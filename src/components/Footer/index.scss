@@ -1,0 +1,14 @@
+.footer-content {
+  width: 100%;
+  font-size: 14px;
+
+  @media (min-width: 768px) {
+    width: 23%;
+  }
+
+  .header-footer {
+    font-weight: 500;
+    font-family: sans-serif;
+    font-size: 18px;
+  }
+}

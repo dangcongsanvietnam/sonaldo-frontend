@@ -1,0 +1,14 @@
+/* CSS cho ant-menu-item ant-menu-item-only-child */
+.ant-menu-item.ant-menu-item-only-child {
+  padding: 0 !important; /* Đặt padding bằng 0 và sử dụng !important để đảm bảo ưu tiên cao */
+  margin: 0 !important; /* Đặt margin bằng 0 và sử dụng !important để đảm bảo ưu tiên cao */
+}
+
+/* Nếu bạn muốn điều chỉnh padding của nội dung */
+.ant-menu-item.ant-menu-item-only-child .ant-menu-title-content {
+  padding: 0 !important;
+}
+
+.label {
+  padding-left: 30px;
+}
