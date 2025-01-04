@@ -36,7 +36,7 @@ const Home = () => {
                 <img
                   onClick={() => navigate(`/product/${product.productId}`)}
                   alt={product.name}
-                  src={`data:image/jpeg;base64,${product?.images[0].file.data}`}
+                  src={`data:image/jpeg;base64,${product?.imageUrl.file.data}`}
                   className="w-full h-48 object-cover rounded-t-lg"
                 />
               }

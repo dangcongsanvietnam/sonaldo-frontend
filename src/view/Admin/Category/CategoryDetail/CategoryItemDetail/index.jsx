@@ -1,45 +1,73 @@
 import React, { useEffect, useState } from "react";
-import { Form, Input, Upload, Button, Row, Col, notification } from "antd";
+import { Form, Input, Upload, Button, Row, Col, notification, Spin, Modal } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
 import ImageUpload from "../../../../../components/ImageUpload";
 import {
   getCategoryItemDetail,
+  removeProductsFromCategoryItem,
   updateCategoryItem,
 } from "../../../../../services/categoryService";
-const { TextArea } = Input;
+import { getProductsByCategoryItem } from "../../../../../services/productService";
+import ProductTable from "../../../../../components/ProductTable";
+import { AddOutlined, DeleteOutline } from "@mui/icons-material";
+import AddProductModal from "../../../../../components/Modal/AddProductModal";
+const { TextArea, Search } = Input;
 
 const CategoryItemDetail = () => {
   const [avatar, setAvatar] = useState(null);
   const dispatch = useDispatch();
   const { categoryId } = useParams();
   const { categoryItemId } = useParams();
+  const [loading, setLoading] = useState(false);
+  const [loadingButton, setLoadingButton] = useState(false);
+  const [loadingTable, setLoadingTable] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [isAddProductModalVisible, setIsAddProductModalVisible] = useState(false);
+  const [products, setProducts] = useState([]);
 
   const categoryItemDetail = useSelector((state) => {
     return state?.category?.categoryItemItem?.data;
   });
 
-  console.log(111111, categoryItemDetail);
-
   const categoryImage = categoryItemDetail?.images;
   const [fileList, setFileList] = useState([]);
-  console.log("avatar", avatar);
-
   const [form] = Form.useForm();
   useEffect(() => {
-    dispatch(getCategoryItemDetail({ categoryId, categoryItemId }))
-      .unwrap()
-      .then((res) => {
-        form.resetFields();
-      })
-      .catch((err) => {
-        console.log(err);
-      });
+    setLoading(true);
+    try {
+      dispatch(getCategoryItemDetail({ categoryId, categoryItemId }))
+        .unwrap()
+        .then((res) => {
+          form.resetFields();
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    } finally {
+      setLoading(false);
+    }
+
   }, [dispatch]);
 
-  const handleSubmit = (values) => {
-    console.log("click");
+  useEffect(() => {
+    fetchProducts();
+  }, [dispatch]);
 
+  const fetchProducts = async () => {
+    // setLoading(true);
+    try {
+      const productsData = await dispatch(getProductsByCategoryItem(categoryItemId)).unwrap();
+      setProducts(productsData.data);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      // setLoading(false);
+    }
+  };
+
+  const handleSubmit = (values) => {
     const sortedFileList = [...fileList].reverse();
 
     const updateValues = {
@@ -58,6 +86,7 @@ const CategoryItemDetail = () => {
         description: "Bắt buộc phải có ít nhất 1 ảnh",
       });
     } else {
+      setLoadingButton(true);
       dispatch(updateCategoryItem(updateValues))
         .unwrap()
         .then(() => {
@@ -73,7 +102,7 @@ const CategoryItemDetail = () => {
             message: "Thất bại",
             description: "Cập nhật thất bại",
           });
-        });
+        }).finally(() => setLoadingButton(false));
     }
   };
 
@@ -93,6 +122,30 @@ const CategoryItemDetail = () => {
       }
     }
   }, [categoryImage, fileList.length]);
+
+  const handleDeleteSelectedProducts = () => {
+    Modal.confirm({
+      title: "Bạn có chắc chắn muốn xóa các sản phẩm đã chọn khỏi danh mục con này không?",
+      onOk: async () => {
+        setLoadingTable(true);
+        try {
+          const updatedProducts = {
+            productIds: selectedRowKeys,
+            categoryItemId: categoryItemId
+          }
+          console.log(updatedProducts)
+          await dispatch(removeProductsFromCategoryItem(updatedProducts)).unwrap().then(() => {
+            fetchProducts().finally(() => setLoadingTable(false));
+          });
+          notification.success({ message: "Xóa tất cả sản phẩm thành công" });
+          setSelectedRowKeys([]);
+        } catch (error) {
+          notification.error({ message: "Xóa một số sản phẩm thất bại" });
+          console.error("Lỗi khi xóa nhiều sản phẩm:", error);
+        }
+      },
+    });
+  };
 
   const base64ToFile = (base64Data, filename) => {
     // Kiểm tra xem base64Data có phải là chuỗi base64 hợp lệ không
@@ -137,57 +190,108 @@ const CategoryItemDetail = () => {
     }
   };
 
+  const handleOpenAddProductModal = () => {
+    setIsAddProductModalVisible(true);
+  };
+
+  const handleCloseAddProductModal = () => {
+    setIsAddProductModalVisible(false);
+  };
+
   return (
     <>
-      <h1 className="text-lg mb-5">Chi tiết danh mục cho danh mục nhãn hàng</h1>
-      <Form
-        form={form}
-        layout="vertical"
-        style={{ margin: "0 auto" }}
-        initialValues={{
-          categoryItemName: categoryItemDetail?.name || "",
-          description: categoryItemDetail?.description || "",
-        }}
-        onFinish={handleSubmit}
-      >
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              label="Tên danh mục của danh mục"
-              name="categoryItemName"
-              rules={[{ message: "Nhập danh mục ..." }]}
-            >
-              <Input initialValues={categoryItemDetail?.name} />
-            </Form.Item>
-            <Form.Item
-              label="Mô tả"
-              name="description"
-              rules={[{ message: "Nhập mô tả ..." }]}
-            >
-              <TextArea
-                rows={4}
-                placeholder="There are many variations of passages of Lorem Ipsum available."
-              />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item label="Ảnh" name="files">
-              <ImageUpload
-                fileList={fileList}
-                avatar={avatar}
-                setAvatar={setAvatar}
-                setFileList={setFileList}
-              ></ImageUpload>
-            </Form.Item>
-          </Col>
-        </Row>
-        <Form.Item className="flex justify-end">
-          <Button htmlType="submit" type="primary">
-            Lưu
+      <Spin spinning={loading}>
+        <h1 className="text-lg mb-5">Chi tiết danh mục con</h1>
+        <Form
+          form={form}
+          layout="vertical"
+          style={{ margin: "0 auto" }}
+          initialValues={{
+            categoryItemName: categoryItemDetail?.name || "",
+            description: categoryItemDetail?.description || "",
+          }}
+          onFinish={handleSubmit}
+        >
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Tên danh mục của danh mục"
+                name="categoryItemName"
+                rules={[{ message: "Nhập danh mục ..." }]}
+              >
+                <Input initialValues={categoryItemDetail?.name} />
+              </Form.Item>
+              <Form.Item
+                label="Mô tả"
+                name="description"
+                rules={[{ message: "Nhập mô tả ..." }]}
+              >
+                <TextArea
+                  rows={4}
+                  placeholder="There are many variations of passages of Lorem Ipsum available."
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Ảnh" name="files">
+                <ImageUpload
+                  fileList={fileList}
+                  setAvatar={setAvatar}
+                  setFileList={setFileList}
+                ></ImageUpload>
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item className="flex justify-end">
+            <Button htmlType="submit" type="primary" loading={loadingButton}>
+              Lưu
+            </Button>
+          </Form.Item>
+        </Form>
+        <hr />
+        {/* New Content Row */}
+        <div className="flex justify-between mt-6">
+          <h1 className="text-lg mb-5">Sản phẩm thuộc danh mục con</h1>
+        </div>
+        <div className="grid grid-cols-3 gap-x-3">
+          <Button
+            type="primary"
+            icon={<AddOutlined />}
+            onClick={handleOpenAddProductModal}
+          >
+            Thêm sản phẩm
           </Button>
-        </Form.Item>
-      </Form>
-      {/* New Content Row */}
+          <Button
+            type="primary"
+            icon={<DeleteOutline />}
+            danger
+            onClick={handleDeleteSelectedProducts}
+            disabled={selectedRowKeys.length === 0}
+          >
+            Xóa sản phẩm đã chọn khỏi danh mục con
+          </Button>
+          <Search
+            placeholder="Nhập ID, tên danh mục con"
+            onSearch={(value) => setSearchKeyword(value)}
+            className="w-auto"
+            enterButton
+          />
+        </div>
+        <AddProductModal
+          setLoadingTable={setLoadingTable}
+          isVisible={isAddProductModalVisible}
+          onClose={handleCloseAddProductModal}
+          currentCategoryItemId={categoryItemId}
+          fetchProducts={fetchProducts}
+        />
+        <ProductTable
+          loading={loadingTable}
+          selectedRowKeys={selectedRowKeys}
+          setSelectedRowKeys={setSelectedRowKeys}
+          searchKeyword={searchKeyword}
+          products={products}
+        ></ProductTable>
+      </Spin >
     </>
   );
 };

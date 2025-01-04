@@ -15,6 +15,7 @@ import AvatarProfile from "../Profile/AvatarProfile";
 
 export default function Register() {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
   const [user, setUser] = useState({
     firstName: "",
     lastName: "",
@@ -60,12 +61,10 @@ export default function Register() {
       birthday: selectedDate,
     }));
 
-    console.log(1, user);
   };
 
   const handleSubmit = (e) => {
-    console.log(2, user);
-    console.log("lcik");
+    setLoading(true);
     e.preventDefault();
     BASE_URL.post("api/v1/auth/signup", user, {
       headers: {
@@ -73,14 +72,12 @@ export default function Register() {
       },
     })
       .then((response) => {
-        console.log(response);
-        if (response.status === 201) {
-          notification.success({
-            message: "Thông báo",
-            description: "Đăng ký tài khoản thành công",
+        if (response.status === 200) {
+          navigate("/notification", {
+            state: {
+              message: "Đăng ký tài khoản thành công, vui lòng vào email để xác thực tài khoản",
+            },
           });
-
-          navigate("/login");
         }
       })
       .catch((error) => {
@@ -97,7 +94,7 @@ export default function Register() {
             notification.error({
               message: "Cảnh báo",
               description:
-                "Đã có lỗi xảy ra. Vui lòng liên hệ với quản trị viên để được trợ giúp.",
+                Object.values(error?.response.data)[0],
             });
             break;
 
@@ -108,7 +105,9 @@ export default function Register() {
             });
             break;
         }
-      });
+      }).finally(() => {
+        setLoading(false);
+      })
   };
 
   const [selectedDate, setSelectedDate] = useState(null);
@@ -120,7 +119,6 @@ export default function Register() {
         .set({ hour: 0, minute: 0, second: 0, millisecond: 0 })
         .toISOString();
       setSelectedDate(dateString);
-      console.log(dateString); // In ra chuỗi string chứa ngày tháng năm với thời gian mặc định
     } else {
       setSelectedDate(null);
       console.log("Date is not selected");
@@ -251,6 +249,7 @@ export default function Register() {
               htmlType="submit"
               type="primary"
               className="w-full h-9"
+              loading={loading}
             >
               Đăng ký
             </Button>

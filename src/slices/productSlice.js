@@ -1,14 +1,16 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { getDataFromCookie, login } from "../services/authService";
-import Cookies from "js-cookie";
 import {
   addNewProduct,
   deleteProduct,
   getAdminProducts,
   getAllProduct,
   getProductDetail,
+  getProductsByBrandCategory,
+  getProductsByCategoryItem,
+  searchAdminProducts,
   searchProducts,
   updateProduct,
+  updateProducts,
 } from "../services/productService";
 
 const productSlice = createSlice({
@@ -16,11 +18,13 @@ const productSlice = createSlice({
   initialState: {
     loading: "idle",
     products: [],
+    adminProducts: [],
     product: null,
     error: null,
     suggestProducts: [],
     tags: [],
     customerProduct: [],
+    categoryItemProducts: []
   },
   reducers: {},
   extraReducers: (builder) => {
@@ -29,7 +33,7 @@ const productSlice = createSlice({
     });
 
     builder.addCase(getAdminProducts.fulfilled, (state, action) => {
-      state.products = action.payload;
+      state.adminProducts = action.payload;
       state.loading = "success";
     });
 
@@ -37,7 +41,31 @@ const productSlice = createSlice({
       state.loading = "Failed";
       state.error = action.error;
     });
+    builder.addCase(searchAdminProducts.pending, (state) => {
+      state.loading = "pending";
+    });
 
+    builder.addCase(searchAdminProducts.fulfilled, (state, action) => {
+      state.adminProducts = action.payload;
+      state.loading = "success";
+    });
+
+    builder.addCase(searchAdminProducts.rejected, (state, action) => {
+      state.loading = "Failed";
+      state.error = action.error;
+    });
+    builder.addCase(updateProducts.pending, (state) => {
+      state.loading = "pending";
+    });
+
+    builder.addCase(updateProducts.fulfilled, (state) => {
+      state.loading = "success";
+    });
+
+    builder.addCase(updateProducts.rejected, (state, action) => {
+      state.loading = "Failed";
+      state.error = action.error;
+    });
     builder.addCase(getAllProduct.pending, (state) => {
       state.loading = "pending";
     });
@@ -48,6 +76,32 @@ const productSlice = createSlice({
     });
 
     builder.addCase(getAllProduct.rejected, (state, action) => {
+      state.loading = "Failed";
+      state.error = action.error;
+    });
+    builder.addCase(getProductsByCategoryItem.pending, (state) => {
+      state.loading = "pending";
+    });
+
+    builder.addCase(getProductsByCategoryItem.fulfilled, (state, action) => {
+      // state.categoryItemProducts = action.payload;
+      state.loading = "success";
+    });
+
+    builder.addCase(getProductsByCategoryItem.rejected, (state, action) => {
+      state.loading = "Failed";
+      state.error = action.error;
+    });
+    builder.addCase(getProductsByBrandCategory.pending, (state) => {
+      state.loading = "pending";
+    });
+
+    builder.addCase(getProductsByBrandCategory.fulfilled, (state, action) => {
+      // state.categoryItemProducts = action.payload;
+      state.loading = "success";
+    });
+
+    builder.addCase(getProductsByBrandCategory.rejected, (state, action) => {
       state.loading = "Failed";
       state.error = action.error;
     });

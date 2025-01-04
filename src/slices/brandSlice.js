@@ -3,12 +3,14 @@ import { createSlice } from "@reduxjs/toolkit";
 import {
   addNewBrand,
   addNewBrandCategory,
+  addProductsToBrand,
   deleteBrand,
   deleteBrandCategory,
   getAdminBrands,
   getBrandCategory,
   getBrandCategoryDetail,
   getBrandDetail,
+  removeProductsFromBrandCategory,
   updateBrand,
   updateBrandCategory,
 } from "../services/brandService";
@@ -36,6 +38,19 @@ const brandSlice = createSlice({
     });
 
     builder.addCase(addNewBrand.rejected, (state, action) => {
+      state.loading = "Failed";
+      state.error = action.error;
+    });
+
+    builder.addCase(addProductsToBrand.pending, (state) => {
+      state.loading = "pending";
+    });
+
+    builder.addCase(addProductsToBrand.fulfilled, (state, action) => {
+      state.loading = "success";
+    });
+
+    builder.addCase(addProductsToBrand.rejected, (state, action) => {
       state.loading = "Failed";
       state.error = action.error;
     });
@@ -160,6 +175,20 @@ const brandSlice = createSlice({
     });
 
     builder.addCase(deleteBrandCategory.rejected, (state, action) => {
+      state.loading = "Failed";
+      state.error = action.error;
+    });
+
+    builder.addCase(removeProductsFromBrandCategory.pending, (state) => {
+      state.loading = "pending";
+    });
+
+    builder.addCase(removeProductsFromBrandCategory.fulfilled, (state, action) => {
+      state.loading = "success";
+      // state.category = action.payload;
+    });
+
+    builder.addCase(removeProductsFromBrandCategory.rejected, (state, action) => {
       state.loading = "Failed";
       state.error = action.error;
     });

@@ -1,12 +1,12 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { getDataFromCookie, login } from "../services/authService";
 import Cookies from "js-cookie";
+import { getLogs } from "../services/changelogService";
 
-const authSlice = createSlice({
+const changelogSlice = createSlice({
   name: "auth",
   initialState: {
     loading: "idle",
-    data: null,
+    data: [],
     error: null,
   },
   reducers: {
@@ -16,21 +16,20 @@ const authSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(login.pending, (state) => {
+    builder.addCase(getLogs.pending, (state) => {
       state.loading = "pending";
     });
 
-    builder.addCase(login.fulfilled, (state, action) => {
+    builder.addCase(getLogs.fulfilled, (state, action) => {
       state.data = action.payload.data;
       state.loading = "success";
     });
 
-    builder.addCase(login.rejected, (state, action) => {
+    builder.addCase(getLogs.rejected, (state, action) => {
       state.loading = "Failed";
       state.error = action.error;
     });
   },
 });
 
-export default authSlice.reducer;
-export const { logout } = authSlice.actions;
+export default changelogSlice.reducer;

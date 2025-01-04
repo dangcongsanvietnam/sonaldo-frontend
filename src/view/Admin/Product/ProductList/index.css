@@ -1,3 +1,61 @@
 .hover-background:hover {
   background-color: #272525; /* Hoặc màu sắc bạn muốn khi hover */
 }
+
+/* Dropdown tùy chỉnh */
+.dropdown-custom .ant-dropdown-menu {
+  min-width: 200px; /* Đặt chiều rộng tối thiểu */
+  border-radius: 8px; /* Bo góc */
+  padding: 0; /* Xóa padding mặc định */
+  overflow: hidden; /* Đảm bảo không bị tràn */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Hiệu ứng bóng */
+}
+
+/* Tăng kích thước từng item trong dropdown */
+.dropdown-custom .ant-dropdown-menu-item {
+  padding: 0; /* Xóa padding mặc định */
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Căn giữa nội dung */
+  height: 48px; /* Tăng chiều cao */
+  font-size: 16px; /* Tăng kích thước font */
+  /* background-color: white; Màu nền */
+  /* border-bottom: 1px solid #f0f0f0; Đường gạch ngăn cách */
+}
+
+/* Xóa đường gạch ở phần tử cuối cùng */
+.dropdown-custom .ant-dropdown-menu-item:last-child {
+  border-bottom: none;
+}
+
+/* Hiệu ứng hover */
+.dropdown-custom .ant-dropdown-menu-item:hover {
+  /* background-color: #f5f5f5; */
+}
+
+/* Căn chỉnh nội dung button */
+.dropdown-custom .ant-dropdown-menu-item > div {
+  display: flex;
+  align-items: center;
+  width: 100%; /* Chiếm toàn bộ chiều rộng */
+  padding: 0 16px; /* Khoảng cách ngang */
+  text-align: left; /* Căn trái */
+  cursor: pointer; /* Trỏ chuột */
+}
+
+/* Tăng kích thước nút trong menu */
+.dropdown-custom .ant-dropdown-menu-item > button {
+  width: 100%; /* Chiếm toàn bộ chiều rộng */
+  height: 48px; /* Đồng bộ chiều cao */
+  font-size: 16px; /* Tăng kích thước font */
+  padding: 0 16px; /* Khoảng cách ngang */
+  text-align: left; /* Căn trái */
+  background: none;
+  border: none; /* Xóa viền */
+  cursor: pointer; /* Trỏ chuột */
+}
+
+/* Hiệu ứng hover cho nút */
+.dropdown-custom .ant-dropdown-menu-item > button:hover {
+  background-color: #f5f5f5;
+}

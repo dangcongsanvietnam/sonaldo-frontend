@@ -1,23 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { Form, Input, Button, notification, Row, Col } from "antd";
-// import TextEditor from "../../TextEditor";
+import { Form, Input } from "antd";
 import TextArea from "antd/es/input/TextArea";
-import { useDispatch } from "react-redux";
+import defaultAvatar from "../../../assets/download.png";
+import ImageUpload from "../../ImageUpload";
 
-import defaultAvatar from "../../../assets/download.png"; // Đường dẫn tới ảnh mặc định
-import { PlusCircleOutlined } from "@ant-design/icons";
-import {
-  addNewCategoryItem,
-  getAdminCategories,
-  getCategoryItem,
-} from "../../../services/categoryService";
-import { getBrandCategory } from "../../../services/brandService";
-
-const CategoryItemForm = ({ categoryId }) => {
+const CategoryItemForm = ({ setAddCategoryItemData }) => {
   const [avatar, setAvatar] = useState(null);
-
-  const dispatch = useDispatch();
   const [form] = Form.useForm();
+  const [fileList, setFileList] = useState([]);
 
   useEffect(() => {
     if (!avatar) {
@@ -35,32 +25,12 @@ const CategoryItemForm = ({ categoryId }) => {
     }
   }, [avatar]);
 
-  const onFinish = (values) => {
-    console.log("Form Values:", values);
-
-    const newCategoryItem = {
-      name: values.categoryItem,
-      description: values.description,
-      files: avatar,
+  const handleValuesChange = (changedValues, allValues) => {
+    const updatedData = {
+      ...allValues,
+      files: fileList.map((file) => file.originFileObj || file),
     };
-
-    dispatch(addNewCategoryItem({ newCategoryItem, categoryId }))
-      .unwrap()
-      .then(() => {
-        dispatch(getCategoryItem(categoryId));
-        dispatch(getAdminCategories());
-        notification.success({
-          message: "Thành công",
-          description: "Thêm danh mục thành công",
-        });
-        form.resetFields();
-      })
-      .catch((err) => {
-        notification.error({
-          message: "Thất bại",
-          description: "Thêm danh mục thất bại",
-        });
-      });
+    setAddCategoryItemData(updatedData);
   };
 
   return (
@@ -69,12 +39,12 @@ const CategoryItemForm = ({ categoryId }) => {
         form={form}
         name="category_item_form"
         layout="horizontal"
-        onFinish={onFinish}
+        onValuesChange={handleValuesChange}
         style={{ maxWidth: 400, margin: "auto 0" }}
       >
         <Form.Item
           label="Danh mục cho danh mục sản phẩm"
-          name="categoryItem"
+          name="name"
           rules={[{ message: "Vui lòng nhập danh mục!" }]}
         >
           <Input placeholder="Nhập danh mục ..." />
@@ -87,15 +57,8 @@ const CategoryItemForm = ({ categoryId }) => {
         >
           <TextArea placeholder="Nhập mô tả ..."></TextArea>
         </Form.Item>
-
-        <Form.Item>
-          <Button
-            type="primary"
-            htmlType="submit"
-            icon={<PlusCircleOutlined />}
-          >
-            Thêm
-          </Button>
+        <Form.Item label="Ảnh sản phẩm">
+          <ImageUpload fileList={fileList} setAvatar={setAvatar} setFileList={setFileList} />
         </Form.Item>
       </Form>
     </div>

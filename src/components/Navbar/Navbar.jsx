@@ -31,7 +31,12 @@ const Navbar = ({ categoryList }) => {
     return state?.product?.suggestProducts;
   });
 
+  const categories2 = useSelector((state) => {
+    return state?.category?.categories;
+  });
+
   console.log("tag", tags);
+  console.log("categories", categories2);
   console.log("suggestProducts", suggestProducts);
 
   const debouncedSearch = useCallback(

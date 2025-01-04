@@ -1,45 +1,61 @@
 import React, { useEffect, useState } from "react";
-import { Form, Input, Upload, Button, Row, Col, notification } from "antd";
+import { Form, Input, Upload, Button, Row, Col, notification, Spin, Modal } from "antd";
 import ImgCrop from "antd-img-crop";
-import { UploadOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
-import { getBrandDetail, updateBrand } from "../../../../services/brandService";
 import { useParams } from "react-router-dom";
 import ImageUpload from "../../../../components/ImageUpload";
+import {
+  addNewBrandCategory,
+  deleteBrandCategory,
+  getBrandDetail,
+  updateBrand,
+} from "../../../../services/brandService";
 import BrandCategoryTable from "../../../../components/BrandCategoryTable";
-import BrandCategoryForm from "../../../../components/Form/BrandCategoryForm";
+import { AddOutlined, DeleteOutline } from "@mui/icons-material";
 
-const { TextArea } = Input;
+const { TextArea, Search } = Input;
 
 const BrandDetail = () => {
   const [avatar, setAvatar] = useState(null);
+  const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
+  const [addBrandCategoryData, setAddBrandCategoryData] = useState({
+    name: "",
+    description: "",
+  });
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [fileList, setFileList] = useState([]);
+  const [brandCategoryFileList, setBrandCategoryFileList] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingButton, setLoadingButton] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState("");
   const dispatch = useDispatch();
   const { brandId } = useParams();
-  const { brandCategoryId } = useParams();
   const brand = useSelector((state) => {
-    return state.brand?.brand?.data;
+    return state?.brand?.brand?.data;
   });
-
   const brandImage = brand?.images;
-  const [fileList, setFileList] = useState([]);
-  console.log("avatar", avatar);
-
   const [form] = Form.useForm();
   useEffect(() => {
-    dispatch(getBrandDetail(brandId))
-      .unwrap()
-      .then(() => {
+    const fetchBrandDetail = async () => {
+      try {
+        setLoading(true);
+        await dispatch(getBrandDetail(brandId)).unwrap();
         form.resetFields();
-      });
-  }, [dispatch]);
+      } catch (error) {
+        notification.error({
+          message: "Lỗi",
+          description: "Không thể tải chi tiết thương hiệu.",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBrandDetail();
+  }, [dispatch, brandId, form]);
 
   const handleSubmit = (values) => {
-    console.log("click");
-    console.log(444, fileList);
-    console.log(666, brandImage);
-
     const sortedFileList = [...fileList].reverse();
-
     const updateValues = {
       name: values?.brandName,
       description: values?.description,
@@ -48,29 +64,32 @@ const BrandDetail = () => {
     };
 
     if (fileList.length < 1) {
-      dispatch(getBrandDetail(brandId));
       notification.error({
         message: "Thất bại",
         description: "Bắt buộc phải có ít nhất 1 ảnh",
       });
-    } else {
-      dispatch(updateBrand(updateValues))
-        .unwrap()
-        .then(() => {
-          dispatch(getBrandDetail(brandId));
-          notification.success({
-            message: "Thành công",
-            description: "Cập nhật thành công",
-          });
-        })
-        .catch(() => {
-          notification.error({
-            message: "Thất bại",
-            description: "Cập nhật thất bại",
-          });
-        });
+      return;
     }
+
+    setLoadingButton(true);
+    dispatch(updateBrand(updateValues))
+      .unwrap()
+      .then(() => {
+        dispatch(getBrandDetail(brandId)).finally(() => setLoadingButton(false))
+        notification.success({
+          message: "Thành công",
+          description: "Cập nhật thành công",
+        });
+      })
+      .catch(() => {
+        setLoadingButton(false)
+        notification.error({
+          message: "Thất bại",
+          description: "Cập nhật thất bại",
+        });
+      })
   };
+
 
   useEffect(() => {
     if (brandImage && brandImage.length > 0) {
@@ -102,24 +121,20 @@ const BrandDetail = () => {
       const n = bstr.length;
       const u8arr = new Uint8Array(n);
 
-      // Chuyển đổi chuỗi nhị phân thành mảng Uint8Array
       for (let i = 0; i < n; i++) {
         u8arr[i] = bstr.charCodeAt(i);
       }
 
-      // Tạo đối tượng File từ mảng Uint8Array
       return new File([u8arr], filename, { type: mime });
     }
 
     try {
-      // Tách phần MIME type và phần base64
       const arr = base64Data.split(",");
       const mime = arr[0].match(/:(.*?);/)[1];
       const bstr = atob(arr[1]);
       const n = bstr.length;
       const u8arr = new Uint8Array(n);
 
-      // Chuyển đổi chuỗi nhị phân thành mảng Uint8Array
       for (let i = 0; i < n; i++) {
         u8arr[i] = bstr.charCodeAt(i);
       }
@@ -132,65 +147,211 @@ const BrandDetail = () => {
     }
   };
 
+  const handleUpdateSelectedProducts = () => {
+    setIsUpdateModalVisible(true);
+  };
+
+  const handleAddBrandCategory = () => {
+    if (!addBrandCategoryData.name || !addBrandCategoryData.description) {
+      notification.error({
+        message: "Thất bại",
+        description: "Vui lòng điền đầy đủ thông tin thương hiệu.",
+      });
+      return;
+    }
+
+    const updateValues = {
+      name: addBrandCategoryData.name,
+      description: addBrandCategoryData.description,
+      files: brandCategoryFileList.map((file) => file.originFileObj),
+      brandId: brandId,
+    };
+
+    setLoading(true); // Bật loading
+    dispatch(addNewBrandCategory(updateValues))
+      .unwrap()
+      .then(() => {
+        dispatch(getBrandDetail(brandId)).finally(() => {
+          setLoading(false); // Tắt loading
+        });
+        notification.success({
+          message: "Thành công",
+          description: "Thêm thương hiệu con thành công.",
+        });
+        setAddBrandCategoryData({ name: "", description: "" });
+        setBrandCategoryFileList([]); // Reset danh sách file
+        setIsUpdateModalVisible(false);
+      })
+      .catch(() => {
+        notification.error({
+          message: "Thất bại",
+          description: "Thêm thương hiệu con thất bại.",
+        });
+      })
+  };
+
+  const handleDeleteSelectedProducts = () => {
+    Modal.confirm({
+      title: "Bạn có chắc chắn muốn xóa các sản phẩm đã chọn không?",
+      onOk: async () => {
+        setLoading(true);
+        try {
+          for (const brandCategoryId of selectedRowKeys) {
+            await dispatch(deleteBrandCategory({ brandId, brandCategoryId })).unwrap();
+          }
+          notification.success({ message: "Xóa tất cả sản phẩm thành công" });
+          setSelectedRowKeys([]); // Reset danh sách đã chọn
+          dispatch(getBrandDetail(brandId)).finally(() => {
+            setLoading(false);
+          });
+        } catch (error) {
+          setLoading(false);
+          notification.error({ message: "Xóa một số sản phẩm thất bại" });
+          console.error("Lỗi khi xóa nhiều sản phẩm:", error);
+        }
+      },
+    });
+  };
+
+  console.log(searchKeyword)
+
   return (
     <>
-      <h1 className="text-lg font-bold mb-5"> Chi tiết nhãn hàng </h1>
-      <Form
-        form={form}
-        layout="vertical"
-        style={{ margin: "0 auto" }}
-        initialValues={{
-          brandName: brand?.name || "",
-          description: brand?.description || "",
-        }}
-        onFinish={handleSubmit}
-      >
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              label="Tên nhãn hàng"
-              name="brandName"
-              rules={[{ message: "Nhập nhãn hàng ..." }]}
-            >
-              <Input initialValues={brand?.name} />
-            </Form.Item>
-            <Form.Item
-              label="Mô tả"
-              name="description"
-              rules={[{ message: "Nhập mô tả ..." }]}
-            >
-              <TextArea
-                rows={4}
-                placeholder="There are many variations of passages of Lorem Ipsum available."
+      <Spin spinning={loading}>
+        <h1 className="text-lg mb-5"> Chi tiết thương hiệu sản phẩm </h1>
+        <Form
+          form={form}
+          layout="vertical"
+          style={{ margin: "0 auto" }}
+          initialValues={{
+            brandName: brand?.name || "",
+            description: brand?.description || "",
+          }}
+          onFinish={handleSubmit}
+        >
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Tên thương hiệu"
+                name="brandName"
+                rules={[{ message: "Nhập thương hiệu ..." }]}
+              >
+                <Input initialValues={brand?.name} />
+              </Form.Item>
+              <Form.Item
+                label="Mô tả"
+                name="description"
+                rules={[{ message: "Nhập mô tả ..." }]}
+              >
+                <TextArea
+                  rows={4}
+                  placeholder=""
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Ảnh" name="files">
+                <ImageUpload
+                  fileList={fileList}
+                  setAvatar={setAvatar}
+                  setFileList={setFileList}
+                ></ImageUpload>
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item className="flex justify-end">
+            <Button htmlType="submit" type="primary" loading={loadingButton}>
+              Lưu
+            </Button>
+          </Form.Item>
+        </Form>
+        {/* New Content Row */}
+        <hr />
+        <div className="mt-7">
+          <Modal
+            title="Thêm thương hiệu con"
+            visible={isUpdateModalVisible}
+            onOk={handleAddBrandCategory}
+            onCancel={() => setIsUpdateModalVisible(false)}
+            okText="Thêm"
+            cancelText="Hủy"
+            confirmLoading={loading}
+          >
+            <Form layout="vertical">
+              <Form.Item
+                label="Tên thương hiệu con"
+                required
+                rules={[{ required: true, message: "Nhập tên thương hiệu con!" }]}
+              >
+                <Input
+                  value={addBrandCategoryData.name}
+                  onChange={(e) =>
+                    setAddBrandCategoryData((prev) => ({
+                      ...prev,
+                      name: e.target.value,
+                    }))
+                  }
+                />
+              </Form.Item>
+              <Form.Item
+                label="Mô tả"
+                rules={[{ required: true, message: "Nhập mô tả!" }]}
+              >
+                <TextArea
+                  rows={3}
+                  value={addBrandCategoryData.description}
+                  onChange={(e) =>
+                    setAddBrandCategoryData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                />
+              </Form.Item>
+              <Form.Item label="Ảnh sản phẩm">
+                <ImageUpload
+                  fileList={brandCategoryFileList}
+                  setFileList={setBrandCategoryFileList}
+                  setAvatar={setAvatar}
+                />
+              </Form.Item>
+            </Form>
+          </Modal>
+          <div className="flex justify-between">
+            <h1 className="text-lg mb-5">Danh sách nhãn hàng con</h1>
+            <div className="grid-cols-3 gap-x-3 grid">
+              <Button
+                type="primary"
+                icon={<AddOutlined />}
+                onClick={handleUpdateSelectedProducts}
+              >
+                Thêm thương hiệu con
+              </Button>
+              <Button
+                type="primary"
+                icon={<DeleteOutline />}
+                danger
+                onClick={handleDeleteSelectedProducts}
+                disabled={selectedRowKeys.length === 0} // Chỉ bật khi có sản phẩm được chọn
+              >
+                Xóa sản phẩm đã chọn
+              </Button>
+              <Search
+                placeholder="Nhập ID, tên thương hiệu con"
+                onSearch={(value) => setSearchKeyword(value)}
+                className="w-auto"
+                enterButton
               />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item label="Ảnh" name="files">
-              <ImageUpload
-                fileList={fileList}
-                avatar={avatar}
-                setAvatar={setAvatar}
-                setFileList={setFileList}
-              ></ImageUpload>
-            </Form.Item>
-          </Col>
-        </Row>
-        <Form.Item className="flex justify-end">
-          <Button htmlType="submit" type="primary">
-            Lưu
-          </Button>
-        </Form.Item>
-      </Form>
-      {/* New Content Row */}
-      <div>
-        <h1 className="text-lg font-bold mb-5">Danh mục nhãn hàng</h1>
-        <BrandCategoryForm brandId={brandId}></BrandCategoryForm>
-        <BrandCategoryTable
-          brandId={brandId}
-          brandCategoryId={brandCategoryId}
-        ></BrandCategoryTable>
-      </div>
+            </div>
+          </div>
+          <BrandCategoryTable
+            brandId={brandId}
+            selectedRowKeys={selectedRowKeys}
+            setSelectedRowKeys={setSelectedRowKeys}
+            searchKeyword={searchKeyword}
+          ></BrandCategoryTable>
+        </div>
+      </Spin>
     </>
   );
 };

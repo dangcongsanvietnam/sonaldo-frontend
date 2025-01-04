@@ -22,14 +22,17 @@ const Layout = () => {
   }, [dispatch]);
 
   return (
-    <Spin spinning={loading} tip="Đang tải dữ liệu..." size="large">
-      {/* Khi loading = true, spinner sẽ bao quanh toàn bộ nội dung bên trong */}
+    <>
       <div className="min-h-screen flex flex-col">
         <Navbar categoryList={categoryList} />
-        <Outlet />
+        {/* <Spin spinning={loading} tip="Đang tải dữ liệu..." size="large"> */}
+          {/* Khi loading = true, spinner sẽ bao quanh toàn bộ nội dung bên trong */}
+          <Outlet />
+        {/* </Spin> */}
         <Footer />
       </div>
-    </Spin>
+    </>
+
   );
 };
 

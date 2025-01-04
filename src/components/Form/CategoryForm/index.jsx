@@ -10,12 +10,15 @@ import {
   getAdminCategories,
 } from "../../../services/categoryService";
 import { Navigate, useNavigate } from "react-router-dom";
+import ImageUpload from "../../ImageUpload";
 const { Search } = Input;
 
 const CategoryForm = () => {
   const [avatar, setAvatar] = useState(null);
-  const navigate = useNavigate();
+  const [fileList, setFileList] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
 
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const [form] = Form.useForm();
 
@@ -36,14 +39,13 @@ const CategoryForm = () => {
   }, [avatar]);
 
   const onFinish = (values) => {
-    console.log("Form Values:", values);
-
     const newCategory = {
       name: values.category,
       description: values.description,
-      files: avatar,
+      files: fileList.length < 1 ? fileList.map((file) => file?.originFileObj) : avatar,
     };
 
+    setIsSaving(true);
     dispatch(addNewCategory(newCategory))
       .unwrap()
       .then((res) => {
@@ -57,9 +59,9 @@ const CategoryForm = () => {
               description: "Thêm thành công",
             });
 
-            navigate("/category");
+            navigate("/admin/category");
             form.resetFields();
-          });
+          }).finally(() => setIsSaving(false));
       })
       .catch((err) => {
         console.log(err);
@@ -87,12 +89,15 @@ const CategoryForm = () => {
         <Form.Item label="Mô tả cho danh mục" name="description">
           <TextArea placeholder="Nhập mô tả ..."></TextArea>
         </Form.Item>
-
+        <Form.Item label="Ảnh sản phẩm">
+          <ImageUpload fileList={fileList} setAvatar={setAvatar} setFileList={setFileList} />
+        </Form.Item>
         <Form.Item>
           <Button
             type="primary"
             htmlType="submit"
             icon={<PlusCircleOutlined />}
+            loading={isSaving}
           >
             Thêm
           </Button>

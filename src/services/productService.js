@@ -4,19 +4,15 @@ import Cookies from "js-cookie";
 
 export const getAdminProducts = createAsyncThunk(
   "product/getAdminProducts",
-  async () => {
-    const token = Cookies.get("token");
-
-    const config = {
-      headers: {
-        "Content-Type": "multipart/form-data",
-        Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+  async ({ page, limit }) => {
+    const res = await BASE_URL.get(`api/v1/products`, {
+      params: {
+        page: page,
+        limit: limit,
       },
-    };
+    });
 
-    const res = await BASE_URL.get("api/v1/admin/products", config);
-
-    return res;
+    return res; // Thông thường bạn trả về `data` thay vì toàn bộ `res`.
   }
 );
 
@@ -24,7 +20,22 @@ export const getProductDetail = createAsyncThunk(
   "product/getProductDetail",
   async (productId) => {
     const res = await BASE_URL.get(`api/v1/products/${productId}`);
-    console.log(productId);
+    return res;
+  }
+);
+
+export const getProductsByCategoryItem = createAsyncThunk(
+  "product/getProductsByCategoryItem",
+  async (categoryItemId) => {
+    const res = await BASE_URL.get(`api/v1/products/get-all-by-categoryItem/${categoryItemId}`);
+    return res;
+  }
+);
+
+export const getProductsByBrandCategory = createAsyncThunk(
+  "product/getProductsByBrandCategory",
+  async (brandCategoryId) => {
+    const res = await BASE_URL.get(`api/v1/products/get-all-by-brandCategory/${brandCategoryId}`);
     return res;
   }
 );
@@ -142,6 +153,62 @@ export const getAllProduct = createAsyncThunk(
       },
     });
 
-    return res; // Thông thường bạn trả về `data` thay vì toàn bộ `res`.
+    return res;
+  }
+);
+
+export const searchAdminProducts = createAsyncThunk(
+  "product/searchAdminProducts",
+  async (params) => {
+    const token = Cookies.get("token");
+
+    const config = {
+      headers: {
+        "Authorization": `Bearer ${token}`, // Thêm token vào header Authorization
+      },
+      params: {
+        productName: params.productName || "",
+        status: params.status || "",
+        brandCategoryId: params.brandCategoryId || "",
+        categoryItemIds: params.categoryItemIds || "",
+        page: params.page || 0,
+        limit: params.limit || 10,
+      },
+    };
+
+    try {
+      const res = await BASE_URL.get("api/v1/admin/products/search-product", config);
+      return res;
+    } catch (error) {
+      console.error("Lỗi khi tìm kiếm sản phẩm:", error);
+      throw error;
+    }
+  }
+);
+
+export const updateProducts = createAsyncThunk(
+  "product/updateProducts",
+  async (params) => {
+    const token = Cookies.get("token");
+
+    const config = {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
+      params: {
+        object: params.object || "",
+        value: params.value || "",
+        productIds: params.productIds || ""
+      },
+    };
+
+    try {
+      const res = await BASE_URL.put("api/v1/admin/products/single-update", {},  config);
+      console.log(res)
+      return res;
+    } catch (error) {
+      console.error("Lỗi khi cập nhật sản phẩm:", error);
+      throw error;
+    }
   }
 );

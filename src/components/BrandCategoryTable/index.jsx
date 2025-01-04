@@ -1,50 +1,32 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   Button,
   Dropdown,
   Input,
   notification,
   Modal,
-  Select,
   Table,
 } from "antd";
 import {
-  PlusCircleOutlined,
   MoreOutlined,
   EyeOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
-import Cookies from "js-cookie";
-// import { deleteBrand, getAdminBrands } from "../../../../services/brandService";
 import { useNavigate } from "react-router-dom";
+
 import {
-  deleteBrandCategory,
-  getBrandCategory,
-  getBrandDetail,
+  deleteBrandCategory
 } from "../../services/brandService";
 
 const { Search } = Input;
 
-const BrandCategoryTable = ({ brandId, brandCategoryId }) => {
-  const brandCategory = useSelector(
-    (state) => state?.brand?.brandCategories?.data
-  );
-  console.log("brandCategory", brandCategory);
-  console.log("brandId", brandId);
-  console.log("brandCategoryId", brandCategoryId);
+const BrandCategoryTable = ({ brandId, selectedRowKeys, setSelectedRowKeys, searchKeyword }) => {
+  const brandCategory = useSelector((state) => {
+    return state?.brand?.brand?.data?.brandCategories;
+  });
   const dispatch = useDispatch();
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const navigate = useNavigate();
-
-  const onSelectChange = (newSelectedRowKeys) => {
-    setSelectedRowKeys(newSelectedRowKeys);
-  };
-
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: onSelectChange,
-  };
 
   const alphanumericSort = (a, b) => {
     return a.brandCategoryId.localeCompare(b.brandCategoryId, undefined, {
@@ -61,9 +43,6 @@ const BrandCategoryTable = ({ brandId, brandCategoryId }) => {
           .unwrap()
           .then(() => {
             notification.success({ message: "Xóa nhãn hàng thành công" });
-
-            // Cập nhật lại danh sách nhãn hàng sau khi xóa
-            dispatch(getBrandCategory(brandId));
           })
           .catch((error) => {
             notification.error({ message: "Xóa nhãn hàng thất bại" });
@@ -75,22 +54,27 @@ const BrandCategoryTable = ({ brandId, brandCategoryId }) => {
 
   const columns = [
     {
-      title: "Mã nhãn hàng",
+      title: "Mã thương hiệu",
       dataIndex: "brandCategoryId",
       sorter: alphanumericSort,
       sortDirections: ["ascend", "descend"],
     },
     {
-      title: "Danh mục thuộc nhãn hàng",
+      title: "Thương hiêu thuộc thương hiệu sản phẩm",
       dataIndex: "brandCategory",
       sorter: (a, b) => a.brandCategory.localeCompare(b.brandCategory),
       sortDirections: ["ascend", "descend"],
     },
     {
-      title: "Mô tả",
-      dataIndex: "description",
-      sorter: (a, b) => a.description.localeCompare(b.description),
-      sortDirections: ["ascend", "descend"],
+      title: "Ảnh thương hiệu",
+      dataIndex: "imageFile",
+      render: (imageFile) => (
+        <img
+          alt="Brand"
+          src={`data:image/jpeg;base64,${imageFile}`}
+          className="w-16 h-16 object-cover rounded"
+        />
+      ),
     },
     {
       title: "Action",
@@ -129,26 +113,35 @@ const BrandCategoryTable = ({ brandId, brandCategoryId }) => {
     },
   ];
 
-  const token = Cookies.get("token");
-
-  useEffect(() => {
-    dispatch(getBrandCategory(brandId));
-  }, [dispatch, token]);
-
-  const data = brandCategory?.map((brandCategoryItem, index) => ({
-    key: index,
-    brandCategoryId: brandCategoryItem?.brandCategoryId,
-    brandCategory: brandCategoryItem?.name,
-    description: brandCategoryItem?.description,
-  }));
+  const filteredData = brandCategory
+    ?.filter((brandCategory) => {
+      const matchesBrandId = brandCategory?.brandCategoryId
+        ?.toString()
+        .toLowerCase()
+        .includes(searchKeyword.toLowerCase());
+      const matchesBrandName = brandCategory?.name
+        ?.toLowerCase()
+        .includes(searchKeyword.toLowerCase());
+      return matchesBrandId || matchesBrandName;
+    })
+    ?.map((brandCategory, index) => ({
+      key: index,
+      brandCategoryId: brandCategory?.brandCategoryId,
+      brandCategory: brandCategory?.name,
+      imageFile: brandCategory?.imageFile.file.data,
+    }));
 
   return (
     <>
       <div className="pt-5">
         <Table
+          rowKey="brandCategoryId"
           columns={columns}
-          dataSource={data}
-          rowSelection={rowSelection}
+          dataSource={filteredData}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (keys) => setSelectedRowKeys(keys),
+          }}
           showSorterTooltip={{ target: "sorter-icon" }}
         />
       </div>

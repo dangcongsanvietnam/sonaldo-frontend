@@ -32,6 +32,11 @@ import Addbrand from "./../view/Admin/Brand/AddBrand";
 import CategoryPageDetail from "./../view/Admin/Category/CategoryPageDetail";
 import CategoryPage from "./../view/Admin/Category/CategoryPage";
 import PublicProductDetail from "../view/PublicProductDetail";
+import AdminLogin from "../view/Admin/AdminLogin";
+import SucessfulPage from "../pages/SuccessfulPage";
+import SearchResults from "../view/Admin/SearchResults";
+import NotificationPage from "../pages/NotificationPage";
+import LogsPage from "../pages/LogsPage";
 
 // publicRoutes.js
 export const publicRoutes = [
@@ -44,6 +49,12 @@ export const publicRoutes = [
   { path: "/forget-password", Component: ForgetPassword },
   { path: "/reset-password", Component: ResetPassword },
   { path: "/product/:id", Component: PublicProductDetail },
+  { path: "/successful-payment", Component: SucessfulPage },
+  { path: "/notification", Component: NotificationPage },
+];
+
+export const publicAdminRoutes = [
+  { path: "/login/admin", Component: AdminLogin },
 ];
 
 // userRoutes.js
@@ -71,4 +82,6 @@ export const adminRoutes = [
   { path: "add-brand", Component: Addbrand },
   { path: "order", Component: Order },
   { path: "customers", Component: CustomerManagement },
+  { path: "search-results", Component: SearchResults },
+  { path: "changelogpage", Component: LogsPage },
 ];

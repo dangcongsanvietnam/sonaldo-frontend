@@ -79,17 +79,6 @@ export const getCategoryDetail = createAsyncThunk(
   }
 );
 
-export const getCategoryItem = createAsyncThunk(
-  "category/getCategoryItem",
-
-  async (categoryId) => {
-    const res = await BASE_URL.get(
-      `api/v1/categories/${categoryId}/categoryItem`
-    );
-    return res;
-  }
-);
-
 export const updateCategory = createAsyncThunk(
   "category/updateCategory",
   async (updateValues) => {
@@ -121,6 +110,39 @@ export const updateCategory = createAsyncThunk(
       return res.data; // Trả về dữ liệu từ res
     } catch (error) {
       // Xử lý lỗi nếu có
+      console.error("Sửa không thành công", error);
+      console.log(updateValues);
+    }
+  }
+);
+
+export const addProductsToCategory = createAsyncThunk(
+  "category/addProductsToCategory",
+  async (updateValues) => {
+    const token = Cookies.get("token");
+
+    const config = {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    };
+
+    const initState = {
+      productIds: updateValues.productIds || "",
+      categoryItemIds: updateValues.categoryItemIds[0] || ""
+    };
+
+    console.log(initState)
+
+    try {
+      const res = await BASE_URL.put(
+        `api/v1/admin/categories/updateProductsAndCategoryItems`,
+        initState,
+        config
+      );
+      console.log("e", res);
+      return res.data;
+    } catch (error) {
       console.error("Sửa không thành công", error);
       console.log(updateValues);
     }
@@ -179,10 +201,8 @@ export const updateCategoryItem = createAsyncThunk(
 
 export const addNewCategoryItem = createAsyncThunk(
   "category/addNewCategoryItem",
-  async ({ newCategoryItem, categoryId }) => {
-    // Lấy token từ cookie
+  async (newCategoryItem) => {
     const token = Cookies.get("token"); // Hoặc tên khác tùy thuộc vào cách bạn lưu trữ token
-    // Tạo cấu hình headers với token
     const config = {
       headers: {
         "Content-Type": "multipart/form-data",
@@ -190,11 +210,72 @@ export const addNewCategoryItem = createAsyncThunk(
       },
     };
 
+    const updateValues = {
+      name: newCategoryItem.name,
+      description: newCategoryItem.description,
+      files: newCategoryItem.files,
+    };
     try {
-      // Thực hiện request với cấu hình headers
       const res = await BASE_URL.post(
-        `api/v1/admin/categories/${categoryId}`,
-        newCategoryItem,
+        `api/v1/admin/categories/${newCategoryItem.categoryId}`,
+        updateValues,
+        config
+      );
+      console.log(res);
+      return res.data; // Trả về dữ liệu từ res
+    } catch (error) {
+      // Xử lý lỗi nếu có
+      console.error("Failed to add brandCategory:", error);
+      throw error;
+    }
+  }
+);
+
+export const addProductsToCategoryItem = createAsyncThunk(
+  "category/addProductsToCategoryItem",
+  async (updatedProducts) => {
+    const token = Cookies.get("token"); // Hoặc tên khác tùy thuộc vào cách bạn lưu trữ token
+    const config = {
+      headers: {
+        Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+      },
+    };
+
+    const updateValues = {
+      productIds: updatedProducts.productIds
+    };
+    try {
+      const res = await BASE_URL.put(
+        `api/v1/admin/categories/${updatedProducts.categoryItemId}/addProductToCategoryItem`,
+        updateValues,
+        config
+      );
+      console.log(res);
+      return res.data; // Trả về dữ liệu từ res
+    } catch (error) {
+      console.error("Failed to add brandCategory:", error);
+      throw error;
+    }
+  }
+);
+
+export const removeProductsFromCategoryItem = createAsyncThunk(
+  "category/removeProductsFromCategoryItem",
+  async (updatedProducts) => {
+    const token = Cookies.get("token"); // Hoặc tên khác tùy thuộc vào cách bạn lưu trữ token
+    const config = {
+      headers: {
+        Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+      },
+    };
+
+    const updateValues = {
+      productIds: updatedProducts.productIds
+    };
+    try {
+      const res = await BASE_URL.put(
+        `api/v1/admin/categories/${updatedProducts.categoryItemId}/removeProductsFromCategoryItem`,
+        updateValues,
         config
       );
       console.log(res);
