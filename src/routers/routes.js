@@ -36,8 +36,8 @@ import PublicProductDetail from "../view/PublicProductDetail";
 // publicRoutes.js
 export const publicRoutes = [
   { path: "/", Component: Home },
-  { path: "/public/category/:categoryId", Component: CategoryPageDetail },
-  { path: "/public/category", Component: CategoryPage },
+  { path: "/category/:categoryId", Component: CategoryPageDetail },
+  { path: "/category", Component: CategoryPage },
   { path: "/register", Component: Register },
   { path: "/login", Component: Login },
   { path: "/verify-email", Component: VerifyEmail },

@@ -4,12 +4,13 @@ import {
   getAdminCategories,
   getCategoryDetail,
 } from "../../../../services/categoryService";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Card, Col, Row } from "antd";
 
 const CategoryPageDetail = () => {
   const dispatch = useDispatch();
   const categoryId = useParams();
+  const navigate = useNavigate();
 
   useEffect(() => {
     dispatch(getAdminCategories());
@@ -17,6 +18,7 @@ const CategoryPageDetail = () => {
   }, [dispatch]);
 
   const category = useSelector((state) => state?.category?.categories?.data);
+  console.log("category", category);
 
   return (
     <>
@@ -34,11 +36,11 @@ const CategoryPageDetail = () => {
                 <img
                   alt="example"
                   style={{ width: "100%", objectFit: "cover" }} // Đảm bảo hình ảnh không vượt quá giới hạn
-                  src={`data:image/jpeg;base64,${item?.images[0].file.data}`}
+                  src={`data:image/jpeg;base64,${item.imageFile?.file?.data}`}
                 />
               }
             >
-              {item.name}
+              {item?.categoryName}
             </Card>
           </Col>
         ))}

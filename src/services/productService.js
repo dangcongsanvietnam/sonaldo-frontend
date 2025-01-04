@@ -24,7 +24,6 @@ export const getProductDetail = createAsyncThunk(
   "product/getProductDetail",
   async (productId) => {
     const res = await BASE_URL.get(`api/v1/products/${productId}`);
-    console.log(productId);
     return res;
   }
 );

@@ -5,6 +5,7 @@ import addressSlice from "./addressSlice";
 import productSlice from "./productSlice";
 import brandSlice from "./brandSlice";
 import categorySlice from "./categorySlice";
+import cartSlice from "./cartSlice";
 
 const reducers = combineReducers({
   auth: authSlice,
@@ -13,6 +14,7 @@ const reducers = combineReducers({
   product: productSlice,
   brand: brandSlice,
   category: categorySlice,
+  cart: cartSlice,
 });
 
 export default reducers;

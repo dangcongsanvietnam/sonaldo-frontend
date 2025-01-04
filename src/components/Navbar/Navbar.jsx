@@ -8,6 +8,7 @@ import { CloseOutlined, UserOutlined, SearchOutlined } from "@ant-design/icons";
 import { Card, Col, Row } from "antd";
 const { Meta } = Card;
 import debounce from "lodash/debounce";
+import "./Navbar.css";
 import {
   faMagnifyingGlass,
   faHeart,
@@ -17,12 +18,36 @@ import {
 import { Input, Space } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { searchProducts } from "../../services/productService";
+import { getUserCart } from "../../services/cartService";
 
 const Navbar = ({ categoryList }) => {
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
+  const [menu, setMenu] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const dispatch = useDispatch();
+
+  const [cartDropdownOpen, setCartDropdownOpen] = useState(false); // Trạng thái cho dropdown giỏ hàng
+  const userCart = useSelector((state) => state.cart?.userCart);
+
+  useEffect(() => {
+    if (!userCart) {
+      dispatch(getUserCart()).finally(() => setIsLoading(false));
+    }
+  }, [dispatch, userCart]);
+
+  const handleHoverCart = () => {
+    if (userCart == undefined) {
+      setIsLoading(true);
+    } else {
+      setIsLoading(false);
+    }
+  };
+
+  console.log("userCart", userCart);
+
+  const cartItems = userCart?.cartItems;
 
   const tags = useSelector((state) => {
     return state?.product?.tags;
@@ -63,11 +88,17 @@ const Navbar = ({ categoryList }) => {
       >
         <ul className="md:flex hidden uppercase items-center gap-8 font-sans text-xs w-[33%]">
           <li>
-            <Link to="/" className="py-7 px-3 inline-block">
+            <Link
+              to="/"
+              className={`py-7 px-3 inline-block ${
+                menu === "home" ? "active" : ""
+              }`}
+              onClick={() => setMenu("home")}
+            >
               Home
             </Link>
           </li>
-          <NavLinks categoryList={categoryList} />
+          <NavLinks menu={menu} setMenu={setMenu} categoryList={categoryList} />
         </ul>
 
         <div className="z-50 p-5 md:w-[10%] w-full flex md:place-content-center justify-between">
@@ -100,8 +131,55 @@ const Navbar = ({ categoryList }) => {
               <FontAwesomeIcon icon={faMagnifyingGlass} className="fa-xl" />
             </div>
           </div>
-          <div className="flex gap-1" href="">
-            <FontAwesomeIcon icon={faCartShopping} className="fa-xl" />
+          <div
+            className="relative"
+            onMouseEnter={() => setCartDropdownOpen(true)} // Mở dropdown khi di chuột vào giỏ hàng
+            onMouseLeave={() => setCartDropdownOpen(false)} // Đóng dropdown khi rời chuột ra khỏi cả giỏ hàng và dropdown
+          >
+            {/* Biểu tượng giỏ hàng */}
+            <FontAwesomeIcon
+              icon={faCartShopping}
+              className="fa-xl cursor-pointer"
+            />
+
+            {/* Dropdown giỏ hàng */}
+            {cartDropdownOpen && (
+              <div
+                className="absolute top-full z-10 right-[-10px] mt-2 bg-white border border-gray-300 shadow-lg rounded-lg w-80"
+                style={{ top: "10px" }} // Dịch dropdown lên trên một chút
+                onMouseEnter={() => setCartDropdownOpen(true)} // Khi chuột vào dropdown, không đóng
+                onMouseLeave={() => {
+                  setCartDropdownOpen(false);
+                }} // Khi chuột ra khỏi dropdown, đóng dropdown
+              >
+                <Card>
+                  {isLoading ? (
+                    <>
+                      <div>...Loading</div>
+                    </>
+                  ) : (
+                    <ul>
+                      {cartItems.map((item) => (
+                        <li
+                          key={item.id}
+                          className="flex justify-between items-center  border-b hover:bg-gray-100 cursor-pointer"
+                          onClick={() => alert(`You selected: ${item.name}`)} // Tương tác với từng mục
+                        >
+                          <span>{item?.productName}</span>
+                          <span>{item?.totalPrice}</span>
+                        </li>
+                      ))}
+                      <div className="flex justify-between">
+                        <div>{cartItems.length}</div>
+                        <button className="text-blue-500 hover:underline">
+                          View Cart
+                        </button>
+                      </div>
+                    </ul>
+                  )}
+                </Card>
+              </div>
+            )}
           </div>
         </div>
 
