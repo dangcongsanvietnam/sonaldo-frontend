@@ -1,77 +1,66 @@
-import React, { useEffect, useState } from "react";
-import { Form, Input, Button, notification } from "antd";
-// import TextEditor from "../../TextEditor";
+import React, { useState } from "react";
+import { Form, Input, Button } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import { useDispatch } from "react-redux";
 import { addNewBrand, getAdminBrands } from "../../../services/brandService";
-import defaultAvatar from "../../../assets/download.png"; // Đường dẫn tới ảnh mặc định
 import { PlusCircleOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import ImageUpload from "../../ImageUpload";
-const { Search } = Input;
+import { Bounce, toast, ToastContainer } from "react-toastify";
 
-const BrandForm = () => {
-  const [avatar, setAvatar] = useState(null);
+const BrandForm = ({ vnMode }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [fileList, setFileList] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [form] = Form.useForm();
 
-  useEffect(() => {
-    if (!avatar) {
-      fetch(defaultAvatar)
-        .then((res) => {
-          console.log("ressss", res);
-          res.blob();
-        })
-        .then((blob) => {
-          const file = new File([blob], "default-avatar.png", {
-            type: "image/png",
-          });
-          setAvatar(file);
-        });
-    }
-  }, [avatar]);
-
   const onFinish = (values) => {
-    console.log("Form Values:", values);
+    if (fileList.length < 1) {
+      toast.error(vnMode ? "Cần ít nhất 1 ảnh" : "Require at least one picture");
+    } else {
+      const newBrand = {
+        name: values.brand,
+        description: values.description,
+        files: fileList.map((file) => file?.originFileObj),
+      };
 
-    const newBrand = {
-      name: values.brand,
-      description: values.description,
-      files: fileList.length < 1 ? fileList.map((file) => file?.originFileObj) : avatar,
-    };
-
-    setIsSaving(true);
-    dispatch(addNewBrand(newBrand))
-      .unwrap()
-      .then((res) => {
-        console.log(newBrand);
-        console.log(res);
-        dispatch(getAdminBrands())
-          .unwrap()
-          .then((res) => {
-            notification.success({
-              message: "Thành công",
-              description: "Thêm thành công",
-            });
-            form.resetFields();
-            navigate("/admin/brand");
-          }).finally(() => setIsSaving(false));
-      })
-      .catch((err) => {
-        console.log(err);
-        console.log(newBrand);
-        notification.error({
-          message: "Thất bại",
-          description: "Thêm thất bại",
-        });
-      });
+      setIsSaving(true);
+      dispatch(addNewBrand(newBrand))
+        .unwrap()
+        .then(() => {
+          dispatch(getAdminBrands())
+            .unwrap()
+            .then(() => {
+              toast.success(vnMode ? "Thêm thành công" : "Add successfully");
+              setTimeout(() => {
+                setIsSaving(false);
+                navigate("/admin/brand");
+              }, 1000);
+            })
+        })
+        .catch(() => {
+          toast.error(vnMode ? "Thêm thất bại" : "Failed to add");
+          setIsSaving(false);
+        })
+    }
   };
 
   return (
     <div>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        transition={Bounce}
+      />
       <Form
         form={form}
         name="category_brand_form"
@@ -80,30 +69,33 @@ const BrandForm = () => {
         style={{ width: "50%", margin: "auto 0" }}
       >
         <Form.Item
-          label="Thêm nhãn hàng"
+          label={vnMode ? "Thêm tên nhãn hàng" : "Add Brand Name"}
           name="brand"
-          rules={[{ message: "Vui lòng nhập nhãn hàng!" }]}
+          rules={[{ message: vnMode ? "Vui lòng nhập nhãn hàng!" : "Please enter the brand name!" }]}
         >
-          <Input placeholder="Nhập nhãn hàng ..." />
+          <Input placeholder={vnMode ? "Nhập nhãn hàng ..." : "Enter brand name ..."} />
         </Form.Item>
 
         <Form.Item
-          label="Mô tả cho nhãn hàng"
+          label={vnMode ? "Mô tả cho nhãn hàng" : "Brand Description"}
           name="description"
-          rules={[{ message: "Vui lòng nhập mục mô tả!" }]}
+          rules={[{ message: vnMode ? "Vui lòng nhập mục mô tả!" : "Please enter a description!" }]}
         >
-          <TextArea rows={4} placeholder="Nhập mô tả ..."></TextArea>
+          <TextArea rows={4} placeholder={vnMode ? "Nhập mô tả ..." : "Enter description ..."}></TextArea>
         </Form.Item>
-        <Form.Item label="Ảnh sản phẩm">
-          <ImageUpload fileList={fileList} setAvatar={setAvatar} setFileList={setFileList} />
+
+        <Form.Item label={vnMode ? "Ảnh sản phẩm" : "Product Image"}>
+          <ImageUpload fileList={fileList} setFileList={setFileList} />
         </Form.Item>
+
         <Form.Item>
           <Button
             type="primary"
             htmlType="submit"
             icon={<PlusCircleOutlined />}
+            loading={isSaving}
           >
-            Thêm
+            {vnMode ? "Thêm" : "Add"}
           </Button>
         </Form.Item>
       </Form>

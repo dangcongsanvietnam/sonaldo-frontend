@@ -6,6 +6,12 @@ import productSlice from "./productSlice";
 import brandSlice from "./brandSlice";
 import categorySlice from "./categorySlice";
 import changelogSlice from "./changelogSlice";
+import orderSlice from './orderSlice';
+import reviewSlice from './reviewSlice';
+import questionSlice from './questionSlice';
+import feedbackSlice from './feedbackSlice';
+import emailSlice from './emailSlice';
+import informationSlice from './informationSlice';
 
 const reducers = combineReducers({
   auth: authSlice,
@@ -14,7 +20,13 @@ const reducers = combineReducers({
   product: productSlice,
   brand: brandSlice,
   category: categorySlice,
-  changelog: changelogSlice
+  changelog: changelogSlice,
+  orders: orderSlice,
+  reviews: reviewSlice,
+  questions: questionSlice,
+  feedbacks: feedbackSlice,
+  email: emailSlice,
+  information: informationSlice,
 });
 
 export default reducers;

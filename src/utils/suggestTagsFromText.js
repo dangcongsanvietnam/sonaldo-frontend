@@ -1,4 +1,4 @@
-export const suggestTagsFromText = (productName, description) => {
+export const suggestTagsFromText = (productName, description, categories, brand, brandCategory) => {
     const removeDiacritics = (text) => {
         return text
             .normalize('NFD')
@@ -23,8 +23,13 @@ export const suggestTagsFromText = (productName, description) => {
 
     const nameTags = processText(productName).map((word) => `#${word}`);
     const descriptionTags = processText(description).map((word) => `#${word}`);
+    
+    const categoryTags = categories.flatMap(category => processText(category)).map(word => `#${word}`);
+    
+    const brandTags = brand ? processText(brand).map(word => `#${word}`) : [];
+    const brandCategoryTags = brandCategory ? processText(brandCategory).map(word => `#${word}`) : [];
 
-    const combinedTags = [...new Set([...nameTags, ...descriptionTags])];
+    const combinedTags = [...new Set([...nameTags, ...descriptionTags, ...categoryTags, ...brandTags, ...brandCategoryTags])];
     return combinedTags;
 };
 

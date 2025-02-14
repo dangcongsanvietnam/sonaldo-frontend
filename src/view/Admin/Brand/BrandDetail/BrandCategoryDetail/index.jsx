@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Form, Input, Upload, Button, Row, Col, notification, Spin, Modal } from "antd";
+import { Form, Input, Button, Row, Col, Spin, Modal, Tooltip } from "antd";
 import { useDispatch, useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import ImageUpload from "../../../../../components/ImageUpload";
 import {
   getBrandCategoryDetail,
@@ -10,13 +10,13 @@ import {
 } from "../../../../../services/brandService";
 import { getProductsByBrandCategory } from "../../../../../services/productService";
 import ProductTable from "../../../../../components/ProductTable";
-import { AddOutlined, DeleteOutline } from "@mui/icons-material";
-import AddProductModal from "../../../../../components/Modal/AddProductModal";
 import AddProductModalBrandCategory from "../../../../../components/Modal/AddProductModalBrandCategory";
+import { PlusOutlined, DeleteOutlined, LeftOutlined } from '@ant-design/icons';
+import { Bounce, toast, ToastContainer } from "react-toastify";
+
 const { TextArea, Search } = Input;
 
 const BrandCategoryDetail = () => {
-  const [avatar, setAvatar] = useState(null);
   const dispatch = useDispatch();
   const { brandId } = useParams();
   const { brandCategoryId } = useParams();
@@ -27,10 +27,13 @@ const BrandCategoryDetail = () => {
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [isAddProductModalVisible, setIsAddProductModalVisible] = useState(false);
   const [products, setProducts] = useState([]);
+  const { vnMode } = useOutletContext();
+  const [visible, setVisible] = useState(false);
+  const navigate = useNavigate();
 
-  const brandCategoryDetail = useSelector((state) => {
-    return state?.brand?.brandCategoryDetailItem?.data;
-  });
+  const brandCategoryDetail = useSelector((state) => state?.brand?.brandCategoryDetailItem?.data);
+  const brands = useSelector((state) => state?.brand?.brands?.data);
+
 
   const brandImage = brandCategoryDetail?.images;
   const [fileList, setFileList] = useState([]);
@@ -40,11 +43,10 @@ const BrandCategoryDetail = () => {
     try {
       dispatch(getBrandCategoryDetail({ brandId, brandCategoryId }))
         .unwrap()
-        .then((res) => {
+        .then(() => {
           form.resetFields();
         })
-        .catch((err) => {
-          console.log(err);
+        .catch(() => {
         });
     } finally {
       setLoading(false);
@@ -62,7 +64,6 @@ const BrandCategoryDetail = () => {
       const productsData = await dispatch(getProductsByBrandCategory(brandCategoryId)).unwrap();
       setProducts(productsData.data);
     } catch (error) {
-      console.error("Error fetching products:", error);
     } finally {
       // setLoading(false);
     }
@@ -82,27 +83,17 @@ const BrandCategoryDetail = () => {
     if (fileList.length < 1) {
       dispatch(getBrandCategoryDetail({ brandId, brandCategoryId }));
 
-      notification.error({
-        message: "Thất bại",
-        description: "Bắt buộc phải có ít nhất 1 ảnh",
-      });
+      toast.error(vnMode ? "Bắt buộc phải có ít nhất 1 ảnh" : "Require at least one picture");
     } else {
       setLoadingButton(true);
       dispatch(updateBrandCategory(updateValues))
         .unwrap()
         .then(() => {
           dispatch(getBrandCategoryDetail({ brandId, brandCategoryId }));
-          notification.success({
-            message: "Thành công",
-            description: "Cập nhật thành công",
-          });
+          toast.success(vnMode ? "Cập nhật thành công" : "Successfully updated");
         })
-        .catch((err) => {
-          console.log(err);
-          notification.error({
-            message: "Thất bại",
-            description: "Cập nhật thất bại",
-          });
+        .catch(() => {
+          toast.error(vnMode ? "Cập nhật thất bại" : "Failed to update");
         }).finally(() => setLoadingButton(false));
     }
   };
@@ -124,69 +115,55 @@ const BrandCategoryDetail = () => {
     }
   }, [brandImage, fileList.length]);
 
-  const handleDeleteSelectedProducts = () => {
-    Modal.confirm({
-      title: "Bạn có chắc chắn muốn xóa các sản phẩm đã chọn khỏi danh mục con này không?",
-      onOk: async () => {
-        setLoadingTable(true);
-        try {
-          const updatedProducts = {
-            productIds: selectedRowKeys,
-            brandCategoryId: brandCategoryId
-          }
-          console.log(updatedProducts)
-          await dispatch(removeProductsFromBrandCategory(updatedProducts)).unwrap().then(() => {
-            fetchProducts().finally(() => setLoadingTable(false));
-          });
-          notification.success({ message: "Xóa tất cả sản phẩm thành công" });
-          setSelectedRowKeys([]);
-        } catch (error) {
-          notification.error({ message: "Xóa một số sản phẩm thất bại" });
-          console.error("Lỗi khi xóa nhiều sản phẩm:", error);
-        }
-      },
-    });
+  const handleDelete = async () => {
+    setLoading(true);
+    try {
+      const updatedProducts = {
+        productIds: selectedRowKeys,
+        brandCategoryId: brandCategoryId
+      };
+
+      await dispatch(removeProductsFromBrandCategory(updatedProducts)).unwrap();
+      await fetchProducts();
+      toast.success(vnMode ? "Xóa tất cả sản phẩm thành công" : "Successfully deleted all products");
+      setSelectedRowKeys([]);
+      setVisible(false);
+    } catch (error) {
+      toast.error(vnMode ? "Xóa một số sản phẩm thất bại" : "Failed to delete some products");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const base64ToFile = (base64Data, filename) => {
-    // Kiểm tra xem base64Data có phải là chuỗi base64 hợp lệ không
     if (!base64Data || !base64Data.startsWith("data:")) {
-      console.warn("Invalid base64 data:", base64Data);
-      // Nếu không có MIME type, giả định là `image/jpeg`
       const defaultMimeType = "image/jpeg";
       const arr = base64Data.split(",");
       const mime =
-        arr.length > 1 ? arr[0].match(/:(.*?);/)[1] : defaultMimeType; // Lấy MIME type hoặc dùng loại mặc định
-      const bstr = atob(arr[arr.length - 1]); // Giải mã base64 thành chuỗi nhị phân
+        arr.length > 1 ? arr[0].match(/:(.*?);/)[1] : defaultMimeType;
+      const bstr = atob(arr[arr.length - 1]);
       const n = bstr.length;
       const u8arr = new Uint8Array(n);
 
-      // Chuyển đổi chuỗi nhị phân thành mảng Uint8Array
       for (let i = 0; i < n; i++) {
         u8arr[i] = bstr.charCodeAt(i);
       }
 
-      // Tạo đối tượng File từ mảng Uint8Array
       return new File([u8arr], filename, { type: mime });
     }
 
     try {
-      // Tách phần MIME type và phần base64
       const arr = base64Data.split(",");
       const mime = arr[0].match(/:(.*?);/)[1];
       const bstr = atob(arr[1]);
       const n = bstr.length;
       const u8arr = new Uint8Array(n);
-
-      // Chuyển đổi chuỗi nhị phân thành mảng Uint8Array
       for (let i = 0; i < n; i++) {
         u8arr[i] = bstr.charCodeAt(i);
       }
 
-      // Tạo đối tượng File từ mảng Uint8Array
       return new File([u8arr], filename, { type: mime });
     } catch (error) {
-      console.error("Error converting base64 to file:", error);
       return null;
     }
   };
@@ -201,8 +178,30 @@ const BrandCategoryDetail = () => {
 
   return (
     <>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        transition={Bounce}
+      />
       <Spin spinning={loading}>
-        <h1 className="text-lg mb-5">Chi tiết danh mục con</h1>
+        <Tooltip title={vnMode ? 'Thương hiệu cha' : 'Brand'}>
+          <Button
+            icon={<LeftOutlined className="text-blue-600" />}
+            onClick={() => navigate(`/admin/brand/${brandId}`)}
+            shape="circle"
+            size="small"
+            className="bg-blue-100 hover:bg-blue-200 mb-10 mr-2"
+          />
+          {vnMode ? 'Thương hiệu cha' : 'Brand'}
+        </Tooltip>
         <Form
           form={form}
           layout="vertical"
@@ -216,63 +215,73 @@ const BrandCategoryDetail = () => {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                label="Tên danh mục của danh mục"
+                label={vnMode ? "Tên danh mục của danh mục" : "Brand Category Name"}
                 name="brandCategoryName"
-                rules={[{ message: "Nhập danh mục ..." }]}
+                rules={[{ message: vnMode ? "Nhập danh mục ..." : "Enter category ..." }]}
               >
-                <Input initialValues={brandCategoryDetail?.name} />
+                <Input
+                  placeholder={
+                    vnMode ? "Nhập tên danh mục con..." : "Enter sub-category name..."
+                  }
+                />
               </Form.Item>
               <Form.Item
-                label="Mô tả"
+                label={vnMode ? "Mô tả" : "Description"}
                 name="description"
-                rules={[{ message: "Nhập mô tả ..." }]}
+                rules={[{ message: vnMode ? "Nhập mô tả ..." : "Enter description ..." }]}
               >
                 <TextArea
                   rows={4}
-                  placeholder="There are many variations of passages of Lorem Ipsum available."
+                  placeholder={
+                    vnMode
+                      ? "Nhập mô tả cho danh mục con..."
+                      : "Enter description for sub-category..."
+                  }
                 />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Ảnh" name="files">
+              <Form.Item label={vnMode ? "Ảnh" : "Image"} name="files">
                 <ImageUpload
                   fileList={fileList}
-                  setAvatar={setAvatar}
                   setFileList={setFileList}
-                ></ImageUpload>
+                />
               </Form.Item>
             </Col>
           </Row>
           <Form.Item className="flex justify-end">
             <Button htmlType="submit" type="primary" loading={loadingButton}>
-              Lưu
+              {vnMode ? "Lưu" : "Save"}
             </Button>
           </Form.Item>
         </Form>
         <hr />
-        {/* New Content Row */}
         <div className="flex justify-between mt-6">
-          <h1 className="text-lg mb-5">Sản phẩm thuộc danh mục con</h1>
+          <h1 className="text-lg mb-5">
+            {vnMode ? "Sản phẩm thuộc danh mục con" : "Products in Sub-Category"}
+          </h1>
         </div>
         <div className="grid grid-cols-3 gap-x-3">
           <Button
             type="primary"
-            icon={<AddOutlined />}
+            icon={<PlusOutlined />}
             onClick={handleOpenAddProductModal}
           >
-            Thêm sản phẩm
+            {vnMode ? "Thêm sản phẩm" : "Add Product"}
           </Button>
           <Button
             type="primary"
-            icon={<DeleteOutline />}
+            icon={<DeleteOutlined />}
             danger
-            onClick={handleDeleteSelectedProducts}
+            onClick={() => setVisible(true)}
             disabled={selectedRowKeys.length === 0}
           >
-            Xóa sản phẩm đã chọn khỏi danh mục con
+            {vnMode ? "Xóa sản phẩm đã chọn khỏi danh mục con" : "Remove Selected Products"}
           </Button>
           <Search
-            placeholder="Nhập ID, tên danh mục con"
+            placeholder={
+              vnMode ? "Nhập ID, tên danh mục con" : "Enter ID or sub-category name"
+            }
             onSearch={(value) => setSearchKeyword(value)}
             className="w-auto"
             enterButton
@@ -284,6 +293,8 @@ const BrandCategoryDetail = () => {
           onClose={handleCloseAddProductModal}
           currentBrandItemId={brandCategoryId}
           fetchProducts={fetchProducts}
+          vnMode={vnMode}
+          brands={brands}
         />
         <ProductTable
           loading={loadingTable}
@@ -291,9 +302,24 @@ const BrandCategoryDetail = () => {
           setSelectedRowKeys={setSelectedRowKeys}
           searchKeyword={searchKeyword}
           products={products}
-        ></ProductTable>
-      </Spin >
+          vnMode={vnMode}
+        />
+        <Modal
+          title={vnMode ? "Xác nhận xóa" : "Confirm Deletion"}
+          open={visible}
+          onCancel={() => setVisible(false)}
+          onOk={handleDelete}
+          confirmLoading={loading}
+        >
+          {loading ? (
+            <Spin />
+          ) : (
+            <p>{vnMode ? "Bạn có chắc chắn muốn xóa các sản phẩm đã chọn khỏi thương hiệu con này không?" : "Are you sure you want to delete the selected products from this sub-brand?"}</p>
+          )}
+        </Modal>
+      </Spin>
     </>
+
   );
 };
 

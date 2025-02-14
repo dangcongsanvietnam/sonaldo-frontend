@@ -1,5 +1,6 @@
 import ImgCrop from "antd-img-crop";
 import { Upload, message } from "antd";
+import './index.css'
 
 const getSrcFromFile = (file) => {
   return new Promise((resolve) => {
@@ -9,11 +10,11 @@ const getSrcFromFile = (file) => {
   });
 };
 
-const ImageUpload = ({ fileList, setFileList, setAvatar }) => {
-  const MIN_WIDTH = 200; // Chiều rộng tối thiểu
-  const MIN_HEIGHT = 200; // Chiều cao tối thiểu
-  const MAX_WIDTH = 2000; // Chiều rộng tối đa
-  const MAX_HEIGHT = 2000; // Chiều cao tối đa
+const ImageUpload = ({ fileList, setFileList, vnMode, info }) => {
+  const MIN_WIDTH = 200;
+  const MIN_HEIGHT = 200;
+  const MAX_WIDTH = 2000;
+  const MAX_HEIGHT = 2000;
 
   const onChange = ({ fileList: newFileList }) => {
     const updatedFileList = newFileList.map((file) => {
@@ -28,13 +29,6 @@ const ImageUpload = ({ fileList, setFileList, setAvatar }) => {
     });
 
     setFileList(updatedFileList);
-
-    if (updatedFileList.length > 0) {
-      const latestFile = updatedFileList[updatedFileList.length - 1];
-      if (latestFile.originFileObj) {
-        setAvatar(latestFile.originFileObj);
-      }
-    }
   };
 
   const onPreview = async (file) => {
@@ -44,15 +38,7 @@ const ImageUpload = ({ fileList, setFileList, setAvatar }) => {
     if (imgWindow) {
       const image = new Image();
       image.src = src;
-      image.style.width = "300px"; // Đảm bảo hiển thị hợp lý
-      image.style.height = "300px";
-      image.style.objectFit = "cover"; // Tự fit hoặc cover
-      imgWindow.document.body.style.display = "flex";
-      imgWindow.document.body.style.justifyContent = "center";
-      imgWindow.document.body.style.alignItems = "center";
-      imgWindow.document.body.style.margin = "0";
-      imgWindow.document.body.style.background = "#f0f0f0";
-      imgWindow.document.body.appendChild(image);
+      imgWindow.document.write(image.outerHTML);
     } else {
       window.location.href = src;
     }
@@ -88,19 +74,34 @@ const ImageUpload = ({ fileList, setFileList, setAvatar }) => {
   };
 
   return (
-    <div className="flex items-center space-x-4">
-      <ImgCrop rotationSlider showReset cropShape="square">
-        <Upload
-          listType="picture-card"
-          fileList={fileList}
-          onChange={onChange}
-          onPreview={onPreview}
-          beforeUpload={beforeUpload}
-          customRequest={customRequest}
-        >
-          {fileList.length < 5 && "+ Upload"}
-        </Upload>
-      </ImgCrop>
+    <div className="">
+      {info ? (
+        <div>
+          <Upload
+            listType="picture-card"
+            fileList={fileList}
+            onChange={onChange}
+            onPreview={onPreview}
+            beforeUpload={beforeUpload}
+            customRequest={customRequest}
+          >
+            {fileList.length < 5 && vnMode ? "+ Tải lên" : "+ Upload"}
+          </Upload>
+        </div>
+      ) : (
+        <ImgCrop rotationSlider showReset cropShape="square">
+          <Upload
+            listType="picture-card"
+            fileList={fileList}
+            onChange={onChange}
+            onPreview={onPreview}
+            beforeUpload={beforeUpload}
+            customRequest={customRequest}
+          >
+            {fileList.length < 5 && vnMode ? "+ Tải lên" : "+ Upload"}
+          </Upload>
+        </ImgCrop>
+      )}
     </div>
   );
 };

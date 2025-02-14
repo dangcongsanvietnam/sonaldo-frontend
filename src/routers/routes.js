@@ -20,7 +20,6 @@ import UserManagement from "./../view/Admin/CustomerManagement";
 import BrandList from "./../view/Admin/Brand/BrandList";
 import BrandDetail from "./../view/Admin/Brand/BrandDetail";
 import BrandCategoryDetail from "./../view/Admin/Brand/BrandDetail/BrandCategoryDetail";
-import { Category } from "@mui/icons-material";
 import CategoryList from "./../view/Admin/Category/CategoryList";
 import CustomerManagement from "./../view/Admin/CustomerManagement";
 import CategoryDetail from "./../view/Admin/Category/CategoryDetail";
@@ -37,6 +36,18 @@ import SucessfulPage from "../pages/SuccessfulPage";
 import SearchResults from "../view/Admin/SearchResults";
 import NotificationPage from "../pages/NotificationPage";
 import LogsPage from "../pages/LogsPage";
+import ManagerList from "../view/SuperAdmin/Manager/ManagerList";
+import AddManager from "../view/SuperAdmin/Manager/AddManager";
+import UserDetail from "../view/SuperAdmin/Manager/UserDetail";
+import UserDetailPage from "../pages/UserDetailPage";
+import OrderManagement from "../pages/OrderManagement";
+import OrderDetails from "../pages/OrderDetails";
+import DetailPage from "../pages/DetailPage";
+import BackupRestorePage from "../pages/BackupRestorePage";
+import ClearDataPage from "../pages/ClearDataPage";
+import FeedbackManagementPage from "../pages/FeedbackManagementPage";
+import EmailPage from "../pages/EmailPage";
+import InformationPage from "../pages/Information";
 
 // publicRoutes.js
 export const publicRoutes = [
@@ -66,7 +77,7 @@ export const userRoutes = [
 
 // adminRoutes.js
 export const adminRoutes = [
-  { path: "products", Component: ProductList }, // Loại bỏ dấu /
+  { path: "products", Component: ProductList },
   { path: "products/:productId", Component: ProductDetail },
   { path: "brand", Component: BrandList },
   { path: "category", Component: CategoryList },
@@ -80,8 +91,26 @@ export const adminRoutes = [
   },
   { path: "add-product", Component: AddProduct },
   { path: "add-brand", Component: Addbrand },
-  { path: "order", Component: Order },
+  { path: "orders", Component: OrderManagement },
+  { path: "order-details/:orderId", Component: OrderDetails },
   { path: "customers", Component: CustomerManagement },
   { path: "search-results", Component: SearchResults },
   { path: "changelogpage", Component: LogsPage },
+  { path: "profile", Component: Profile },
+  { path: "change-password", Component: ChangePassword },
+];
+
+export const superAdminRoutes = [
+  { path: "users", Component: ManagerList },
+  { path: "backup-and-restore", Component: BackupRestorePage },
+  { path: "delete", Component: ClearDataPage },
+  { path: "feedbacks", Component: FeedbackManagementPage },
+  { path: "emails", Component: EmailPage },
+  { path: "add-user", Component: AddManager },
+  { path: "user-detail/:email", Component: DetailPage },
+  { path: "search-results", Component: SearchResults },
+  { path: "changelogpage", Component: LogsPage },
+  { path: "profile", Component: Profile },
+  { path: "change-password", Component: ChangePassword },
+  { path: "contact", Component: InformationPage },
 ];

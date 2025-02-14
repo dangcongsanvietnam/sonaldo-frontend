@@ -3,23 +3,23 @@ import {
   Button,
   Dropdown,
   Input,
-  notification,
   Modal,
-  Select,
   Table,
   Tag,
-  Spin,
 } from "antd";
-import { MoreOutlined, EyeOutlined, DeleteOutlined } from "@ant-design/icons";
+import Icon, { MoreOutlined, EyeOutlined, DeleteOutlined, CheckOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import {
   deleteCategory,
   getAdminCategories,
 } from "../../../../services/categoryService";
+import { Bounce, toast, ToastContainer } from "react-toastify";
+import { useLoading } from "../../../../provider/LoadingProvider";
 const { Search } = Input;
 
 const CategoryList = () => {
+  const { startLoading, stopLoading } = useLoading();
   const categories = useSelector((state) => {
     return state.category.categories.data;
   });
@@ -28,6 +28,12 @@ const CategoryList = () => {
   const [searchKeyword, setSearchKeyword] = useState("");
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const { vnMode } = useOutletContext();
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [modalType, setModalType] = useState(null);
+  const [categoryToDelete, setCategoryToDelete] = useState(null);
+  const condition = searchKeyword.length > 0;
+  const suffix = condition ? <Icon component={CheckOutlined} type="smile" className="hidden" /> : <span />;
 
   const filteredData = categories
     ?.filter((category) => {
@@ -57,6 +63,17 @@ const CategoryList = () => {
       categoryItems: category?.categoryItems,
     }));
 
+  useEffect(() => {
+    startLoading();
+    try {
+      dispatch(getAdminCategories());
+    } catch (error) {
+
+    } finally {
+      stopLoading();
+    }
+  }, [dispatch]);
+
   const alphanumericSort = (a, b) => {
     return a.categoryId.localeCompare(b.categoryId, undefined, {
       numeric: true,
@@ -64,23 +81,15 @@ const CategoryList = () => {
     });
   };
 
-  const handleDelete = (categoryId) => {
-    Modal.confirm({
-      title: "Bạn có chắc chắn muốn xóa danh mục này không?",
-      onOk: () => {
-        setLoading(true);
-        dispatch(deleteCategory(categoryId))
-          .unwrap()
-          .then(() => {
-            notification.success({ message: "Xóa danh mục thành công" });
-            dispatch(getAdminCategories()); // Cập nhật lại danh sách sau khi xóa
-          })
-          .catch((error) => {
-            notification.error({ message: "Xóa danh mục thất bại" });
-            console.error("Lỗi khi xóa:", error);
-          }).finally(() => setLoading(false));
-      },
-    });
+  const showDeleteModal = (categoryId) => {
+    setCategoryToDelete(categoryId);
+    setModalType("single");
+    setIsModalVisible(true);
+  };
+
+  const showDeleteSelectedModal = () => {
+    setModalType("multiple");
+    setIsModalVisible(true);
   };
 
   const renderDropdownMenu = (record) => ({
@@ -96,7 +105,7 @@ const CategoryList = () => {
       },
       {
         label: (
-          <div onClick={() => handleDelete(record.categoryId)}>
+          <div onClick={() => showDeleteModal(record.categoryId)}>
             <DeleteOutlined style={{ marginRight: 8, color: "red" }} />
             Xóa
           </div>
@@ -106,41 +115,49 @@ const CategoryList = () => {
     ],
   });
 
-  const handleDeleteSelectedProducts = () => {
-    Modal.confirm({
-      title: "Bạn có chắc chắn muốn xóa các sản phẩm đã chọn không?",
-      onOk: async () => {
-        try {
-          setLoading(true);
-          for (const categoryId of selectedRowKeys) {
-            await dispatch(deleteCategory(categoryId)).unwrap();
-          }
-          notification.success({ message: "Xóa tất cả danh mục thành công" });
-          setSelectedRowKeys([]);
-          dispatch(getAdminCategories()).finally(() => setLoading(false))
-        } catch (error) {
-          notification.error({ message: "Xóa một số danh mục thất bại" });
-          console.error("Lỗi khi xóa nhiều danh mục:", error);
+  const handleDelete = async () => {
+    setLoading(true);
+
+    try {
+      if (modalType === "single" && categoryToDelete) {
+        await dispatch(deleteCategory(categoryToDelete)).unwrap();
+        toast.success(vnMode ? "Xóa danh mục thành công" : "Deleted category successfully");
+      } else if (modalType === "multiple" && selectedRowKeys.length > 0) {
+        for (const categoryId of selectedRowKeys) {
+          await dispatch(deleteCategory(categoryId)).unwrap();
         }
-      },
-    });
+        toast.success(vnMode ? "Xóa tất cả danh mục thành công" : "Deleted all selected categories successfully");
+        setSelectedRowKeys([]);
+      }
+      dispatch(getAdminCategories());
+    } catch (error) {
+      toast.error(
+        vnMode
+          ? "Xóa danh mục thất bại. Vui lòng thử lại!"
+          : "Failed to delete category. Please try again!"
+      );
+    } finally {
+      setLoading(false);
+      setIsModalVisible(false);
+      setCategoryToDelete(null);
+    }
   };
 
   const columns = [
     {
-      title: "Mã danh mục",
+      title: vnMode ? "Mã Danh Mục" : "Category ID",
       dataIndex: "categoryId",
       sorter: alphanumericSort,
       sortDirections: ["ascend", "descend"],
     },
     {
-      title: "Tên danh mục",
+      title: vnMode ? "Tên Danh Mục" : "Category Name",
       dataIndex: "category",
       sorter: (a, b) => a.category.localeCompare(b.category),
       sortDirections: ["ascend", "descend"],
     },
     {
-      title: "Ảnh danh mục",
+      title: vnMode ? "Ảnh Danh Mục" : "Category Image",
       dataIndex: "imageFile",
       render: (imageFile) => (
         <img
@@ -151,7 +168,7 @@ const CategoryList = () => {
       ),
     },
     {
-      title: "Danh mục con",
+      title: vnMode ? "Danh Mục Con" : "Category Item",
       dataIndex: "categoryItems",
       render: (items) =>
         items && items.length > 0 ? (
@@ -165,11 +182,11 @@ const CategoryList = () => {
             </Tag>
           ))
         ) : (
-          <Tag color="red">Không có danh mục</Tag>
+          <Tag color="red">{vnMode ? "Không có danh mục con" : "Category Item List is empty"}</Tag>
         ),
     },
     {
-      title: "Thao tác",
+      title: vnMode ? "Thao tác" : "Action",
       key: "operation",
       fixed: "right",
       render: (record) => (
@@ -186,41 +203,76 @@ const CategoryList = () => {
 
   return (
     <>
-      <Spin spinning={loading}>
-        <div className="flex justify-between">
-          <h1 className="text-lg font-bold mb-5">Danh mục sản phẩm</h1>
-          <div className="grid-cols-2 grid gap-4 gap-x-3">
-            <Button
-              type="primary"
-              icon={<DeleteOutlined />}
-              danger
-              onClick={handleDeleteSelectedProducts}
-              disabled={selectedRowKeys.length === 0} // Chỉ bật khi có sản phẩm được chọn
-            >
-              Xóa danh mục đã chọn
-            </Button>
-            <Search
-              placeholder="Nhập ID, tên danh mục, hoặc danh mục con"
-              onSearch={(value) => setSearchKeyword(value)}
-              className="w-auto"
-              enterButton
-            />
-          </div>
-        </div>
-        <div className="pt-5">
-          <Table
-            rowKey="categoryId"
-            columns={columns}
-            dataSource={filteredData}
-            rowSelection={{
-              selectedRowKeys,
-              onChange: (keys) => setSelectedRowKeys(keys),
-            }}
-            pagination={{ pageSize: 10 }}
-            showSorterTooltip={{ target: "sorter-icon" }}
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        transition={Bounce}
+      />
+      <div className="flex justify-between">
+        <div className="grid-cols-2 grid gap-4 gap-x-3">
+          <Button
+            type="primary"
+            icon={<DeleteOutlined />}
+            danger
+            onClick={showDeleteSelectedModal}
+            disabled={selectedRowKeys.length === 0}
+          >
+            {vnMode ? "Xóa các danh mục đã chọn" : "Delete all selected categories"}
+          </Button>
+          <Search
+            placeholder={vnMode ? "Nhập mã, tên danh mục, hoặc danh mục con" : "Enter id, category name, or category item"}
+            onSearch={(value) => setSearchKeyword(value)}
+            className="w-auto"
+            allowClear
+            enterButton
+            suffix={suffix}
           />
         </div>
-      </Spin>
+      </div>
+      <div className="pt-5">
+        <Table
+          rowKey="categoryId"
+          columns={columns}
+          dataSource={filteredData}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (keys) => setSelectedRowKeys(keys),
+          }}
+          pagination={{ pageSize: 10 }}
+          showSorterTooltip={{ target: "sorter-icon" }}
+        />
+      </div>
+      <Modal
+        title={
+          modalType === "single"
+            ? vnMode
+              ? "Bạn có chắc chắn muốn xóa danh mục này không?"
+              : "Are you sure you want to delete this category?"
+            : vnMode
+              ? "Bạn có chắc chắn muốn xóa các danh mục đã chọn không?"
+              : "Are you sure you want to delete selected categories?"
+        }
+        open={isModalVisible}
+        onOk={handleDelete}
+        onCancel={() => setIsModalVisible(false)}
+        confirmLoading={loading}
+        okText={vnMode ? "Xác nhận" : "Confirm"}
+        cancelText={vnMode ? "Hủy bỏ" : "Cancel"}
+      >
+        <p>
+          {vnMode
+            ? "Hành động này không thể hoàn tác. Vui lòng xác nhận!"
+            : "This action cannot be undone. Please confirm!"}
+        </p>
+      </Modal>
     </>
   );
 };

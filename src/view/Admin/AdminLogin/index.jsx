@@ -7,6 +7,8 @@ import { emailValidator } from '../../../utils/validataData';
 import { useDispatch } from 'react-redux';
 import { login } from '../../../services/authService';
 import Cookies from "js-cookie";
+import BASE_URL from '../../../api';
+import { Bounce, toast, ToastContainer } from 'react-toastify';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -21,8 +23,20 @@ const AdminLogin = () => {
   useEffect(() => {
     const token = Cookies.get("token");
     const role = localStorage.getItem("role");
-    if (token && role) {
-      navigate("/admin")
+    if (token) {
+      BASE_URL.get(`api/v1/auth/validate-token?token=${token}&role=${role}`)
+        .then((res) => {
+          if (res.status === 200) {
+            if (role == "ROLE_MANAGER") {
+              navigate("/admin")
+
+            } else if (role == "ROLE_ADMIN") {
+              navigate("/super-admin")
+            }
+          }
+        }).catch(() => 
+          toast.error("Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại")
+        )
     }
   }, [navigate]);
 
@@ -50,12 +64,15 @@ const AdminLogin = () => {
             message: "Thành công",
             description: "Đăng nhập thành công",
           });
-          if (res.data.role === "ROLE_ADMIN") {
+          if (res.data.role == "ROLE_MANAGER") {
             navigate("/admin")
+
+          } else if (res.data.role == "ROLE_ADMIN") {
+            navigate("/super-admin")
           }
         }
       })
-      .catch((err) => {
+      .catch(() => {
         notification.error({
           message: "Thất bại",
           description: "Đăng nhập thất bại",
@@ -71,6 +88,19 @@ const AdminLogin = () => {
 
   return (
     <div className="login-container">
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        transition={Bounce}
+      />
       <div className="background-animation"></div>
       <Card style={{ width: 400 }}>
         <Title level={3} style={{ textAlign: 'center' }}>Đăng Nhập</Title>

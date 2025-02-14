@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Form, Input, Upload, Button, Row, Col, notification, Spin, Modal } from "antd";
-import ImgCrop from "antd-img-crop";
+import { Form, Input, Button, Row, Col, Spin, Modal, Tooltip } from "antd";
 import { useDispatch, useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import ImageUpload from "../../../../components/ImageUpload";
 import {
   addNewCategoryItem,
@@ -11,12 +10,12 @@ import {
   updateCategory,
 } from "../../../../services/categoryService";
 import CategoryItemTable from "../../../../components/CategoryItemTable";
-import { AddOutlined, DeleteOutline } from "@mui/icons-material";
+import { AppstoreAddOutlined, DeleteOutlined, LeftOutlined } from "@ant-design/icons";
+import { Bounce, toast, ToastContainer } from "react-toastify";
 
 const { TextArea, Search } = Input;
 
 const CategoryDetail = () => {
-  const [avatar, setAvatar] = useState(null);
   const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
   const [addCategoryItemData, setAddCategoryItemData] = useState({
     name: "",
@@ -34,7 +33,12 @@ const CategoryDetail = () => {
     return state?.category?.category?.data;
   });
   const categoryImage = category?.images;
+  const { vnMode } = useOutletContext();
   const [form] = Form.useForm();
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const [modalType, setModalType] = useState(null);
+  const navigate = useNavigate();
+
   useEffect(() => {
     const fetchCategoryDetail = async () => {
       try {
@@ -42,10 +46,7 @@ const CategoryDetail = () => {
         await dispatch(getCategoryDetail(categoryId)).unwrap();
         form.resetFields();
       } catch (error) {
-        notification.error({
-          message: "Lỗi",
-          description: "Không thể tải chi tiết danh mục.",
-        });
+        toast.error(vnMode ? "Không thể tải chi tiết danh mục." : "Failed to load category detail.");
       } finally {
         setLoading(false);
       }
@@ -64,10 +65,7 @@ const CategoryDetail = () => {
     };
 
     if (fileList.length < 1) {
-      notification.error({
-        message: "Thất bại",
-        description: "Bắt buộc phải có ít nhất 1 ảnh",
-      });
+      toast.error(vnMode ? "Bắt buộc phải có ít nhất 1 ảnh" : "Require at least one picture");
       return;
     }
 
@@ -76,17 +74,11 @@ const CategoryDetail = () => {
       .unwrap()
       .then(() => {
         dispatch(getCategoryDetail(categoryId)).finally(() => setLoadingButton(false))
-        notification.success({
-          message: "Thành công",
-          description: "Cập nhật thành công",
-        });
+        toast.success(vnMode ? "Cập nhật thành công" : "Update successfully");
       })
       .catch(() => {
         setLoadingButton(false)
-        notification.error({
-          message: "Thất bại",
-          description: "Cập nhật thất bại",
-        });
+        toast.error(vnMode ? "Cập nhật thất bại" : "Failed to update");
       })
   };
 
@@ -109,10 +101,7 @@ const CategoryDetail = () => {
   }, [categoryImage, fileList.length]);
 
   const base64ToFile = (base64Data, filename) => {
-    // Kiểm tra xem base64Data có phải là chuỗi base64 hợp lệ không
     if (!base64Data || !base64Data.startsWith("data:")) {
-      console.warn("Invalid base64 data:", base64Data);
-      // Nếu không có MIME type, giả định là `image/jpeg`
       const defaultMimeType = "image/jpeg";
       const arr = base64Data.split(",");
       const mime =
@@ -139,10 +128,8 @@ const CategoryDetail = () => {
         u8arr[i] = bstr.charCodeAt(i);
       }
 
-      // Tạo đối tượng File từ mảng Uint8Array
       return new File([u8arr], filename, { type: mime });
     } catch (error) {
-      console.error("Error converting base64 to file:", error);
       return null;
     }
   };
@@ -153,10 +140,7 @@ const CategoryDetail = () => {
 
   const handleAddCategoryItem = () => {
     if (!addCategoryItemData.name || !addCategoryItemData.description) {
-      notification.error({
-        message: "Thất bại",
-        description: "Vui lòng điền đầy đủ thông tin danh mục.",
-      });
+      toast.error(vnMode ? "Vui lòng điền đầy đủ thông tin danh mục." : "Please complete the information.");
       return;
     }
 
@@ -172,53 +156,68 @@ const CategoryDetail = () => {
       .unwrap()
       .then(() => {
         dispatch(getCategoryDetail(categoryId)).finally(() => {
-          setLoading(false); // Tắt loading
+          setLoading(false);
         });
-        notification.success({
-          message: "Thành công",
-          description: "Thêm danh mục con thành công.",
-        });
+        toast.success(vnMode ? "Thêm danh mục con thành công." : "Add new sub-category successfully.");
         setAddCategoryItemData({ name: "", description: "" });
-        setCategoryItemFileList([]); // Reset danh sách file
+        setCategoryItemFileList([]);
         setIsUpdateModalVisible(false);
       })
       .catch(() => {
-        notification.error({
-          message: "Thất bại",
-          description: "Thêm danh mục con thất bại.",
-        });
+        toast.error(vnMode ? "Thêm danh mục con thất bại." : "Failed to add sub-category");
       })
   };
 
   const handleDeleteSelectedProducts = () => {
-    Modal.confirm({
-      title: "Bạn có chắc chắn muốn xóa các sản phẩm đã chọn không?",
-      onOk: async () => {
-        setLoading(true);
-        try {
-          for (const categoryItemId of selectedRowKeys) {
-            await dispatch(deleteCategoryItem({ categoryId, categoryItemId })).unwrap();
-          }
-          notification.success({ message: "Xóa tất cả sản phẩm thành công" });
-          setSelectedRowKeys([]); // Reset danh sách đã chọn
-          dispatch(getCategoryDetail(categoryId)).finally(() => {
-            setLoading(false);
-          });
-        } catch (error) {
-          setLoading(false);
-          notification.error({ message: "Xóa một số sản phẩm thất bại" });
-          console.error("Lỗi khi xóa nhiều sản phẩm:", error);
-        }
-      },
-    });
+    setModalType("multiple");
+    setIsDeleteModalVisible(true);
   };
 
-  console.log(searchKeyword)
+  const handleDelete = async () => {
+    setLoading(true);
+    try {
+      if (modalType === "multiple" && selectedRowKeys.length > 0) {
+        for (const categoryItemId of selectedRowKeys) {
+          await dispatch(deleteCategoryItem({ categoryId, categoryItemId })).unwrap();
+        }
+        toast.success(vnMode ? "Xóa tất cả danh mục thành công" : "Remove all selected sub-categories successfully");
+        setSelectedRowKeys([]);
+      }
+      dispatch(getCategoryDetail(categoryId));
+    } catch (error) {
+      toast.error(vnMode ? "Xóa một số danh mục thất bại" : "Failed to remove selected sub-categories");
+    } finally {
+      setLoading(false);
+      setIsDeleteModalVisible(false);
+    }
+  };
 
   return (
     <>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        transition={Bounce}
+      />
       <Spin spinning={loading}>
-        <h1 className="text-lg mb-5"> Chi tiết danh mục sản phẩm </h1>
+        <Tooltip title={vnMode ? 'Danh sách danh mục' : 'Category list'}>
+          <Button
+            icon={<LeftOutlined className="text-blue-600" />}
+            onClick={() => navigate('/admin/category')}
+            shape="circle"
+            size="small"
+            className="bg-blue-100 hover:bg-blue-200 mb-10 mr-2"
+          />
+          {vnMode ? 'Danh sách danh mục' : 'Category list'}
+        </Tooltip>
         <Form
           form={form}
           layout="vertical"
@@ -232,56 +231,80 @@ const CategoryDetail = () => {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                label="Tên danh mục"
+                label={vnMode ? "Tên danh mục" : "Category Name"}
                 name="categoryName"
-                rules={[{ message: "Nhập danh mục ..." }]}
+                rules={[
+                  {
+                    required: true,
+                    message: vnMode
+                      ? "Nhập tên danh mục ..."
+                      : "Enter category name ...",
+                  },
+                ]}
               >
-                <Input initialValues={category?.name} />
+                <Input />
               </Form.Item>
               <Form.Item
-                label="Mô tả"
+                label={vnMode ? "Mô tả danh mục" : "Category Description"}
                 name="description"
-                rules={[{ message: "Nhập mô tả ..." }]}
+                rules={[
+                  {
+                    required: true,
+                    message: vnMode
+                      ? "Nhập mô tả ..."
+                      : "Enter description ...",
+                  },
+                ]}
               >
                 <TextArea
                   rows={4}
-                  placeholder=""
+                  placeholder={
+                    vnMode ? "Nhập mô tả ..." : "Enter description ..."
+                  }
                 />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Ảnh" name="files">
+              <Form.Item
+                label={vnMode ? "Ảnh danh mục" : "Category Image"}
+                name="files"
+              >
                 <ImageUpload
                   fileList={fileList}
-                  setAvatar={setAvatar}
                   setFileList={setFileList}
-                ></ImageUpload>
+                />
               </Form.Item>
             </Col>
           </Row>
           <Form.Item className="flex justify-end">
             <Button htmlType="submit" type="primary" loading={loadingButton}>
-              Lưu
+              {vnMode ? "Lưu Danh Mục" : "Save Category"}
             </Button>
           </Form.Item>
         </Form>
-        {/* New Content Row */}
         <hr />
         <div className="mt-7">
           <Modal
-            title="Thêm danh mục con"
-            visible={isUpdateModalVisible}
+            title={vnMode ? "Thêm Danh Mục Con" : "Create Category Item"}
+            open={isUpdateModalVisible}
             onOk={handleAddCategoryItem}
             onCancel={() => setIsUpdateModalVisible(false)}
-            okText="Thêm"
-            cancelText="Hủy"
+            okText={vnMode ? "Tạo" : "Create"}
+            cancelText={vnMode ? "Huỷ" : "Cancel"}
             confirmLoading={loading}
           >
             <Form layout="vertical">
               <Form.Item
-                label="Tên danh mục con"
-                required
-                rules={[{ required: true, message: "Nhập tên danh mục con!" }]}
+                label={vnMode ? "Tên danh mục con" : "Category Item Name"}
+                name="name"
+                rules={[
+                  {
+                    required: true,
+                    message: vnMode
+                      ? "Nhập tên danh mục con!"
+                      : "Enter category name!",
+                  },
+                ]}
               >
                 <Input
                   value={addCategoryItemData.name}
@@ -294,8 +317,16 @@ const CategoryDetail = () => {
                 />
               </Form.Item>
               <Form.Item
-                label="Mô tả"
-                rules={[{ required: true, message: "Nhập mô tả!" }]}
+                label={vnMode ? "Mô tả" : "Description"}
+                name="description"
+                rules={[
+                  {
+                    required: true,
+                    message: vnMode
+                      ? "Nhập mô tả!"
+                      : "Enter description!",
+                  },
+                ]}
               >
                 <TextArea
                   rows={3}
@@ -308,36 +339,39 @@ const CategoryDetail = () => {
                   }
                 />
               </Form.Item>
-              <Form.Item label="Ảnh sản phẩm">
+              <Form.Item label={vnMode ? "Ảnh danh mục con" : "Category Item Image"}>
                 <ImageUpload
                   fileList={categoryItemFileList}
                   setFileList={setCategoryItemFileList}
-                  setAvatar={setAvatar}
                 />
               </Form.Item>
             </Form>
           </Modal>
           <div className="flex justify-between">
-            <h1 className="text-lg mb-5">Danh mục nhãn hàng</h1>
-            <div className="grid-cols-3 gap-x-3 grid">
+            <h1 className="text-lg mb-5">
+              {vnMode ? "Danh mục nhãn hàng" : "Category Items"}
+            </h1>
+            <div className="grid grid-cols-3 gap-x-3">
               <Button
                 type="primary"
-                icon={<AddOutlined />}
+                icon={<AppstoreAddOutlined />}
                 onClick={handleUpdateSelectedProducts}
               >
-                Thêm danh mục con
+                {vnMode ? "Thêm danh mục con" : "Add Subcategory"}
               </Button>
               <Button
                 type="primary"
-                icon={<DeleteOutline />}
+                icon={<DeleteOutlined />}
                 danger
                 onClick={handleDeleteSelectedProducts}
-                disabled={selectedRowKeys.length === 0} // Chỉ bật khi có sản phẩm được chọn
+                disabled={selectedRowKeys.length === 0}
               >
-                Xóa sản phẩm đã chọn
+                {vnMode ? "Xóa danh mục đã chọn" : "Delete Selected"}
               </Button>
               <Search
-                placeholder="Nhập ID, tên danh mục con"
+                placeholder={
+                  vnMode ? "Nhập ID, tên danh mục con" : "Enter ID or subcategory name"
+                }
                 onSearch={(value) => setSearchKeyword(value)}
                 className="w-auto"
                 enterButton
@@ -349,8 +383,19 @@ const CategoryDetail = () => {
             selectedRowKeys={selectedRowKeys}
             setSelectedRowKeys={setSelectedRowKeys}
             searchKeyword={searchKeyword}
-          ></CategoryItemTable>
+          />
         </div>
+        <Modal
+          title={vnMode ? "Bạn có chắc chắn muốn xóa các sản phẩm đã chọn không?" : "Are you sure to delete all selected products"}
+          open={isDeleteModalVisible}
+          onOk={handleDelete}
+          onCancel={() => setIsDeleteModalVisible(false)}
+          confirmLoading={loading}
+          okText={vnMode ? "Xác nhận" : "Confirm"}
+          cancelText={vnMode ? "Huỷ" : "Cancel"}
+        >
+          <p>{vnMode ? "Hành động này không thể hoàn tác. Vui lòng xác nhận!" : "This action cannot changed. Please confirm!"}</p>
+        </Modal>
       </Spin>
     </>
   );

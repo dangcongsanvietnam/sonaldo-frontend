@@ -1,12 +1,32 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 
 import "./index.scss";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFacebook, faInstagram } from "@fortawesome/free-brands-svg-icons";
-import { Button, Input } from "antd";
+import { Button, Form, Input, notification } from "antd";
+import { useDispatch, useSelector } from "react-redux";
+import { createFeedback } from "../../services/feedbackService";
 
 const Footer = () => {
+  const [form] = Form.useForm();
+  const dispatch = useDispatch();
+  const [isLoading, setIsLoading] = useState(false);
+  const { data } = useSelector((state) => state.user); // Lấy thông tin user từ Redux store
+
+  const onFinish = async (values) => {
+    setIsLoading(true);
+    try {
+      await dispatch(createFeedback(values)).unwrap();
+      notification.success({ message: 'Gửi feedback thành công!' });
+      form.resetFields();
+    } catch (error) {
+      notification.error({ message: 'Gửi feedback thất bại!' });
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   return (
     <>
       <div className="footer text-white bg-[#007cbb] md:flex justify-between px-14 py-10 ">
@@ -75,16 +95,60 @@ const Footer = () => {
             </p>
           </div>
 
-          <Input
-            placeholder="Email"
-            className="h-[40px]  w-full rounded-none"
-          ></Input>
+          <Form
+            form={form}
+            name="basic"
+            layout='vertical'
+            onFinish={onFinish}
+            autoComplete="off"
+            initialValues={data ? { // Sử dụng data từ Redux store
+              name: data.firstName + " " + data.lastName,
+              email: data.email,
+            } : {}}
+          >
+            <Form.Item
+              label="Name"
+              name="name"
+              rules={[
+                {
+                  required: true,
+                  message: 'Please input your name!',
+                },
+              ]}
+            >
+              <Input />
+            </Form.Item>
 
-          <div>
-            <Button className="bg-[#00A4E4] border-none text-[12px] h-[36px] font-medium uppercase rounded-none">
-              Subcribe
-            </Button>
-          </div>
+            <Form.Item
+              label="Email"
+              name="email"
+              rules={[
+                {
+                  required: true,
+                  message: 'Please input your email!',
+                },
+              ]}
+            >
+              <Input />
+            </Form.Item>
+            <Form.Item
+              label="Content"
+              name="content"
+              rules={[
+                {
+                  required: true,
+                  message: 'Please input your content!',
+                },
+              ]}
+            >
+              <Input.TextArea showCount maxLength={1000} />
+            </Form.Item>
+            <Form.Item>
+              <Button type="primary" htmlType="submit" loading={isLoading}>
+                Gửi
+              </Button>
+            </Form.Item>
+          </Form>
         </div>
       </div>
     </>

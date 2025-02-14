@@ -18,6 +18,8 @@ export const getLogs = createAsyncThunk(
                 detail: params.detail || "",
                 startTime: params.startTime || "",
                 endTime: params.endTime || "",
+                userId: params.userId,
+                role: params.role,
                 page: params.page || 0,
                 limit: params.limit || 10,
             },

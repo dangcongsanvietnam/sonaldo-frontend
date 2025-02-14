@@ -13,6 +13,7 @@ const authSlice = createSlice({
     logout: (state) => {
       state.data = null;
       Cookies.remove("token");
+      localStorage.removeItem("role");
     },
   },
   extraReducers: (builder) => {

@@ -25,6 +25,7 @@ export default function Register() {
     email: "string",
     password: "",
     googleLoginFlag: false,
+    role: "ROLE_USER"
   });
 
   const [form] = Form.useForm();

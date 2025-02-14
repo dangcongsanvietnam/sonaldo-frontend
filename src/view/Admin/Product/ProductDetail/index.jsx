@@ -7,10 +7,10 @@ import {
   InputNumber,
   Select,
   Tag,
-  notification,
+  Tooltip,
 } from "antd";
 import { useDispatch, useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import {
   getProductDetail,
   updateProduct,
@@ -18,11 +18,16 @@ import {
 import defaultAvatar from "../../../../assets/download.png";
 import ImageUpload from "../../../../components/ImageUpload";
 import { suggestTagsFromText } from "../../../../utils/suggestTagsFromText";
+import { Bounce, toast, ToastContainer } from "react-toastify";
+import { getAdminBrands } from "../../../../services/brandService";
+import { getAdminCategories } from "../../../../services/categoryService";
+import { LeftOutlined } from '@ant-design/icons';
 
 const { TextArea } = Input;
 const { SHOW_CHILD } = Cascader;
 
 const ProductDetail = () => {
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const { productId } = useParams();
   const [form] = Form.useForm();
@@ -35,6 +40,8 @@ const ProductDetail = () => {
   const [inputValue, setInputValue] = useState("");
   const [inputConfirmed, setInputConfirmed] = useState(false);
   const [suggestedTags, setSuggestedTags] = useState([]);
+  const [formUpdated, setFormUpdated] = useState(false);
+  const { vnMode } = useOutletContext();
 
   const productDetail = useSelector((state) => state?.product?.product?.data);
   const categoryItem = useSelector((state) => state?.category?.categories?.data);
@@ -70,19 +77,49 @@ const ProductDetail = () => {
     dispatch(getProductDetail(productId))
       .unwrap()
       .then((res) => {
-        form.resetFields();
         const newCategories = res.data.categoryItems?.map((item) => [
           item.categoryId,
           item.categoryItemId,
         ]);
         setCategoryDefault(newCategories || []);
+
         const filteredTags = res.data.tags
           ?.map((tag) => `#${tag.tagName}`)
           .filter((tag) => tag.trim() !== "#");
         setTags(filteredTags || []);
+
+        form.resetFields();
+        form.setFieldsValue({
+          productName: res.data.name || "",
+          description: res.data.description || "",
+          price: res.data.price || "",
+          quantity: res.data.quantity || 0,
+          state: res.data?.state === "Preorder" ? "2" : res.data?.state === "Lock" ? "1" : pres.data?.state === "New Arrival" ? "3" : "4" || "",
+          brand: [
+            res.data.brandCategory?.brandId,
+            res.data.brandCategory?.brandCategoryId,
+          ],
+        })
+
+        setTimeout(() => {
+          setFormUpdated(true);
+        }, 0);
       })
-      .catch((err) => console.error(err));
+      .catch();
   }, [dispatch, productId, form]);
+
+  useEffect(() => {
+    if (formUpdated) {
+      handleTagBlur();
+      setFormUpdated(false);
+    }
+  }, [formUpdated]);
+
+  useEffect(() => {
+    if (categoryDefault.length > 0) {
+      form.setFieldsValue({ category: categoryDefault });
+    }
+  }, [categoryDefault, form]);
 
 
   useEffect(() => {
@@ -97,8 +134,13 @@ const ProductDetail = () => {
   }, [avatar]);
 
   useEffect(() => {
+    dispatch(getAdminBrands());
+    dispatch(getAdminCategories());
+  }, [dispatch]);
+
+  useEffect(() => {
     handleTagBlur();
-  }, [form.getFieldValue("productName"), form.getFieldValue("description"), tags]);
+  }, [tags]);
 
   useEffect(() => {
     if (productDetail?.images && productDetail?.images.length > 0) {
@@ -119,7 +161,6 @@ const ProductDetail = () => {
 
   const base64ToFile = (base64Data, filename) => {
     if (!base64Data || !base64Data.startsWith("data:")) {
-      console.warn("Invalid base64 data:", base64Data);
       const defaultMimeType = "image/jpeg";
       const arr = base64Data.split(",");
       const mime =
@@ -148,7 +189,6 @@ const ProductDetail = () => {
 
       return new File([u8arr], filename, { type: mime });
     } catch (error) {
-      console.error("Error converting base64 to file:", error);
       return null;
     }
   };
@@ -156,9 +196,26 @@ const ProductDetail = () => {
   const handleTagBlur = () => {
     const name = form.getFieldValue("productName");
     const description = form.getFieldValue("description");
+    const selectedCategories = form.getFieldValue("category") || [];
+    const selectedBrandId = form.getFieldValue("brand");
 
-    if (name || description) {
-      const suggested = suggestTagsFromText(name, description);
+    const categoryNames = selectedCategories.flatMap(categoryId => {
+      const category = categoryOptions.find(opt => opt.value === categoryId[0]);
+      return category ? [category.label, category?.children?.find(child => child?.value === categoryId[1]).label] : [];
+    });
+
+    let brandName = "";
+    let brandCategoryName = "";
+    if (selectedBrandId) {
+      const brand = brandOptions.find(opt => opt.value === selectedBrandId[0]);
+      if (brand) {
+        brandName = brand.label;
+        brandCategoryName = brandOptions.find(opt => opt.children.find(child => child.value === selectedBrandId[1])) ? brand.children[0].label : "";
+      }
+    }
+
+    if (name || description || categoryNames.length || brandName) {
+      const suggested = suggestTagsFromText(name, description, categoryNames, brandName, brandCategoryName);
       const uniqueSuggestions = suggested.filter((tag) => !tags.includes(tag));
       setSuggestedTags(uniqueSuggestions);
     }
@@ -170,9 +227,10 @@ const ProductDetail = () => {
       .filter((tag) => tag.trim() !== "") // Loại bỏ tag rỗng
       .map((tag) => (tag.startsWith("#") ? tag : `#${tag.trim()}`));
     const stateMapping = {
-      1: "Out of stock",
-      2: "In Stock",
-      3: "Preorder",
+      1: "Lock",
+      2: "Preorder",
+      3: "New Arrival",
+      4: "Normal"
     };
     const updateValues = {
       name: values?.productName,
@@ -191,10 +249,7 @@ const ProductDetail = () => {
     };
 
     if (fileList.length < 1) {
-      notification.error({
-        message: "Thất bại",
-        description: "Bắt buộc phải có ít nhất 1 ảnh",
-      });
+      toast.error(vnMode ? "Bắt buộc phải có ít nhất 1 ảnh" : "Require at least one picture");
       return;
     }
 
@@ -202,16 +257,46 @@ const ProductDetail = () => {
     dispatch(updateProduct({ updateValues, productId }))
       .unwrap()
       .then(() => {
-        notification.success({
-          message: "Thành công",
-          description: "Sửa sản phẩm thành công",
-        });
+        toast.success(vnMode ? "Sửa sản phẩm thành công" : "Successfully updated product");
+        dispatch(getProductDetail(productId))
+          .unwrap()
+          .then((res) => {
+            const newCategories = res.data.categoryItems?.map((item) => [
+              item.categoryId,
+              item.categoryItemId,
+            ]);
+            setCategoryDefault(newCategories || []);
+
+            const filteredTags = res.data.tags
+              ?.map((tag) => `#${tag.tagName}`)
+              .filter((tag) => tag.trim() !== "#");
+            setTags(filteredTags || []);
+
+            form.resetFields();
+            form.setFieldsValue({
+              productName: res.data.name || "",
+              description: res.data.description || "",
+              price: res.data.price || "",
+              quantity: res.data.quantity || 0,
+              state: res.data?.state === "Preorder" ? "2" : res.data?.state === "Lock" ? "1" : pres.data?.state === "New Arrival" ? "3" : "4" || "",
+              brand: [
+                res.data.brandCategory?.brandId,
+                res.data.brandCategory?.brandCategoryId,
+              ],
+            })
+
+            setTimeout(() => {
+              setFormUpdated(true);
+            }, 0);
+          })
+          .catch();
       })
-      .catch((err) => console.error(err))
+      .catch()
       .finally(() => setIsSaving(false));
   };
 
   const handleValuesChange = (changedValues, allValues) => {
+    handleTagBlur(allValues);
     const { quantity, state, brand, category } = changedValues;
 
     if (brand !== undefined) setTempValues((prev) => ({ ...prev, brand }));
@@ -237,7 +322,7 @@ const ProductDetail = () => {
   };
 
   const handleInputConfirm = () => {
-    if (inputConfirmed) return; // Ngăn chặn gọi hàm lặp lại
+    if (inputConfirmed) return;
     setInputConfirmed(true);
 
     const sanitizedInput = inputValue.trim();
@@ -246,10 +331,7 @@ const ProductDetail = () => {
         setTags((prevTags) => [...prevTags, sanitizedInput]);
         setInputValue("");
       } else {
-        notification.error({
-          message: "Lỗi",
-          description: "Tag phải bắt đầu với ký tự #",
-        });
+        toast.error(vnMode ? "Tag phải bắt đầu với ký tự #" : "Tag must be start with #");
       }
     } else if (!sanitizedInput) {
       setInputValue("");
@@ -285,8 +367,29 @@ const ProductDetail = () => {
 
   return (
     <>
-      <h1 className="text-lg font-bold mb-5">Chi tiết sản phẩm</h1>
-
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        transition={Bounce}
+      />
+      <Tooltip title={vnMode ? 'Danh sách thương hiệu' : 'Brand list'}>
+        <Button
+          icon={<LeftOutlined className="text-blue-600" />}
+          onClick={() => navigate('/admin/products')}
+          shape="circle"
+          size="small"
+          className="bg-blue-100 hover:bg-blue-200 mb-10 mr-2"
+        />
+        {vnMode ? 'Danh sách sản phẩm' : 'Product list'}
+      </Tooltip>
       <Form
         form={form}
         layout="vertical"
@@ -295,24 +398,29 @@ const ProductDetail = () => {
           description: productDetail?.description || "",
           price: productDetail?.price || "",
           quantity: productDetail?.quantity || 0,
-          state: productDetail?.state || "",
+          state: productDetail?.state === "Preorder" ? "2" : productDetail?.state === "Lock" ? "1" : productDetail?.state === "New Arrival" ? "3" : "4" || "",
+          brand: [
+            productDetail?.brandCategory?.brandId,
+            productDetail?.brandCategory?.brandCategoryId,
+          ],
+          category: categoryDefault
         }}
         onFinish={handleFinish}
         onValuesChange={handleValuesChange}
       >
         <div className="flex gap-x-28">
           <div className="w-1/2 pl-3">
-            <Form.Item label="Tên sản phẩm" name="productName">
-              <Input onBlur={() => handleTagBlur()} />
+            <Form.Item label={vnMode ? "Tên sản phẩm" : "Product name"} name="productName">
+              <Input onBlur={() => handleTagBlur()} placeholder={vnMode ? "nhập tên ..." : "enter name ..."} />
             </Form.Item>
 
-            <Form.Item label="Mô tả sản phẩm" name="description">
-              <TextArea onBlur={() => handleTagBlur()} rows={4} placeholder="Mô tả ..." />
+            <Form.Item label={vnMode ? "Mô tả sản phẩm" : "Product description"} name="description">
+              <TextArea onBlur={() => handleTagBlur()} rows={4} placeholder={vnMode ? "Mô tả ..." : "Descibe ..."} />
             </Form.Item>
 
             <div className="mb-5">
               <div className="tags-container">
-                <div className="mb-1">Tag sản phẩm</div>
+                <div className="mb-1">{vnMode ? "Nhãn sản phẩm" : "Product tag"}</div>
                 {tags.map((tag, index) => (
                   <Tag
                     key={`${tag}-${index}`}
@@ -331,17 +439,17 @@ const ProductDetail = () => {
                   onChange={handleInputChange}
                   onPressEnter={handlePressEnter}
                   onBlur={handleBlur}
-                  placeholder="Nhập tag (bắt đầu bằng #)"
+                  placeholder={vnMode ? "Nhập tag (bắt đầu bằng #)" : "Enter tag (Start with #)"}
                   style={{ width: '200px', marginBottom: '8px' }}
                 />
                 <Button type="primary" onClick={handleAddTag}>
-                  Thêm tag
+                  {vnMode ? "Thêm nhãn" : "Add tag"}
                 </Button>
               </div>
               {suggestedTags.length > 0 && (
                 <div className="mt-4">
                   <div className="suggested-tags">
-                    <small className="mr-2">Gợi ý tag:</small>
+                    <small className="mr-2">{vnMode ? "Gợi ý nhãn:" : "Suggested tag:"}</small>
                     {suggestedTags.slice(0, 5).map((tag) => (
                       <Tag
                         key={tag}
@@ -362,7 +470,7 @@ const ProductDetail = () => {
             </div>
 
             <div className="flex w-full gap-4">
-              <Form.Item label="Giá sản phẩm" className="flex-1" name="price">
+              <Form.Item label={vnMode ? "Giá sản phẩm" : "Product price"} className="flex-1" name="price">
                 <InputNumber
                   formatter={(value) =>
                     `₫ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
@@ -372,16 +480,17 @@ const ProductDetail = () => {
                 />
               </Form.Item>
 
-              <Form.Item label="Số lượng" className="flex-1" name="quantity">
+              <Form.Item label={vnMode ? "Số lượng" : "Quantity"} className="flex-1" name="quantity">
                 <InputNumber min={1} max={100000} className="w-full" />
               </Form.Item>
 
-              <Form.Item label="Trạng thái" className="flex-1" name="state">
+              <Form.Item label={vnMode ? "Trạng thái" : "Product state"} className="flex-1" name="state">
                 <Select
                   options={[
-                    { value: "1", label: "Out of stock" },
-                    { value: "2", label: "In Stock" },
-                    { value: "3", label: "Preorder" },
+                    { value: "1", label: vnMode ? "Khoá" : "Lock" },
+                    { value: "2", label: vnMode ? "Đặt trước" : "Preorder" },
+                    { value: "3", label: vnMode ? "Sản phẩm mới" : "New Arrival" },
+                    { value: "4", label: vnMode ? "Bình thường" : "Normal" },
                   ]}
                 />
               </Form.Item>
@@ -389,7 +498,7 @@ const ProductDetail = () => {
           </div>
 
           <div>
-            <Form.Item label="Ảnh" name="files">
+            <Form.Item label={vnMode ? "Ảnh sản phẩm" : "Product image"} name="files">
               <ImageUpload
                 fileList={fileList}
                 setAvatar={setAvatar}
@@ -397,27 +506,22 @@ const ProductDetail = () => {
               />
             </Form.Item>
 
-            <Form.Item label="Hãng sản phẩm" name="brand">
+            <Form.Item label={vnMode ? "Thương hiệu sản phẩm" : "Product brand"} name="brand">
               <Cascader
                 options={brandOptions}
                 maxTagCount="responsive"
                 showCheckedStrategy={SHOW_CHILD}
                 showSearch={{ filter }}
-                defaultValue={[
-                  productDetail?.brandCategory?.brandId,
-                  productDetail?.brandCategory?.brandCategoryId,
-                ]}
               />
             </Form.Item>
 
-            <Form.Item label="Danh mục sản phẩm" name="category">
+            <Form.Item label={vnMode ? "Danh mục sản phẩm" : "Product category"} name="category">
               <Cascader
                 options={categoryOptions}
                 multiple
                 maxTagCount="responsive"
                 showCheckedStrategy={SHOW_CHILD}
                 showSearch={{ filter }}
-                defaultValue={categoryDefault}
               />
             </Form.Item>
           </div>
@@ -429,7 +533,7 @@ const ProductDetail = () => {
           loading={isSaving}
           className="mt-5"
         >
-          Lưu
+          {vnMode ? "Lưu sản phẩm" : "Save product"}
         </Button>
 
       </Form>

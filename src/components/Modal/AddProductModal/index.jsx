@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Button, List, Table, notification, Spin, Input } from "antd";
+import { Modal, List, Table, Spin, Input } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { addProductsToCategoryItem, getAdminCategories } from "../../../services/categoryService";
 import { getProductsByCategoryItem } from "../../../services/productService";
-import { ArrowDropDown, ArrowDropUp, ArrowUpward } from "@mui/icons-material";
+import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
+import { toast } from "react-toastify";
 
-const AddProductModal = ({ isVisible, onClose, currentCategoryItemId, setLoadingTable, fetchProducts }) => {
+const AddProductModal = ({ isVisible, onClose, currentCategoryItemId, setLoadingTable, fetchProducts, vnMode, categories }) => {
     const dispatch = useDispatch();
     const [selectedParentCategoryId, setSelectedParentCategoryId] = useState(null);
     const [selectedCategoryItemId, setSelectedCategoryItemId] = useState(null);
@@ -16,7 +17,6 @@ const AddProductModal = ({ isVisible, onClose, currentCategoryItemId, setLoading
     const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
     const [searchCategory, setSearchCategory] = useState("");
     const [searchProduct, setSearchProduct] = useState("");
-    const categories = useSelector((state) => state?.category?.categories?.data || []);
 
     useEffect(() => {
         dispatch(getAdminCategories());
@@ -41,7 +41,6 @@ const AddProductModal = ({ isVisible, onClose, currentCategoryItemId, setLoading
                         .map((product) => product.productId);
                     setSelectedProductIds(preselected);
                 } catch (error) {
-                    console.error("Error fetching products:", error);
                 } finally {
                     setLoading(false);
                 }
@@ -55,29 +54,25 @@ const AddProductModal = ({ isVisible, onClose, currentCategoryItemId, setLoading
         setLoading(true);
         setLoadingTable(true);
         try {
-            console.log(selectedProductIds)
             await dispatch(addProductsToCategoryItem({ productIds: selectedProductIds, categoryItemId: currentCategoryItemId })).unwrap().then(() => {
                 fetchProducts().finally(() => setLoadingTable(false))
             })
-            notification.success({ message: "Thêm sản phẩm thành công" });
+            toast.success(vnMode ? "Thêm sản phẩm thành công" : "Add to sub-category successfully");
             onClose();
         } catch (error) {
-            notification.error({ message: "Thêm sản phẩm thất bại" });
-            console.error("Error adding products:", error);
+            toast.error(vnMode ? "Thêm sản phẩm thất bại" : "Failed to add to sub-category");
         } finally {
             setLoading(false);
         }
     };
 
-    const filteredCategories = categories.filter((parentCategory) =>
+    const filteredCategories = categories?.filter((parentCategory) =>
         parentCategory.categoryName.toLowerCase().includes(searchCategory.toLowerCase()) ||
         parentCategory.categoryItems.some((item) =>
             item.name.toLowerCase().includes(searchCategory.toLowerCase())
         )
     );
 
-
-    // Handle product search
     useEffect(() => {
         setFilteredProducts(
             products.filter((product) =>
@@ -104,7 +99,7 @@ const AddProductModal = ({ isVisible, onClose, currentCategoryItemId, setLoading
                         >
                             <div className="flex justify-between w-full">
                                 {parentCategory.categoryName}
-                                {selectedParentCategoryId === parentCategory.categoryId ? <ArrowDropUp /> : <ArrowDropDown />}
+                                {selectedParentCategoryId === parentCategory.categoryId ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
                             </div>
                         </List.Item>
                         {selectedParentCategoryId === parentCategory.categoryId && (
@@ -129,12 +124,12 @@ const AddProductModal = ({ isVisible, onClose, currentCategoryItemId, setLoading
 
     const columns = [
         {
-            title: "Tên sản phẩm",
+            title: vnMode ? "Tên sản phẩm" : "Product name",
             dataIndex: "name",
             key: "name",
         },
         {
-            title: "Danh mục",
+            title: vnMode ? "Danh mục con" : "Sub-category",
             dataIndex: "categoryName",
             key: "categoryName",
         },
@@ -142,8 +137,8 @@ const AddProductModal = ({ isVisible, onClose, currentCategoryItemId, setLoading
 
     return (
         <Modal
-            title="Thêm sản phẩm vào danh mục con"
-            visible={isVisible}
+            title={vnMode ? "Thêm sản phẩm vào danh mục con" : "Add to sub-category"}
+            open={isVisible}
             onCancel={onClose}
             onOk={handleAddProducts}
             okButtonProps={{ disabled: selectedProductIds.length === 0 }}
@@ -152,11 +147,10 @@ const AddProductModal = ({ isVisible, onClose, currentCategoryItemId, setLoading
         >
             <Spin spinning={loading}>
                 <div style={{ display: "flex", gap: "16px" }}>
-                    {/* Sidebar for categories */}
                     <div style={{ flex: 1, maxHeight: "400px", overflowY: "auto", borderRight: "1px solid #f0f0f0", paddingRight: 16 }}>
                         <h3>Danh mục</h3>
                         <Input
-                            placeholder="Tìm kiếm danh mục..."
+                            placeholder={vnMode ? "Tìm kiếm danh mục..." : "Search category, sub-category"}
                             value={searchCategory}
                             onChange={(e) => setSearchCategory(e.target.value)}
                             style={{ marginBottom: 16 }}
@@ -164,11 +158,10 @@ const AddProductModal = ({ isVisible, onClose, currentCategoryItemId, setLoading
                         {renderCategorySidebar()}
                     </div>
 
-                    {/* Product list */}
                     <div style={{ flex: 2 }}>
                         <h3>Sản phẩm</h3>
                         <Input
-                            placeholder="Tìm kiếm sản phẩm..."
+                            placeholder={vnMode ? "Tìm kiếm sản phẩm..." : "Search product..."}
                             value={searchProduct}
                             onChange={(e) => setSearchProduct(e.target.value)}
                             style={{ marginBottom: 16 }}

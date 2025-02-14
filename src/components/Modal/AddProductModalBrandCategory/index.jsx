@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Button, List, Table, notification, Spin, Input } from "antd";
-import { useDispatch, useSelector } from "react-redux";
+import { Modal, List, Table, Spin, Input } from "antd";
+import { useDispatch } from "react-redux";
 import { getProductsByBrandCategory } from "../../../services/productService";
-import { ArrowDropDown, ArrowDropUp, ArrowUpward } from "@mui/icons-material";
 import { addProductsToBrand, getAdminBrands } from "../../../services/brandService";
+import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
+import { toast } from "react-toastify";
 
-const AddProductModalBrandBrand = ({ isVisible, onClose, currentBrandItemId, setLoadingTable, fetchProducts }) => {
+const AddProductModalBrandBrand = ({ isVisible, onClose, currentBrandItemId, setLoadingTable, fetchProducts, vnMode, brands }) => {
     const dispatch = useDispatch();
     const [selectedParentBrandId, setSelectedParentBrandId] = useState(null);
     const [selectedBrandItemId, setSelectedBrandItemId] = useState(null);
@@ -16,7 +17,6 @@ const AddProductModalBrandBrand = ({ isVisible, onClose, currentBrandItemId, set
     const [pagination, setPagination] = useState({ current: 1, pageSize: 10 });
     const [searchBrand, setSearchBrand] = useState("");
     const [searchProduct, setSearchProduct] = useState("");
-    const brands = useSelector((state) => state?.brand?.brands?.data || []);
 
     useEffect(() => {
         dispatch(getAdminBrands());
@@ -27,7 +27,6 @@ const AddProductModalBrandBrand = ({ isVisible, onClose, currentBrandItemId, set
             const fetchProducts = async () => {
                 setLoading(true);
                 try {
-                    console.log(currentBrandItemId)
                     const productsData = await dispatch(getProductsByBrandCategory(selectedBrandItemId)).unwrap();
                     const processedProducts = productsData?.data.map((product) => ({
                         ...product,
@@ -42,7 +41,6 @@ const AddProductModalBrandBrand = ({ isVisible, onClose, currentBrandItemId, set
                         .map((product) => product.productId);
                     setSelectedProductIds(preselected);
                 } catch (error) {
-                    console.error("Error fetching products:", error);
                 } finally {
                     setLoading(false);
                 }
@@ -56,24 +54,20 @@ const AddProductModalBrandBrand = ({ isVisible, onClose, currentBrandItemId, set
         setLoading(true);
         setLoadingTable(true);
         try {
-            console.log(selectedProductIds)
             await dispatch(addProductsToBrand({ productIds: selectedProductIds, brandCategoryId: currentBrandItemId })).unwrap().then(() => {
                 setProducts([]);
                 fetchProducts().finally(() => setLoadingTable(false))
             })
-            notification.success({ message: "Thêm sản phẩm thành công" });
+            toast.success(vnMode ? "Thêm sản phẩm thành công" : "Successfully added product");
             onClose();
         } catch (error) {
-            notification.error({ message: "Thêm sản phẩm thất bại" });
-            console.error("Error adding products:", error);
+            toast.error(vnMode ? "Thêm sản phẩm thất bại" : "Failed to add product");
         } finally {
             setLoading(false);
         }
     };
 
-    console.log(6,brands)
-
-    const filteredCategories = brands.filter((parentBrand) =>
+    const filteredCategories = brands?.filter((parentBrand) =>
         parentBrand.brandName.toLowerCase().includes(searchBrand.toLowerCase()) ||
         parentBrand.brandCategories.some((item) =>
             item.name.toLowerCase().includes(searchBrand.toLowerCase())
@@ -81,7 +75,6 @@ const AddProductModalBrandBrand = ({ isVisible, onClose, currentBrandItemId, set
     );
 
 
-    // Handle product search
     useEffect(() => {
         setFilteredProducts(
             products.filter((product) =>
@@ -108,7 +101,7 @@ const AddProductModalBrandBrand = ({ isVisible, onClose, currentBrandItemId, set
                         >
                             <div className="flex justify-between w-full">
                                 {parentBrand.brandName}
-                                {selectedParentBrandId === parentBrand.brandId ? <ArrowDropUp /> : <ArrowDropDown />}
+                                {selectedParentBrandId === parentBrand.brandId ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
                             </div>
                         </List.Item>
                         {selectedParentBrandId === parentBrand.brandId && (
@@ -147,7 +140,7 @@ const AddProductModalBrandBrand = ({ isVisible, onClose, currentBrandItemId, set
     return (
         <Modal
             title="Thêm sản phẩm vào danh mục con"
-            visible={isVisible}
+            open={isVisible}
             onCancel={onClose}
             onOk={handleAddProducts}
             okButtonProps={{ disabled: selectedProductIds.length === 0 }}
@@ -156,7 +149,6 @@ const AddProductModalBrandBrand = ({ isVisible, onClose, currentBrandItemId, set
         >
             <Spin spinning={loading}>
                 <div style={{ display: "flex", gap: "16px" }}>
-                    {/* Sidebar for brands */}
                     <div style={{ flex: 1, maxHeight: "400px", overflowY: "auto", borderRight: "1px solid #f0f0f0", paddingRight: 16 }}>
                         <h3>Danh mục</h3>
                         <Input
@@ -168,7 +160,6 @@ const AddProductModalBrandBrand = ({ isVisible, onClose, currentBrandItemId, set
                         {renderBrandSidebar()}
                     </div>
 
-                    {/* Product list */}
                     <div style={{ flex: 2 }}>
                         <h3>Sản phẩm</h3>
                         <Input

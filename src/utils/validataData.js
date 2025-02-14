@@ -16,7 +16,6 @@ export const emailValidator = (rule, value) => {
   return Promise.resolve();
 };
 
-//////////////////////
 export const validatePassword = (password) => {
   // Kiểm tra độ dài mật khẩu tối thiểu
   if (password.length < 8) {
@@ -41,7 +40,7 @@ export const passwordValidator = (rule, value) => {
 };
 
 export const validatePhoneNumber = (phoneNumber) => {
-  return String(phoneNumber).match(/(84|0[3|5|7|8|9])+([0-9]{8})\b/g);
+  return String(phoneNumber).match(/^(?:84|0)?([35789]\d{8})$/);
 };
 
 export const phoneNumberValidator = (rule, value) => {

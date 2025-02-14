@@ -1,22 +1,23 @@
 import React, { useEffect, useState } from "react";
-import { Form, Input, Upload, Button, Row, Col, notification, Spin, Modal } from "antd";
-import ImgCrop from "antd-img-crop";
+import { Form, Input, Button, Row, Col, Spin, Modal, Tooltip } from "antd";
 import { useDispatch, useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import ImageUpload from "../../../../components/ImageUpload";
+import { PlusOutlined, DeleteOutlined, LeftOutlined } from '@ant-design/icons';
 import {
   addNewBrandCategory,
   deleteBrandCategory,
+  getAdminBrands,
   getBrandDetail,
   updateBrand,
 } from "../../../../services/brandService";
 import BrandCategoryTable from "../../../../components/BrandCategoryTable";
-import { AddOutlined, DeleteOutline } from "@mui/icons-material";
+import { Bounce, toast, ToastContainer } from "react-toastify";
 
 const { TextArea, Search } = Input;
 
 const BrandDetail = () => {
-  const [avatar, setAvatar] = useState(null);
+  const navigate = useNavigate();
   const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
   const [addBrandCategoryData, setAddBrandCategoryData] = useState({
     name: "",
@@ -28,8 +29,10 @@ const BrandDetail = () => {
   const [loading, setLoading] = useState(false);
   const [loadingButton, setLoadingButton] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
+  const [visible, setVisible] = useState(false);
   const dispatch = useDispatch();
   const { brandId } = useParams();
+  const { vnMode } = useOutletContext();
   const brand = useSelector((state) => {
     return state?.brand?.brand?.data;
   });
@@ -42,10 +45,7 @@ const BrandDetail = () => {
         await dispatch(getBrandDetail(brandId)).unwrap();
         form.resetFields();
       } catch (error) {
-        notification.error({
-          message: "Lỗi",
-          description: "Không thể tải chi tiết thương hiệu.",
-        });
+        toast.error(vnMode ? "Không thể tải chi tiết thương hiệu." : "Cannot load brand detail.");
       } finally {
         setLoading(false);
       }
@@ -53,6 +53,10 @@ const BrandDetail = () => {
 
     fetchBrandDetail();
   }, [dispatch, brandId, form]);
+
+    useEffect(() => {
+      dispatch(getAdminBrands());
+    }, [dispatch]);
 
   const handleSubmit = (values) => {
     const sortedFileList = [...fileList].reverse();
@@ -64,10 +68,7 @@ const BrandDetail = () => {
     };
 
     if (fileList.length < 1) {
-      notification.error({
-        message: "Thất bại",
-        description: "Bắt buộc phải có ít nhất 1 ảnh",
-      });
+      toast.error(vnMode ? "Bắt buộc phải có ít nhất 1 ảnh" : "Require at least one picture");
       return;
     }
 
@@ -76,17 +77,11 @@ const BrandDetail = () => {
       .unwrap()
       .then(() => {
         dispatch(getBrandDetail(brandId)).finally(() => setLoadingButton(false))
-        notification.success({
-          message: "Thành công",
-          description: "Cập nhật thành công",
-        });
+        toast.success(vnMode ? "Cập nhật thành công" : "Update successfully");
       })
       .catch(() => {
         setLoadingButton(false)
-        notification.error({
-          message: "Thất bại",
-          description: "Cập nhật thất bại",
-        });
+        toast.error(vnMode ? "Cập nhật thất bại" : "Failed to update");
       })
   };
 
@@ -109,10 +104,7 @@ const BrandDetail = () => {
   }, [brandImage, fileList.length]);
 
   const base64ToFile = (base64Data, filename) => {
-    // Kiểm tra xem base64Data có phải là chuỗi base64 hợp lệ không
     if (!base64Data || !base64Data.startsWith("data:")) {
-      console.warn("Invalid base64 data:", base64Data);
-      // Nếu không có MIME type, giả định là `image/jpeg`
       const defaultMimeType = "image/jpeg";
       const arr = base64Data.split(",");
       const mime =
@@ -142,7 +134,6 @@ const BrandDetail = () => {
       // Tạo đối tượng File từ mảng Uint8Array
       return new File([u8arr], filename, { type: mime });
     } catch (error) {
-      console.error("Error converting base64 to file:", error);
       return null;
     }
   };
@@ -153,10 +144,7 @@ const BrandDetail = () => {
 
   const handleAddBrandCategory = () => {
     if (!addBrandCategoryData.name || !addBrandCategoryData.description) {
-      notification.error({
-        message: "Thất bại",
-        description: "Vui lòng điền đầy đủ thông tin thương hiệu.",
-      });
+      toast.error(vnMode ? "Vui lòng điền đầy đủ thông tin thương hiệu." : "Please complete the form.");
       return;
     }
 
@@ -167,58 +155,65 @@ const BrandDetail = () => {
       brandId: brandId,
     };
 
-    setLoading(true); // Bật loading
+    setLoading(true);
     dispatch(addNewBrandCategory(updateValues))
       .unwrap()
       .then(() => {
         dispatch(getBrandDetail(brandId)).finally(() => {
-          setLoading(false); // Tắt loading
+          setLoading(false);
         });
-        notification.success({
-          message: "Thành công",
-          description: "Thêm thương hiệu con thành công.",
-        });
+        toast.success(vnMode ? "Thêm thương hiệu con thành công." : "Successsfully added sub-brand");
         setAddBrandCategoryData({ name: "", description: "" });
-        setBrandCategoryFileList([]); // Reset danh sách file
+        setBrandCategoryFileList([]);
         setIsUpdateModalVisible(false);
       })
       .catch(() => {
-        notification.error({
-          message: "Thất bại",
-          description: "Thêm thương hiệu con thất bại.",
-        });
+        toast.success(vnMode ? "Thêm thương hiệu con lỗi." : "Failed to add sub-brand");
       })
   };
 
-  const handleDeleteSelectedProducts = () => {
-    Modal.confirm({
-      title: "Bạn có chắc chắn muốn xóa các sản phẩm đã chọn không?",
-      onOk: async () => {
-        setLoading(true);
-        try {
-          for (const brandCategoryId of selectedRowKeys) {
-            await dispatch(deleteBrandCategory({ brandId, brandCategoryId })).unwrap();
-          }
-          notification.success({ message: "Xóa tất cả sản phẩm thành công" });
-          setSelectedRowKeys([]); // Reset danh sách đã chọn
-          dispatch(getBrandDetail(brandId)).finally(() => {
-            setLoading(false);
-          });
-        } catch (error) {
-          setLoading(false);
-          notification.error({ message: "Xóa một số sản phẩm thất bại" });
-          console.error("Lỗi khi xóa nhiều sản phẩm:", error);
-        }
-      },
-    });
+  const handleDelete = async () => {
+    setLoading(true);
+    try {
+      for (const brandCategoryId of selectedRowKeys) {
+        await dispatch(deleteBrandCategory({ brandId, brandCategoryId })).unwrap();
+      }
+      toast.success(vnMode ? "Xóa tất cả sản phẩm thành công" : "Successfully deleted all products");
+      setSelectedRowKeys([]);
+      dispatch(getBrandDetail(brandId)).finally(() => setLoading(false));
+      setVisible(false);
+    } catch (error) {
+      setLoading(false);
+      toast.error(vnMode ? "Xóa một số sản phẩm thất bại" : "Failed to delete some products");
+    }
   };
-
-  console.log(searchKeyword)
 
   return (
     <>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+        transition={Bounce}
+      />
       <Spin spinning={loading}>
-        <h1 className="text-lg mb-5"> Chi tiết thương hiệu sản phẩm </h1>
+        <Tooltip title={vnMode ? 'Danh sách thương hiệu' : 'Brand list'}>
+          <Button
+            icon={<LeftOutlined className="text-blue-600" />}
+            onClick={() => navigate('/admin/brand')}
+            shape="circle"
+            size="small"
+            className="bg-blue-100 hover:bg-blue-200 mb-10 mr-2"
+          />
+          {vnMode ? 'Danh sách thương hiệu' : 'Brand list'}
+        </Tooltip>
         <Form
           form={form}
           layout="vertical"
@@ -232,56 +227,50 @@ const BrandDetail = () => {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                label="Tên thương hiệu"
+                label={vnMode ? "Tên thương hiệu" : "Brand Name"}
                 name="brandName"
-                rules={[{ message: "Nhập thương hiệu ..." }]}
+                rules={[{ required: true, message: vnMode ? "Nhập tên thương hiệu ..." : "Enter brand name ..." }]}
               >
-                <Input initialValues={brand?.name} />
+                <Input />
               </Form.Item>
               <Form.Item
-                label="Mô tả"
+                label={vnMode ? "Mô tả" : "Description"}
                 name="description"
-                rules={[{ message: "Nhập mô tả ..." }]}
+                rules={[{ required: true, message: vnMode ? "Nhập mô tả ..." : "Enter description ..." }]}
               >
-                <TextArea
-                  rows={4}
-                  placeholder=""
-                />
+                <TextArea rows={4} />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Ảnh" name="files">
+              <Form.Item label={vnMode ? "Ảnh" : "Image"} name="files">
                 <ImageUpload
                   fileList={fileList}
-                  setAvatar={setAvatar}
                   setFileList={setFileList}
-                ></ImageUpload>
+                />
               </Form.Item>
             </Col>
           </Row>
           <Form.Item className="flex justify-end">
             <Button htmlType="submit" type="primary" loading={loadingButton}>
-              Lưu
+              {vnMode ? "Lưu" : "Save"}
             </Button>
           </Form.Item>
         </Form>
-        {/* New Content Row */}
         <hr />
         <div className="mt-7">
           <Modal
-            title="Thêm thương hiệu con"
-            visible={isUpdateModalVisible}
+            title={vnMode ? "Thêm thương hiệu con" : "Add Sub-brand"}
+            open={isUpdateModalVisible}
             onOk={handleAddBrandCategory}
             onCancel={() => setIsUpdateModalVisible(false)}
-            okText="Thêm"
-            cancelText="Hủy"
+            okText={vnMode ? "Thêm" : "Add"}
+            cancelText={vnMode ? "Hủy" : "Cancel"}
             confirmLoading={loading}
           >
             <Form layout="vertical">
               <Form.Item
-                label="Tên thương hiệu con"
-                required
-                rules={[{ required: true, message: "Nhập tên thương hiệu con!" }]}
+                label={vnMode ? "Tên thương hiệu con" : "Sub-brand Name"}
+                rules={[{ required: true, message: vnMode ? "Nhập tên thương hiệu con!" : "Enter sub-brand name!" }]}
               >
                 <Input
                   value={addBrandCategoryData.name}
@@ -294,8 +283,8 @@ const BrandDetail = () => {
                 />
               </Form.Item>
               <Form.Item
-                label="Mô tả"
-                rules={[{ required: true, message: "Nhập mô tả!" }]}
+                label={vnMode ? "Mô tả" : "Description"}
+                rules={[{ required: true, message: vnMode ? "Nhập mô tả!" : "Enter description!" }]}
               >
                 <TextArea
                   rows={3}
@@ -308,36 +297,37 @@ const BrandDetail = () => {
                   }
                 />
               </Form.Item>
-              <Form.Item label="Ảnh sản phẩm">
+              <Form.Item label={vnMode ? "Ảnh sản phẩm" : "Product Image"}>
                 <ImageUpload
                   fileList={brandCategoryFileList}
                   setFileList={setBrandCategoryFileList}
-                  setAvatar={setAvatar}
                 />
               </Form.Item>
             </Form>
           </Modal>
           <div className="flex justify-between">
-            <h1 className="text-lg mb-5">Danh sách nhãn hàng con</h1>
+            <h1 className="text-lg mb-5">
+              {vnMode ? "Danh sách nhãn hàng con" : "Sub-brand List"}
+            </h1>
             <div className="grid-cols-3 gap-x-3 grid">
               <Button
                 type="primary"
-                icon={<AddOutlined />}
+                icon={<PlusOutlined />}
                 onClick={handleUpdateSelectedProducts}
               >
-                Thêm thương hiệu con
+                {vnMode ? "Thêm thương hiệu con" : "Add Sub-brand"}
               </Button>
               <Button
                 type="primary"
-                icon={<DeleteOutline />}
+                icon={<DeleteOutlined />}
                 danger
-                onClick={handleDeleteSelectedProducts}
-                disabled={selectedRowKeys.length === 0} // Chỉ bật khi có sản phẩm được chọn
+                onClick={() => setVisible(true)}
+                disabled={selectedRowKeys.length === 0}
               >
-                Xóa sản phẩm đã chọn
+                {vnMode ? "Xóa sản phẩm đã chọn" : "Delete Selected"}
               </Button>
               <Search
-                placeholder="Nhập ID, tên thương hiệu con"
+                placeholder={vnMode ? "Nhập ID, tên thương hiệu con" : "Enter ID or sub-brand name"}
                 onSearch={(value) => setSearchKeyword(value)}
                 className="w-auto"
                 enterButton
@@ -349,8 +339,21 @@ const BrandDetail = () => {
             selectedRowKeys={selectedRowKeys}
             setSelectedRowKeys={setSelectedRowKeys}
             searchKeyword={searchKeyword}
-          ></BrandCategoryTable>
+          />
         </div>
+        <Modal
+        title={vnMode ? "Xác nhận xóa" : "Confirm Deletion"}
+        open={visible}
+        onCancel={() => setVisible(false)}
+        onOk={handleDelete}
+        confirmLoading={loading}
+      >
+        {loading ? (
+          <Spin />
+        ) : (
+          <p>{vnMode ? "Bạn có chắc chắn muốn xóa các sản phẩm đã chọn không?" : "Are you sure you want to delete the selected products?"}</p>
+        )}
+      </Modal>
       </Spin>
     </>
   );

@@ -1,13 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { Input, Select, DatePicker, Button, Table, Spin, Tag } from "antd";
-import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { getLogs } from "../../services/changelogService";
-import moment from "moment";
+import { useOutletContext } from "react-router-dom";
+import { v4 as uuidv4 } from 'uuid';
+import dayjs from "dayjs";
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
+dayjs.extend(customParseFormat);
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 const { RangePicker } = DatePicker;
 
 const LogsPage = () => {
+    const userTimezone = dayjs.tz.guess();
+    const userId = localStorage.getItem("userId");
+    const role = localStorage.getItem("role");
     const [filters, setFilters] = useState({
         eventType: "",
         eventId: "",
@@ -18,20 +28,20 @@ const LogsPage = () => {
     });
     const [loading, setLoading] = useState(false);
     const dispatch = useDispatch();
+    const { vnMode } = useOutletContext();
 
     const handleFilterChange = (key, value) => {
         setFilters((prev) => ({ ...prev, [key]: value }));
     };
 
-    const data = useSelector((state) => state.changelog.data)
+    const data = useSelector((state) => state.changelog.data);
 
     const formattedData = data.map((log) => {
-        const formattedTimestamp = moment(log.timestamp).format("HH:mm DD/MM/YYYY");
+        const formattedTimestamp = dayjs(log.timestamp).format("HH:mm DD/MM/YYYY");
 
-        // Định dạng trạng thái và thêm màu
         const statusMapping = {
-            SUCCESS: { text: "Thành công", color: "green" },
-            FAILURE: { text: "Thất bại", color: "red" },
+            SUCCESS: { text: vnMode ? "Thành công" : "Success", color: "green" },
+            FAILURE: { text: vnMode ? "Thất bại" : "Failure", color: "red" },
         };
         const formattedStatus = statusMapping[log.status]
             ? statusMapping[log.status]
@@ -39,54 +49,71 @@ const LogsPage = () => {
         let formattedEventType = "";
         let formattedDetail = "";
 
-        // Chuyển đổi giá trị của eventType
         switch (log.eventType) {
             case "LOGIN":
-                formattedEventType = "đã đăng nhập";
+                formattedEventType = vnMode ? "đã đăng nhập" : "logged in";
                 break;
             case "DELETE":
-                formattedEventType = "đã bị xoá";
+                formattedEventType = vnMode ? "đã bị xoá" : "has been deleted";
                 break;
             case "CREATE":
-                formattedEventType = "đã được thêm";
+                formattedEventType = vnMode ? "đã được thêm" : "has been added";
                 break;
             case "UPDATE":
-                formattedEventType = "đã được cập nhật";
+                formattedEventType = vnMode ? "đã được cập nhật" : "has been updated";
                 break;
             case "REMOVE":
-                formattedEventType = "đã xoá khỏi danh sách";
+                formattedEventType = vnMode ? "đã xoá khỏi danh sách" : "removed from the list";
             case "ADD":
-                formattedEventType = "đã thêm vào danh sách";
+                formattedEventType = vnMode ? "đã thêm vào danh sách" : "added to the list";
                 break;
-            case "ADD_TO_BRAND_CATEGORY" || "ADD_TO_CATEGORY_ITEM":
-                formattedEventType = "đã được thêm sản phẩm";
+            case "ADD_TO_BRAND_CATEGORY":
+                formattedEventType = vnMode ? "đã được thêm sản phẩm vào nhãn hàng" : "product has been added to brand";
                 break;
-            case "REMOVE_FROM_BRAND_CATEGORY" || "REMOVE_FROM_CATEGORY_ITEM":
-                formattedEventType = "đã bị xoá sản phẩm";
+            case "REMOVE_FROM_BRAND_CATEGORY":
+                formattedEventType = vnMode ? "đã bị xoá sản phẩm khỏi nhãn hàng" : "product has been removed from brand";
+                break;
+            case "ADD_TO_CATEGORY_ITEM":
+                formattedEventType = vnMode ? "đã được thêm sản phẩm vào danh mục" : "product has been added to category";
+                break;
+            case "REMOVE_FROM_CATEGORY_ITEM":
+                formattedEventType = vnMode ? "đã bị xoá sản phẩm khỏi danh mục" : "product has been removed from category";
                 break;
             default:
                 formattedEventType = log.eventType;
         }
 
-        let productId = ""
-        if (log.details.startsWith("PRODUCT ") && log.eventType == "ADD_TO_BRAND_CATEGORY") {
-            productId = log.details.split(" ")[1]; // Lấy ID sản phẩm
-            formattedDetail = `thương hiệu`;
-        } else if (log.details.startsWith("PRODUCT ") && log.eventType == "ADD_TO_CATEGORY_ITEM") {
-            productId = log.details.split(" ")[1]; // Lấy ID sản phẩm
-            formattedDetail = `danh mục`;
-        } else if (log.detail === "USER") {
-            formattedDetail = "người dùng";
-        } else if (log.detail === "BRAND") {
-            formattedDetail = "thương hiệu";
-        } else {
+        let productId = "";
+        if (log.details?.startsWith("PRODUCT ") && (log.eventType == "ADD_TO_BRAND_CATEGORY" || log.eventType == "REMOVE_FROM_BRAND_CATEGORY")) {
+            productId = log.details.split(" ")[1];
+            formattedDetail = vnMode ? `thương hiệu` : "brand";
+          } else if (log.details.startsWith("PRODUCT ") && (log.eventType == "ADD_TO_CATEGORY_ITEM" || log.eventType == "REMOVE_FROM_CATEGORY_ITEM")) {
+            productId = log.details.split(" ")[1];
+            formattedDetail = vnMode ? `khách hàng` : "customer";
+          } else if (log.details === "USER") {
+            formattedDetail = vnMode ? "người dùng" : "user";
+          } else if (log.details === "BRAND") {
+            formattedDetail = vnMode ? "thương hiệu" : "brand";
+          } else if (log.details === "CATEGORY") {
+            formattedDetail = vnMode ? "danh mục" : "category";
+          } else if (log.details === "PRODUCT") {
+            formattedDetail = vnMode ? "sản phẩm" : "product";
+          } else if (log.details === "INFORMATION") {
+            formattedDetail = vnMode ? "thông tin" : "information";
+          } else {
             formattedDetail = log.details;
-        }
+          }
+
+        const displayEventType = productId === ""
+            ? `${formattedDetail} ${formattedEventType}`
+            : `${formattedDetail} ${formattedEventType} ${productId}`;
+
 
         return {
             ...log,
+            _uniqueId: uuidv4(),
             detail: formattedDetail,
-            eventType: productId == "" ? formattedDetail + " " + formattedEventType : formattedDetail + " " + formattedEventType + " " + productId,
+            eventType: displayEventType,
             timestamp: formattedTimestamp,
             status: formattedStatus,
         };
@@ -109,9 +136,10 @@ const LogsPage = () => {
             detail: "",
             startTime: null,
             endTime: null,
+            userId: userId,
+            role: role
         };
 
-        // Xóa dữ liệu hiển thị (nếu sử dụng Redux)
         await dispatch(getLogs(newClearData)).finally(() => setLoading(false));
     };
 
@@ -120,20 +148,29 @@ const LogsPage = () => {
         setLoading(true);
         const fetchChangelogs = async () => {
             try {
-                dispatch(getLogs(filters));
+                const initialData = { userId: userId, role: role };
+                dispatch(getLogs(initialData));
             } catch (error) {
                 console.error("Failed to fetch changelogs:", error);
             } finally {
-                setLoading(false)
+                setLoading(false);
             }
         };
         fetchChangelogs();
-    }, [dispatch]);
+    }, [dispatch, userId, role]);
 
     const fetchLogs = async () => {
         setLoading(true);
         try {
-            await dispatch(getLogs(filters))
+            const newData = {
+                ...filters,
+                startTime: filters.startTime ? dayjs(filters.startTime).toISOString() : null,
+                endTime: filters.endTime ? dayjs(filters.endTime).toISOString() : null,
+                userId: userId,
+                role: role
+            };
+
+            await dispatch(getLogs(newData));
         } catch (error) {
             console.error("Failed to fetch logs:", error);
         } finally {
@@ -141,81 +178,93 @@ const LogsPage = () => {
         }
     };
 
+
     return (
         <div>
             <div style={{ marginBottom: 16, display: "flex", gap: 16 }}>
                 <Input
-                    placeholder="ID"
+                    placeholder={vnMode ? "ID" : "ID"}
                     style={{ width: 200 }}
                     onChange={(e) => handleFilterChange("eventId", e.target.value)}
                     value={filters.eventId}
                     allowClear
                 />
                 <Select
-                    placeholder="Loại thay đổi"
+                    placeholder={vnMode ? "Loại thay đổi" : "Type Change"}
                     style={{ width: 200 }}
                     onChange={(value) => handleFilterChange("eventType", value)}
                     allowClear
                     defaultValue={undefined}
                     value={filters.eventType || undefined}
                 >
-                    <Select.Option value="CREATE">Thêm</Select.Option>
-                    <Select.Option value="UPDATE">Sửa</Select.Option>
-                    <Select.Option value="DELETE">Xoá</Select.Option>
-                    <Select.Option value="ADD_TO_BRAND_CATEGORY">Thêm vào nhãn hàng</Select.Option>
-                    <Select.Option value="REMOVE_FROM_BRAND_CATEGORY">Xoá khỏi nhãn hàng</Select.Option>
-                    <Select.Option value="ADD_TO_CATEGORY_ITEM">Thêm vào danh mục</Select.Option>
-                    <Select.Option value="REMOVE_FROM_CATEGORY_ITEM">Xoá khỏi danh mục</Select.Option>
+                    <Select.Option value="CREATE">{vnMode ? "Thêm" : "Create"}</Select.Option>
+                    <Select.Option value="UPDATE">{vnMode ? "Sửa" : "Update"}</Select.Option>
+                    <Select.Option value="DELETE">{vnMode ? "Xoá" : "Delete"}</Select.Option>
+                    <Select.Option value="ADD_TO_BRAND_CATEGORY">{vnMode ? "Thêm vào nhãn hàng" : "Add to Brand Category"}</Select.Option>
+                    <Select.Option value="REMOVE_FROM_BRAND_CATEGORY">{vnMode ? "Xoá khỏi nhãn hàng" : "Remove from Brand Category"}</Select.Option>
+                    <Select.Option value="ADD_TO_CATEGORY_ITEM">{vnMode ? "Thêm vào danh mục" : "Add to Category Item"}</Select.Option>
+                    <Select.Option value="REMOVE_FROM_CATEGORY_ITEM">{vnMode ? "Xoá khỏi danh mục" : "Remove from Category Item"}</Select.Option>
                 </Select>
                 <Select
-                    placeholder="Trạng thái"
+                    placeholder={vnMode ? "Trạng thái" : "Status"}
                     defaultValue={undefined}
                     style={{ width: 200 }}
                     onChange={(value) => handleFilterChange("status", value)}
                     allowClear
                     value={filters.status || undefined}
                 >
-                    <Select.Option value="SUCCESS">Thành công</Select.Option>
-                    <Select.Option value="FAILURE">Thất bại</Select.Option>
+                    <Select.Option value="SUCCESS">{vnMode ? "Thành công" : "Success"}</Select.Option>
+                    <Select.Option value="FAILURE">{vnMode ? "Thất bại" : "Failure"}</Select.Option>
                 </Select>
                 <RangePicker
                     value={
-                        filters.startTime && filters.endTime
-                            ? [moment(filters.startTime), moment(filters.endTime)]
-                            : null
+                        (filters.startTime && filters.endTime)
+                        ? [dayjs(filters.startTime, "YYYY-MM-DDTHH:mm:ss.SSS").tz(userTimezone), dayjs(filters.endTime, "YYYY-MM-DDTHH:mm:ss.SSS").tz(userTimezone)]
+                        : null
                     }
                     onChange={(dates) => {
-                        handleFilterChange("startTime", dates ? dates[0]?.toISOString() : null);
-                        handleFilterChange("endTime", dates ? dates[1]?.toISOString() : null);
+                        if (dates && dates.length === 2) {
+                            const startTimeLocal = dates[0].tz(userTimezone).format("YYYY-MM-DDTHH:mm:ss.SSS");
+                            const endTimeLocal = dates[1].tz(userTimezone).format("YYYY-MM-DDTHH:mm:ss.SSS");
+                            handleFilterChange("startTime", startTimeLocal + "Z");
+                            handleFilterChange("endTime", endTimeLocal + "Z");
+                        } else {
+                            handleFilterChange("startTime", null);
+                            handleFilterChange("endTime", null);
+                        }
                     }}
                     allowClear
+                    showTime={{ format: 'HH:mm' }}
+                    format="DD/MM/YYYY HH:mm"
                 />
                 <Button type="primary" onClick={fetchLogs}>
-                    Lọc
+                    {vnMode ? "Lọc" : "Filter"}
                 </Button>
                 <Button type="primary" danger onClick={handleClear}>
-                    Xoá
+                    {vnMode ? "Xoá" : "Clear"}
                 </Button>
             </div>
             <Spin spinning={loading}>
                 <Table
                     dataSource={formattedData}
                     columns={[
-                        { title: "ID thay đổi", dataIndex: "eventId", key: "eventId" },
-                        { title: "Nội dung thay đổi", dataIndex: "eventType", key: "eventType" },
+                        { title: vnMode ? "ID thay đổi" : "Change ID", dataIndex: "eventId", key: "eventId" },
+                        { title: vnMode ? "Nội dung thay đổi" : "Change Content", dataIndex: "eventType", key: "eventType" },
                         {
-                            title: "Trạng thái",
+                            title: vnMode ? "Trạng thái" : "Status",
                             dataIndex: "status",
                             key: "status",
                             render: (status) => (
                                 <Tag color={status.color}>{status.text}</Tag>
                             ),
                         },
-                        { title: "Thời gian thay đổi", dataIndex: "timestamp", key: "timestamp" },
+                        { title: vnMode ? "Thời gian thay đổi" : "Change Time", dataIndex: "timestamp", key: "timestamp" },
                     ]}
+                    rowKey="_uniqueId"
                 />
             </Spin>
         </div>
+
     );
 };
 

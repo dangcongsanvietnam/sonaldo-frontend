@@ -1,8 +1,7 @@
-import axios from "axios";
 import React, { useState } from "react";
 import ValidatePassword from "./ValidatePassword";
 import ConfirmPassword from "./ConfirmPassword";
-import { useLocation } from "react-router-dom";
+import { useLocation, useOutletContext } from "react-router-dom";
 import Cookies from "js-cookie";
 import BASE_URL from "../../api";
 
@@ -12,8 +11,11 @@ const ChangePassword = () => {
   const urlParams = new URLSearchParams(location.search);
   const jwt = urlParams.get("jwt");
   const token = Cookies.get("token");
+  const [buttonLoading, setButtonLoading] = useState(false);
+  const {vnMode} = useOutletContext();
 
   const handleVerifyPassword = () => {
+    setButtonLoading(true);
     BASE_URL.post(
       "api/v1/auth/change-password",
       {},
@@ -21,25 +23,32 @@ const ChangePassword = () => {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        params: {
+          dataHref: 'super-admin/change-password?jwt='
+        }
       }
     )
       .then(() => {
-        alert("Vui lòng vào email để xác thực mật khẩu");
+        alert(vnMode ? "Vui lòng vào email để xác thực mật khẩu" : "Please check your email to verify password");
         setResendMail(true);
+        setButtonLoading(false);
       })
       .catch(() => {
-        alert("Failed to verify password");
+        alert(vnMode ? "Xác thực mật khẩu thất bại" : "Failed to verify password");
+        setButtonLoading(false);
       });
   };
 
   return (
     <>
       {jwt ? (
-        <ConfirmPassword token={token} />
+        <ConfirmPassword token={token} vnMode={vnMode} />
       ) : (
         <ValidatePassword
           resendMail={resendMail}
           handleVerifyPassword={handleVerifyPassword}
+          buttonLoading={buttonLoading}
+          vnMode={vnMode}
         />
       )}
     </>

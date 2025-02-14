@@ -19,8 +19,6 @@ import {
   deleteCategoryItem
 } from "../../services/categoryService";
 
-const { Search } = Input;
-
 const CategoryItemTable = ({ categoryId, selectedRowKeys, setSelectedRowKeys, searchKeyword }) => {
   const categoryItem = useSelector((state) => {
     return state?.category?.category?.data?.categoryItems;

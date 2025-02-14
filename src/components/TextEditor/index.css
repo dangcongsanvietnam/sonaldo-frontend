@@ -1,0 +1,22 @@
+.wrapper-class {
+    position: relative; /* Đảm bảo dropdown không bị che */
+    overflow: visible; /* Hiển thị đầy đủ dropdown */
+}
+
+.editor-class {
+    min-height: 200px;
+    font-size: 14px;
+}
+
+.toolbar-class .rdw-dropdown-wrapper {
+    z-index: 1050; /* Đảm bảo dropdown không bị che khuất */
+}
+
+.toolbar-class .rdw-dropdown-optionwrapper {
+    display: block !important; /* Hiển thị dropdown nếu bị ẩn */
+}
+
+.rdw-dropdown-wrapper {
+    position: relative;
+    z-index: 9999 !important; /* Đảm bảo dropdown luôn nằm trên cùng */
+}
