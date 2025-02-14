@@ -18,7 +18,7 @@ const ClearDataPage = () => {
     setIsLoadingAllExceptUserChangelog(true);
     try {
       const token = Cookies.get('token');
-      await axios.delete('http://localhost:8080/api/v1/super-admin/backup-restore/clear/all-except-user-changelog', {
+      await axios.delete('http://14.225.253.35:8080/api/v1/super-admin/backup-restore/clear/all-except-user-changelog', {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success(vnMode ? 'Xóa dữ liệu thành công!' : 'Data cleared successfully!');
@@ -34,7 +34,7 @@ const ClearDataPage = () => {
     setIsLoadingUsers(true);
     try {
       const token = Cookies.get('token');
-      await axios.delete('http://localhost:8080/api/v1/super-admin/backup-restore/clear/users/user', {
+      await axios.delete('http://14.225.253.35:8080/api/v1/super-admin/backup-restore/clear/users/user', {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success(vnMode ? 'Xóa tất cả người dùng thành công!' : 'Successfully deleted all users!');

@@ -18,7 +18,7 @@ const BackupRestorePage = () => {
     setBackupUsersLoading(true);
     try {
         const token = Cookies.get('token');
-        const response = await axios.get('http://localhost:8080/api/v1/super-admin/backup-restore/backup/users/user', {
+        const response = await axios.get('http://14.225.253.35:8080/api/v1/super-admin/backup-restore/backup/users/user', {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
@@ -55,7 +55,7 @@ const handleRestoreUsers = async () => {
         const formData = new FormData();
         formData.append('file', restoreFile);
 
-        await axios.post('http://localhost:8080/api/v1/super-admin/backup-restore/restore/users/user', formData, {
+        await axios.post('http://14.225.253.35:8080/api/v1/super-admin/backup-restore/restore/users/user', formData, {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
@@ -75,7 +75,7 @@ const handleBackupAll = async () => {
     setBackupAllLoading(true);
     try {
         const token = Cookies.get('token');
-        const response = await axios.get('http://localhost:8080/api/v1/super-admin/backup-restore/backup/all', {
+        const response = await axios.get('http://14.225.253.35:8080/api/v1/super-admin/backup-restore/backup/all', {
             headers: {
                 Authorization: `Bearer ${token}`,
             },
@@ -112,7 +112,7 @@ const handleRestoreAll = async () => {
         const formData = new FormData();
         formData.append('file', restoreFile);
 
-        await axios.post('http://localhost:8080/api/v1/super-admin/backup-restore/restore/all', formData, {
+        await axios.post('http://14.225.253.35:8080/api/v1/super-admin/backup-restore/restore/all', formData, {
             headers: {
                 Authorization: `Bearer ${token}`,
             },

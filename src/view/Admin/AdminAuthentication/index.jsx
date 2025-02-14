@@ -95,7 +95,7 @@ const AdminAuthentication = () => {
   }, [notifications, unreadCount]);
 
   useEffect(() => {
-    const client = Stomp.over(() => new SockJS("http://localhost:8080/ws"));
+    const client = Stomp.over(() => new SockJS("http://14.225.253.35:8080/ws"));
 
     client.debug = () => { };
 
