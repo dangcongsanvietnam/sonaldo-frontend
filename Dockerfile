@@ -1,11 +1,18 @@
-# Sử dụng Nginx làm server
-FROM nginx:alpine
+# Sử dụng Node.js làm base image
+FROM node:18
 
-# Copy file build từ Vite (dist) vào Nginx
-COPY dist /usr/share/nginx/html
+# Đặt thư mục làm việc trong container
+WORKDIR /app
 
-# Expose port 80 để truy cập từ bên ngoài
+# Copy package.json và cài đặt dependencies
+COPY package.json package-lock.json ./
+RUN npm install
+
+# Copy toàn bộ project vào container
+COPY . .
+
+# Mở cổng 5173
 EXPOSE 5173
 
-# Chạy Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Chạy Vite Dev Server
+CMD ["npm", "run", "dev", "--", "--host"]
