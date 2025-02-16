@@ -174,7 +174,7 @@ const AdminAuthentication = () => {
     });
 
     const res = await dispatch(searchAdminProducts({ search: value })).unwrap();
-    res.data.forEach((product) => {
+    res.forEach((product) => {
       results.push({ name: `${product.name} - ${product.productId}`, type: "product", link: `/admin/products/${product.productId}` });
     });
 
@@ -272,19 +272,11 @@ const AdminAuthentication = () => {
       const response = await dispatch(getLogs(params));
       const data = response.payload.data;
 
-      // Format lại dữ liệu
       const formattedData = data.map((log) => {
         let formattedEventType = "";
         let formattedDetail = "";
 
-        // Chuyển đổi giá trị của eventType
         switch (log.eventType) {
-          case "LOGIN":
-            formattedEventType = vnMode ? "đã đăng nhập" : "was login";
-            break;
-          case "LOGIN":
-            formattedEventType = vnMode ? "đã đăng ký" : "was signup";
-            break;
           case "DELETE":
             formattedEventType = vnMode ? "đã bị xoá" : "was deleted";
             break;
@@ -317,10 +309,10 @@ const AdminAuthentication = () => {
 
         let productId = ""
         if (log.details?.startsWith("PRODUCT ") && (log.eventType == "ADD_TO_BRAND_CATEGORY" || log.eventType == "REMOVE_FROM_BRAND_CATEGORY")) {
-          productId = log.details.split(" ")[1]; // Lấy ID sản phẩm
+          productId = log.details.split(" ")[1];
           formattedDetail = vnMode ? `thương hiệu` : "brand";
         } else if (log.details.startsWith("PRODUCT ") && (log.eventType == "ADD_TO_CATEGORY_ITEM" || log.eventType == "REMOVE_FROM_CATEGORY_ITEM")) {
-          productId = log.details.split(" ")[1]; // Lấy ID sản phẩm
+          productId = log.details.split(" ")[1];
           formattedDetail = vnMode ? `danh mục` : "category";
         } else if (log.details === "USER") {
           formattedDetail = vnMode ? "người dùng" : "user";
@@ -425,7 +417,7 @@ const AdminAuthentication = () => {
 
   const handleViewOrderDetail = () => {
     if (lastViewedOrderId) {
-      navigate(`/super-admin/order-details/${lastViewedOrderId}`);
+      navigate(`/admin/order-details/${lastViewedOrderId}`);
     } else {
       toast.info(vnMode ? 'Vui lòng chọn một đơn hàng để xem chi tiết' : 'Please choose at least one order to watch detail');
     }
@@ -606,7 +598,7 @@ const AdminAuthentication = () => {
         </Button>
       ),
       style: { textAlign: "center" },
-      onClick: () => navigate("/super-admin/changelogpage"),
+      onClick: () => navigate("/admin/changelogpage"),
     });
   }
 
@@ -669,7 +661,7 @@ const AdminAuthentication = () => {
           label: (
             <div style={{ display: "flex", alignItems: "center", gap: "8px", paddingLeft: collapsed ? "20px" : "30px" }}>
               <RollbackOutlined />
-              {vnMode ? "Quay về trang quản trị" : "Back to the admin"}
+              {vnMode ? "Quay về trang chủ" : "Back to the admin"}
             </div>
           ),
           key: "admin",
@@ -695,22 +687,22 @@ const AdminAuthentication = () => {
             {getAvatarContent()}
           </div>
           <div className="mt-2 text-sm font-semibold">{user?.email}</div>
-          <div className="text-sm text-gray-500">{user?.firstName && user?.lastName ? (user?.firstName + " " + user?.lastName + " - " + "Quản trị viên") : " "}</div>
+          <div className="text-sm text-gray-500">{user?.firstName && user?.lastName ? (user?.firstName + " " + user?.lastName + " - " + (vnMode ? "Quản lý" : "Manager")) : " "}</div>
         </div>
 
         <div className="mt-4">
           <div className="border-t mt-2"></div>
-          <div onClick={() => navigate("/super-admin/profile")} className={`flex items-center py-2 px-3 ${darkMode ? "hover:bg-[#334255]" : "hover:bg-gray-100"} cursor-pointer rounded-md`}>
+          <div onClick={() => navigate("/admin/profile")} className={`flex items-center py-2 px-3 ${darkMode ? "hover:bg-[#334255]" : "hover:bg-gray-100"} cursor-pointer rounded-md`}>
             <i className="fas fa-pencil-alt text-gray-500 mr-2"></i>
-            <span>Customize Profile</span>
+            <span>{vnMode ? "Thông tin cá nhân" : "Customize Profile"}</span>
           </div>
-          <div onClick={() => navigate("/super-admin/change-password")} className={`flex items-center py-2 px-3 ${darkMode ? "hover:bg-[#334255]" : "hover:bg-gray-100"} cursor-pointer rounded-md`}>
+          <div onClick={() => navigate("/admin/change-password")} className={`flex items-center py-2 px-3 ${darkMode ? "hover:bg-[#334255]" : "hover:bg-gray-100"} cursor-pointer rounded-md`}>
             <i className="fas fa-key text-gray-500 mr-2"></i>
-            <span>Đổi mật khẩu</span>
+            <span>{vnMode ? "Đổi mật khẩu" : "Change Password"}</span>
           </div>
         </div>
         <button onClick={handleLogout} className={`w-full ${darkMode ? "hover:bg-[#334255] bg-[#1E293B]" : "hover:bg-blue-600 bg-blue-500"} text-white text-sm py-2 rounded-lg mt-4 transition-all duration-300`}>
-          Đăng xuất
+          {vnMode ? "Đăng xuất" : "Logout"}
         </button>
       </div>
     )

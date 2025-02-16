@@ -18,15 +18,17 @@ import {
 import defaultAvatar from "../../../../assets/download.png";
 import ImageUpload from "../../../../components/ImageUpload";
 import { suggestTagsFromText } from "../../../../utils/suggestTagsFromText";
-import { Bounce, toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { getAdminBrands } from "../../../../services/brandService";
 import { getAdminCategories } from "../../../../services/categoryService";
 import { LeftOutlined } from '@ant-design/icons';
+import { useLoading } from "../../../../provider/LoadingProvider";
 
 const { TextArea } = Input;
 const { SHOW_CHILD } = Cascader;
 
 const ProductDetail = () => {
+  const { startLoading, stopLoading } = useLoading();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { productId } = useParams();
@@ -74,38 +76,42 @@ const ProductDetail = () => {
     : [];
 
   useEffect(() => {
-    dispatch(getProductDetail(productId))
-      .unwrap()
-      .then((res) => {
-        const newCategories = res.data.categoryItems?.map((item) => [
-          item.categoryId,
-          item.categoryItemId,
-        ]);
-        setCategoryDefault(newCategories || []);
+    const fetchData = async () => {
+      startLoading();
+      await dispatch(getProductDetail(productId))
+        .unwrap()
+        .then((res) => {
+          const newCategories = res.data.categoryItems?.map((item) => [
+            item.categoryId,
+            item.categoryItemId,
+          ]);
+          setCategoryDefault(newCategories || []);
 
-        const filteredTags = res.data.tags
-          ?.map((tag) => `#${tag.tagName}`)
-          .filter((tag) => tag.trim() !== "#");
-        setTags(filteredTags || []);
+          const filteredTags = res.data.tags
+            ?.map((tag) => `#${tag.tagName}`)
+            .filter((tag) => tag.trim() !== "#");
+          setTags(filteredTags || []);
 
-        form.resetFields();
-        form.setFieldsValue({
-          productName: res.data.name || "",
-          description: res.data.description || "",
-          price: res.data.price || "",
-          quantity: res.data.quantity || 0,
-          state: res.data?.state === "Preorder" ? "2" : res.data?.state === "Lock" ? "1" : pres.data?.state === "New Arrival" ? "3" : "4" || "",
-          brand: [
-            res.data.brandCategory?.brandId,
-            res.data.brandCategory?.brandCategoryId,
-          ],
+          form.resetFields();
+          form.setFieldsValue({
+            productName: res.data.name || "",
+            description: res.data.description || "",
+            price: res.data.price || "",
+            quantity: res.data.quantity || 0,
+            state: res.data?.state === "Preorder" ? "2" : res.data?.state === "Lock" ? "1" : res.data?.state === "NewArrival" ? "3" : "4" || "",
+            brand: [
+              res.data.brandCategory?.brandId,
+              res.data.brandCategory?.brandCategoryId,
+            ],
+          })
+
+          setTimeout(() => {
+            setFormUpdated(true);
+          }, 0);
         })
-
-        setTimeout(() => {
-          setFormUpdated(true);
-        }, 0);
-      })
-      .catch();
+        .catch().finally(() => stopLoading())
+    }
+    fetchData();
   }, [dispatch, productId, form]);
 
   useEffect(() => {
@@ -229,7 +235,7 @@ const ProductDetail = () => {
     const stateMapping = {
       1: "Lock",
       2: "Preorder",
-      3: "New Arrival",
+      3: "NewArrival",
       4: "Normal"
     };
     const updateValues = {
@@ -261,6 +267,7 @@ const ProductDetail = () => {
         dispatch(getProductDetail(productId))
           .unwrap()
           .then((res) => {
+            console.log(res)
             const newCategories = res.data.categoryItems?.map((item) => [
               item.categoryId,
               item.categoryItemId,
@@ -278,7 +285,7 @@ const ProductDetail = () => {
               description: res.data.description || "",
               price: res.data.price || "",
               quantity: res.data.quantity || 0,
-              state: res.data?.state === "Preorder" ? "2" : res.data?.state === "Lock" ? "1" : pres.data?.state === "New Arrival" ? "3" : "4" || "",
+              state: res.data?.state === "Preorder" ? "2" : res.data?.state === "Lock" ? "1" : res.data?.state === "NewArrival" ? "3" : "4" || "",
               brand: [
                 res.data.brandCategory?.brandId,
                 res.data.brandCategory?.brandCategoryId,
@@ -297,22 +304,14 @@ const ProductDetail = () => {
 
   const handleValuesChange = (changedValues, allValues) => {
     handleTagBlur(allValues);
-    const { quantity, state, brand, category } = changedValues;
+    const { state, brand, category } = changedValues;
 
     if (brand !== undefined) setTempValues((prev) => ({ ...prev, brand }));
     if (category !== undefined) setTempValues((prev) => ({ ...prev, category }));
 
-    if (quantity !== undefined) {
-      form.setFieldsValue({
-        state: quantity > 0 ? "2" : "1",
-      });
-    }
-
     if (state !== undefined) {
-      if (state === "1" || state === "3") {
+      if (state === "1" || state === "2") {
         form.setFieldsValue({ quantity: 0 });
-      } else if (state === "2" && allValues.quantity === 0) {
-        form.setFieldsValue({ quantity: 1 });
       }
     }
   };
@@ -367,19 +366,6 @@ const ProductDetail = () => {
 
   return (
     <>
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick={false}
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        transition={Bounce}
-      />
       <Tooltip title={vnMode ? 'Danh sách thương hiệu' : 'Brand list'}>
         <Button
           icon={<LeftOutlined className="text-blue-600" />}
@@ -398,7 +384,7 @@ const ProductDetail = () => {
           description: productDetail?.description || "",
           price: productDetail?.price || "",
           quantity: productDetail?.quantity || 0,
-          state: productDetail?.state === "Preorder" ? "2" : productDetail?.state === "Lock" ? "1" : productDetail?.state === "New Arrival" ? "3" : "4" || "",
+          state: productDetail?.state === "Preorder" ? "2" : productDetail?.state === "Lock" ? "1" : productDetail?.state === "NewArrival" ? "3" : "4" || "",
           brand: [
             productDetail?.brandCategory?.brandId,
             productDetail?.brandCategory?.brandCategoryId,
@@ -481,7 +467,7 @@ const ProductDetail = () => {
               </Form.Item>
 
               <Form.Item label={vnMode ? "Số lượng" : "Quantity"} className="flex-1" name="quantity">
-                <InputNumber min={1} max={100000} className="w-full" />
+                <InputNumber min={0} max={100000} className="w-full" />
               </Form.Item>
 
               <Form.Item label={vnMode ? "Trạng thái" : "Product state"} className="flex-1" name="state">

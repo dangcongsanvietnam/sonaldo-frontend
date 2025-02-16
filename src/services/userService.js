@@ -24,7 +24,6 @@ export const updateUserInfo = createAsyncThunk(
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "multipart/form-data",
-        // Thêm token vào header Authorization
       },
     };
     

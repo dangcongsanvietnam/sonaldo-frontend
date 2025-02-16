@@ -51,23 +51,10 @@ const ImageUpload = ({ fileList, setFileList, vnMode, info }) => {
   };
 
   const beforeUpload = (file) => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
-        const { width, height } = img;
-        if (
-          width < MIN_WIDTH ||
-          height < MIN_HEIGHT ||
-          width > MAX_WIDTH ||
-          height > MAX_HEIGHT
-        ) {
-          message.error(
-            `Ảnh phải có kích thước từ ${MIN_WIDTH}x${MIN_HEIGHT}px đến ${MAX_WIDTH}x${MAX_HEIGHT}px.`
-          );
-          reject();
-        } else {
-          resolve(file);
-        }
+        resolve(file);
       };
       img.src = URL.createObjectURL(file);
     });

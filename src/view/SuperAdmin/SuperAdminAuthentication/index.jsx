@@ -455,7 +455,7 @@ const SuperAdminAuthentication = () => {
 
       if (currentName == "changelogpage") {
         return {
-          title: vnMode? `Thông báo` : 'Notification',
+          title: vnMode ? `Thông báo` : 'Notification',
           key: path,
           href: `/super-admin/${pathnames.slice(0, index + 1).join("/")}`,
         };
@@ -722,24 +722,23 @@ const SuperAdminAuthentication = () => {
             {getAvatarContent()}
           </div>
           <div className="mt-2 text-sm font-semibold">{user?.email}</div>
-          <div className="text-sm text-gray-500">{user?.firstName && user?.lastName ? (user?.firstName + " " + user?.lastName + " - " + "Quản trị viên") : " "}</div>
+          <div className="text-sm text-gray-500">{user?.firstName && user?.lastName ? (user?.firstName + " " + user?.lastName + " - " + (vnMode ? "Quản trị viên" : "Admin")) : " "}</div>
         </div>
 
         <div className="mt-4">
           <div className="border-t mt-2"></div>
           <div onClick={() => navigate("/super-admin/profile")} className={`flex items-center py-2 px-3 ${darkMode ? "hover:bg-[#334255]" : "hover:bg-gray-100"} cursor-pointer rounded-md`}>
             <i className="fas fa-pencil-alt text-gray-500 mr-2"></i>
-            <span>Customize Profile</span>
+            <span>{vnMode ? "Thông tin cá nhân" : "Customize Profile"}</span>
           </div>
           <div onClick={() => navigate("/super-admin/change-password")} className={`flex items-center py-2 px-3 ${darkMode ? "hover:bg-[#334255]" : "hover:bg-gray-100"} cursor-pointer rounded-md`}>
             <i className="fas fa-key text-gray-500 mr-2"></i>
-            <span>Đổi mật khẩu</span>
+            <span>{vnMode ? "Đổi mật khẩu" : "Change Password"}</span>
           </div>
         </div>
 
-        {/* Sign In Button */}
         <button onClick={handleLogout} className={`w-full ${darkMode ? "hover:bg-[#334255] bg-[#1E293B]" : "hover:bg-blue-600 bg-blue-500"} text-white text-sm py-2 rounded-lg mt-4 transition-all duration-300`}>
-          Đăng xuất
+          {vnMode ? "Đăng xuất" : "Logout"}
         </button>
       </div>
     )

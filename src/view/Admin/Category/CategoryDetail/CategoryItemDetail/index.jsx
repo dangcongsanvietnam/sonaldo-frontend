@@ -13,7 +13,7 @@ import ProductTable from "../../../../../components/ProductTable";
 import AddProductModal from "../../../../../components/Modal/AddProductModal";
 const { TextArea, Search } = Input;
 import { PlusOutlined, DeleteOutlined, LeftOutlined } from '@ant-design/icons';
-import { Bounce, toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 const CategoryItemDetail = () => {
   const dispatch = useDispatch();
@@ -106,11 +106,11 @@ const CategoryItemDetail = () => {
           originFileObj: file,
         };
       });
-      if (fileList.length === 0) {
-        setFileList(newFileList);
-      }
+      setFileList(newFileList);
+    } else {
+      setFileList([]);
     }
-  }, [categoryImage, fileList.length]);
+  }, [categoryImage]);
 
   const handleDeleteSelectedProducts = () => {
     setIsDeleteModalVisible(true);
@@ -182,19 +182,6 @@ const CategoryItemDetail = () => {
   return (
     <>
       <Spin spinning={loading}>
-        <ToastContainer
-          position="top-right"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick={false}
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-          transition={Bounce}
-        />
         <Tooltip title={vnMode ? 'Danh mục cha' : 'Category'}>
           <Button
             icon={<LeftOutlined className="text-blue-600" />}

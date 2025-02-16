@@ -79,7 +79,6 @@ export const userRoutes = [
   { path: "/orders/:orderId", Component: Payment },
 ];
 
-// adminRoutes.js
 export const adminRoutes = [
   { path: "products", Component: ProductList },
   { path: "products/:productId", Component: ProductDetail },
@@ -97,7 +96,6 @@ export const adminRoutes = [
   { path: "add-brand", Component: Addbrand },
   { path: "orders", Component: OrderManagement },
   { path: "order-details/:orderId", Component: OrderDetails },
-  { path: "customers", Component: CustomerManagement },
   { path: "search-results", Component: SearchResults },
   { path: "changelogpage", Component: LogsPage },
   { path: "profile", Component: Profile },

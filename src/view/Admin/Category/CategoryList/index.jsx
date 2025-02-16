@@ -14,7 +14,7 @@ import {
   deleteCategory,
   getAdminCategories,
 } from "../../../../services/categoryService";
-import { Bounce, toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import { useLoading } from "../../../../provider/LoadingProvider";
 const { Search } = Input;
 
@@ -64,15 +64,28 @@ const CategoryList = () => {
     }));
 
   useEffect(() => {
+    fetchData();
+  }, [dispatch]);
+
+  const fetchData = async () => {
     startLoading();
     try {
-      dispatch(getAdminCategories());
+      await Promise.all([
+        dispatch(getAdminCategories())
+          .unwrap()
+          .then(async () => {
+            toast.success(vnMode ? "Tải dữ liệu danh mục thành công." : "Successfully loaded category data.");
+            await stopLoading();
+          }).catch(() => {
+            stopLoading();
+          })
+      ]);
     } catch (error) {
-
+      toast.error(vnMode ? "Tải dữ liệu danh mục thất bại." : "Failed to load product data.");
     } finally {
       stopLoading();
     }
-  }, [dispatch]);
+  };
 
   const alphanumericSort = (a, b) => {
     return a.categoryId.localeCompare(b.categoryId, undefined, {
@@ -129,7 +142,7 @@ const CategoryList = () => {
         toast.success(vnMode ? "Xóa tất cả danh mục thành công" : "Deleted all selected categories successfully");
         setSelectedRowKeys([]);
       }
-      dispatch(getAdminCategories());
+      fetchData();
     } catch (error) {
       toast.error(
         vnMode
@@ -203,19 +216,6 @@ const CategoryList = () => {
 
   return (
     <>
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick={false}
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        transition={Bounce}
-      />
       <div className="flex justify-between">
         <div className="grid-cols-2 grid gap-4 gap-x-3">
           <Button

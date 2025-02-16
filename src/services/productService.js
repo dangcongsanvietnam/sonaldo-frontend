@@ -7,12 +7,12 @@ export const getAdminProducts = createAsyncThunk(
   async ({ page, limit }) => {
     const res = await BASE_URL.get(`api/v1/products`, {
       params: {
-        page: page,
-        limit: limit,
+        page: page || 0,
+        limit: limit || 10,
       },
     });
 
-    return res; // Thông thường bạn trả về `data` thay vì toàn bộ `res`.
+    return res.data;
   }
 );
 
@@ -148,11 +148,12 @@ export const searchAdminProducts = createAsyncThunk(
 
     const config = {
       headers: {
-        Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+        Authorization: `Bearer ${token}`,
       },
       params: {
         productName: params.productName || "",
         status: params.status || "",
+        state: params.state || "",
         brandCategoryId: params.brandCategoryId || "",
         categoryItemIds: params.categoryItemIds || "",
         page: params.page || 0,
@@ -165,9 +166,8 @@ export const searchAdminProducts = createAsyncThunk(
         "api/v1/admin/products/search-product",
         config
       );
-      return res;
+      return res.data;
     } catch (error) {
-      console.error("Lỗi khi tìm kiếm sản phẩm:", error);
       throw error;
     }
   }

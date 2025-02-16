@@ -12,7 +12,7 @@ import { getProductsByBrandCategory } from "../../../../../services/productServi
 import ProductTable from "../../../../../components/ProductTable";
 import AddProductModalBrandCategory from "../../../../../components/Modal/AddProductModalBrandCategory";
 import { PlusOutlined, DeleteOutlined, LeftOutlined } from '@ant-design/icons';
-import { Bounce, toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 const { TextArea, Search } = Input;
 
@@ -109,11 +109,11 @@ const BrandCategoryDetail = () => {
           originFileObj: file,
         };
       });
-      if (fileList.length === 0) {
-        setFileList(newFileList);
-      }
+      setFileList(newFileList);
+    } else {
+      setFileList([]);
     }
-  }, [brandImage, fileList.length]);
+  }, [brandImage]);
 
   const handleDelete = async () => {
     setLoading(true);
@@ -178,19 +178,6 @@ const BrandCategoryDetail = () => {
 
   return (
     <>
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick={false}
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        transition={Bounce}
-      />
       <Spin spinning={loading}>
         <Tooltip title={vnMode ? 'Thương hiệu cha' : 'Brand'}>
           <Button
