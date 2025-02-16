@@ -17,7 +17,7 @@ const AvatarProfile = ({ isRegister, setAvatar, user }) => {
       : [
           {
             uid: "-1",
-            url: `data:image/jpeg;base64,${user?.images[0].file.data}`,
+            url: `data:image/jpeg;base64,${user?.avatar?.file?.data}`,
           },
         ]
   );

@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const BASE_URL = axios.create({
-  baseURL: "https://sonaldo14.onrender.com/",
+  baseURL: "http://localhost:8080/",
   headers: {
     "Content-Type": "application/json",
   },

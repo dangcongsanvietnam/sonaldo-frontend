@@ -1,16 +1,15 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { getDataFromCookie, login } from "../services/authService";
-import Cookies from "js-cookie";
-import { getAdminProducts } from "../services/productService";
 import {
   addNewCategory,
   addNewCategoryItem,
+  addProductsToCategory,
+  addProductsToCategoryItem,
   deleteCategory,
   deleteCategoryItem,
   getAdminCategories,
   getCategoryDetail,
-  getCategoryItem,
   getCategoryItemDetail,
+  removeProductsFromCategoryItem,
   updateCategory,
   updateCategoryItem,
 } from "../services/categoryService";
@@ -41,6 +40,18 @@ const categorySlice = createSlice({
       state.loading = "Failed";
       state.error = action.error;
     });
+    builder.addCase(addProductsToCategory.pending, (state) => {
+      state.loading = "pending";
+    });
+
+    builder.addCase(addProductsToCategory.fulfilled, (state, action) => {
+      state.loading = "success";
+    });
+
+    builder.addCase(addProductsToCategory.rejected, (state, action) => {
+      state.loading = "Failed";
+      state.error = action.error;
+    });
 
     builder.addCase(addNewCategory.pending, (state) => {
       state.loading = "pending";
@@ -66,6 +77,34 @@ const categorySlice = createSlice({
     });
 
     builder.addCase(getCategoryDetail.rejected, (state, action) => {
+      state.loading = "Failed";
+      state.error = action.error;
+    });
+
+    builder.addCase(removeProductsFromCategoryItem.pending, (state) => {
+      state.loading = "pending";
+    });
+
+    builder.addCase(removeProductsFromCategoryItem.fulfilled, (state, action) => {
+      state.loading = "success";
+      // state.category = action.payload;
+    });
+
+    builder.addCase(removeProductsFromCategoryItem.rejected, (state, action) => {
+      state.loading = "Failed";
+      state.error = action.error;
+    });
+
+    builder.addCase(addProductsToCategoryItem.pending, (state) => {
+      state.loading = "pending";
+    });
+
+    builder.addCase(addProductsToCategoryItem.fulfilled, (state, action) => {
+      state.loading = "success";
+      // state.category = action.payload;
+    });
+
+    builder.addCase(addProductsToCategoryItem.rejected, (state, action) => {
       state.loading = "Failed";
       state.error = action.error;
     });
@@ -108,20 +147,6 @@ const categorySlice = createSlice({
     });
 
     builder.addCase(addNewCategoryItem.rejected, (state, action) => {
-      state.loading = "Failed";
-      state.error = action.error;
-    });
-
-    builder.addCase(getCategoryItem.pending, (state) => {
-      state.loading = "pending";
-    });
-
-    builder.addCase(getCategoryItem.fulfilled, (state, action) => {
-      state.loading = "success";
-      state.categoryItems = action.payload;
-    });
-
-    builder.addCase(getCategoryItem.rejected, (state, action) => {
       state.loading = "Failed";
       state.error = action.error;
     });

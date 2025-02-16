@@ -1,47 +1,32 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   Button,
   Dropdown,
   Input,
   notification,
   Modal,
-  Select,
   Table,
 } from "antd";
 import {
-  PlusCircleOutlined,
   MoreOutlined,
   EyeOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
-import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
 
 import {
-  deleteCategoryItem,
-  getCategoryItem,
+  deleteCategoryItem
 } from "../../services/categoryService";
 
 const { Search } = Input;
 
-const CategoryItemTable = ({ categoryId, categoryItemId }) => {
-  const categoryItem = useSelector(
-    (state) => state?.category?.categoryItems.data
-  );
-  console.log(11111, categoryItem);
+const CategoryItemTable = ({ categoryId, selectedRowKeys, setSelectedRowKeys, searchKeyword }) => {
+  const categoryItem = useSelector((state) => {
+    return state?.category?.category?.data?.categoryItems;
+  });
   const dispatch = useDispatch();
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const navigate = useNavigate();
-
-  const onSelectChange = (newSelectedRowKeys) => {
-    setSelectedRowKeys(newSelectedRowKeys);
-  };
-
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: onSelectChange,
-  };
 
   const alphanumericSort = (a, b) => {
     return a.categoryItemId.localeCompare(b.categoryItemId, undefined, {
@@ -58,9 +43,6 @@ const CategoryItemTable = ({ categoryId, categoryItemId }) => {
           .unwrap()
           .then(() => {
             notification.success({ message: "Xóa nhãn hàng thành công" });
-
-            // Cập nhật lại danh sách nhãn hàng sau khi xóa
-            dispatch(getCategoryItem(categoryId));
           })
           .catch((error) => {
             notification.error({ message: "Xóa nhãn hàng thất bại" });
@@ -84,10 +66,15 @@ const CategoryItemTable = ({ categoryId, categoryItemId }) => {
       sortDirections: ["ascend", "descend"],
     },
     {
-      title: "Mô tả",
-      dataIndex: "description",
-      sorter: (a, b) => a.description.localeCompare(b.description),
-      sortDirections: ["ascend", "descend"],
+      title: "Ảnh danh mục",
+      dataIndex: "imageFile",
+      render: (imageFile) => (
+        <img
+          alt="Category"
+          src={`data:image/jpeg;base64,${imageFile}`}
+          className="w-16 h-16 object-cover rounded"
+        />
+      ),
     },
     {
       title: "Action",
@@ -126,26 +113,35 @@ const CategoryItemTable = ({ categoryId, categoryItemId }) => {
     },
   ];
 
-  const token = Cookies.get("token");
-
-  useEffect(() => {
-    dispatch(getCategoryItem(categoryId));
-  }, [dispatch, token]);
-
-  const data = categoryItem?.map((categoryItemItem, index) => ({
-    key: index,
-    categoryItemId: categoryItemItem?.categoryItemId,
-    categoryItem: categoryItemItem?.name,
-    description: categoryItemItem?.description,
-  }));
+  const filteredData = categoryItem
+    ?.filter((categoryItem) => {
+      const matchesCategoryId = categoryItem?.categoryItemId
+        ?.toString()
+        .toLowerCase()
+        .includes(searchKeyword.toLowerCase());
+      const matchesCategoryName = categoryItem?.name
+        ?.toLowerCase()
+        .includes(searchKeyword.toLowerCase());
+      return matchesCategoryId || matchesCategoryName;
+    })
+    ?.map((categoryItem, index) => ({
+      key: index,
+      categoryItemId: categoryItem?.categoryItemId,
+      categoryItem: categoryItem?.name,
+      imageFile: categoryItem?.imageFile.file.data,
+    }));
 
   return (
     <>
       <div className="pt-5">
         <Table
+          rowKey="categoryItemId"
           columns={columns}
-          dataSource={data}
-          rowSelection={rowSelection}
+          dataSource={filteredData}
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (keys) => setSelectedRowKeys(keys),
+          }}
           showSorterTooltip={{ target: "sorter-icon" }}
         />
       </div>

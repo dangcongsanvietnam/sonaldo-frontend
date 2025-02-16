@@ -7,12 +7,15 @@ import { addNewBrand, getAdminBrands } from "../../../services/brandService";
 import defaultAvatar from "../../../assets/download.png"; // Đường dẫn tới ảnh mặc định
 import { PlusCircleOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
+import ImageUpload from "../../ImageUpload";
 const { Search } = Input;
 
 const BrandForm = () => {
   const [avatar, setAvatar] = useState(null);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const [fileList, setFileList] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -37,9 +40,10 @@ const BrandForm = () => {
     const newBrand = {
       name: values.brand,
       description: values.description,
-      files: avatar,
+      files: fileList.length < 1 ? fileList.map((file) => file?.originFileObj) : avatar,
     };
 
+    setIsSaving(true);
     dispatch(addNewBrand(newBrand))
       .unwrap()
       .then((res) => {
@@ -53,8 +57,8 @@ const BrandForm = () => {
               description: "Thêm thành công",
             });
             form.resetFields();
-            navigate("/brand");
-          });
+            navigate("/admin/brand");
+          }).finally(() => setIsSaving(false));
       })
       .catch((err) => {
         console.log(err);
@@ -90,7 +94,9 @@ const BrandForm = () => {
         >
           <TextArea rows={4} placeholder="Nhập mô tả ..."></TextArea>
         </Form.Item>
-
+        <Form.Item label="Ảnh sản phẩm">
+          <ImageUpload fileList={fileList} setAvatar={setAvatar} setFileList={setFileList} />
+        </Form.Item>
         <Form.Item>
           <Button
             type="primary"

@@ -171,9 +171,39 @@ export const updateBrandCategory = createAsyncThunk(
   }
 );
 
+export const addProductsToBrand = createAsyncThunk(
+  "brand/addProductsToBrand",
+  async (updateValues) => {
+    const token = Cookies.get("token");
+
+    const config = {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    };
+
+    const initState = {
+      productIds: updateValues?.productIds,
+    };
+
+    try {
+      const res = await BASE_URL.put(
+        `api/v1/admin/brands/${updateValues.brandCategoryId}/addProductToBrandCategory`,
+        initState,
+        config
+      );
+      console.log("e", res);
+      return res.data; // Trả về dữ liệu từ res
+    } catch (error) {
+      console.error("Sửa không thành công", error);
+      console.log(updateValues);
+    }
+  }
+);
+
 export const addNewBrandCategory = createAsyncThunk(
   "brand/addNewBrandCategory",
-  async ({ newBrandCategory, brandId }) => {
+  async (newBrandCategory) => {
     // Lấy token từ cookie
     const token = Cookies.get("token"); // Hoặc tên khác tùy thuộc vào cách bạn lưu trữ token
     // Tạo cấu hình headers với token
@@ -184,11 +214,17 @@ export const addNewBrandCategory = createAsyncThunk(
       },
     };
 
+    const updateValues = {
+      name: newBrandCategory.name,
+      description: newBrandCategory.description,
+      files: newBrandCategory.files,
+    };
+
     try {
       // Thực hiện request với cấu hình headers
       const res = await BASE_URL.post(
-        `api/v1/admin/brands/${brandId}`,
-        newBrandCategory,
+        `api/v1/admin/brands/${newBrandCategory.brandId}`,
+        updateValues,
         config
       );
       console.log(res);
@@ -225,6 +261,35 @@ export const deleteBrandCategory = createAsyncThunk(
     } catch (error) {
       // Xử lý lỗi nếu có
       console.error("Xoá ko thành công", error);
+      throw error;
+    }
+  }
+);
+
+export const removeProductsFromBrandCategory = createAsyncThunk(
+  "category/removeProductsFromBrandCategory",
+  async (updatedProducts) => {
+    const token = Cookies.get("token"); // Hoặc tên khác tùy thuộc vào cách bạn lưu trữ token
+    const config = {
+      headers: {
+        Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+      },
+    };
+
+    const updateValues = {
+      productIds: updatedProducts.productIds
+    };
+    try {
+      const res = await BASE_URL.put(
+        `api/v1/admin/brands/${updatedProducts.brandCategoryId}/removeProductsFromBrandCategory`,
+        updateValues,
+        config
+      );
+      console.log(res);
+      return res.data; // Trả về dữ liệu từ res
+    } catch (error) {
+      // Xử lý lỗi nếu có
+      console.error("Failed to add brandCategory:", error);
       throw error;
     }
   }

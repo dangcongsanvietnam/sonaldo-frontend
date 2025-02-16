@@ -1,54 +1,74 @@
 import React, { useEffect, useState } from "react";
-import { Form, Input, Upload, Button, Row, Col, notification } from "antd";
-import ImgCrop from "antd-img-crop";
-import { UploadOutlined } from "@ant-design/icons";
+import { Form, Input, Upload, Button, Row, Col, notification, Spin, Modal } from "antd";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  getBrandCategory,
-  getBrandCategoryDetail,
-  getBrandDetail,
-  updateBrand,
-  updateBrandCategory,
-} from "../../../../../services/brandService";
 import { useParams } from "react-router-dom";
 import ImageUpload from "../../../../../components/ImageUpload";
-
-const { TextArea } = Input;
+import {
+  getBrandCategoryDetail,
+  removeProductsFromBrandCategory,
+  updateBrandCategory,
+} from "../../../../../services/brandService";
+import { getProductsByBrandCategory } from "../../../../../services/productService";
+import ProductTable from "../../../../../components/ProductTable";
+import { AddOutlined, DeleteOutline } from "@mui/icons-material";
+import AddProductModal from "../../../../../components/Modal/AddProductModal";
+import AddProductModalBrandCategory from "../../../../../components/Modal/AddProductModalBrandCategory";
+const { TextArea, Search } = Input;
 
 const BrandCategoryDetail = () => {
   const [avatar, setAvatar] = useState(null);
   const dispatch = useDispatch();
   const { brandId } = useParams();
   const { brandCategoryId } = useParams();
+  const [loading, setLoading] = useState(false);
+  const [loadingButton, setLoadingButton] = useState(false);
+  const [loadingTable, setLoadingTable] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [isAddProductModalVisible, setIsAddProductModalVisible] = useState(false);
+  const [products, setProducts] = useState([]);
 
   const brandCategoryDetail = useSelector((state) => {
     return state?.brand?.brandCategoryDetailItem?.data;
   });
 
-  console.log(111111, brandCategoryDetail);
-
   const brandImage = brandCategoryDetail?.images;
   const [fileList, setFileList] = useState([]);
-  console.log("avatar", avatar);
-
   const [form] = Form.useForm();
   useEffect(() => {
-    dispatch(getBrandCategoryDetail({ brandId, brandCategoryId }))
-      .unwrap()
-      .then((res) => {
-        form.resetFields();
-      })
-      .catch((err) => {
-        console.log(err);
-        console.log(brandId, brandCategoryId);
-      });
+    setLoading(true);
+    try {
+      dispatch(getBrandCategoryDetail({ brandId, brandCategoryId }))
+        .unwrap()
+        .then((res) => {
+          form.resetFields();
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    } finally {
+      setLoading(false);
+    }
+
   }, [dispatch]);
 
-  const handleSubmit = (values) => {
-    console.log("click");
-    console.log(444, fileList);
-    console.log(666, brandImage);
+  useEffect(() => {
+    fetchProducts();
+  }, [dispatch]);
 
+  const fetchProducts = async () => {
+    // setLoading(true);
+    try {
+      const productsData = await dispatch(getProductsByBrandCategory(brandCategoryId)).unwrap();
+      setProducts(productsData.data);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+    } finally {
+      // setLoading(false);
+    }
+  };
+
+  const handleSubmit = (values) => {
     const sortedFileList = [...fileList].reverse();
 
     const updateValues = {
@@ -67,6 +87,7 @@ const BrandCategoryDetail = () => {
         description: "Bắt buộc phải có ít nhất 1 ảnh",
       });
     } else {
+      setLoadingButton(true);
       dispatch(updateBrandCategory(updateValues))
         .unwrap()
         .then(() => {
@@ -82,7 +103,7 @@ const BrandCategoryDetail = () => {
             message: "Thất bại",
             description: "Cập nhật thất bại",
           });
-        });
+        }).finally(() => setLoadingButton(false));
     }
   };
 
@@ -102,6 +123,30 @@ const BrandCategoryDetail = () => {
       }
     }
   }, [brandImage, fileList.length]);
+
+  const handleDeleteSelectedProducts = () => {
+    Modal.confirm({
+      title: "Bạn có chắc chắn muốn xóa các sản phẩm đã chọn khỏi danh mục con này không?",
+      onOk: async () => {
+        setLoadingTable(true);
+        try {
+          const updatedProducts = {
+            productIds: selectedRowKeys,
+            brandCategoryId: brandCategoryId
+          }
+          console.log(updatedProducts)
+          await dispatch(removeProductsFromBrandCategory(updatedProducts)).unwrap().then(() => {
+            fetchProducts().finally(() => setLoadingTable(false));
+          });
+          notification.success({ message: "Xóa tất cả sản phẩm thành công" });
+          setSelectedRowKeys([]);
+        } catch (error) {
+          notification.error({ message: "Xóa một số sản phẩm thất bại" });
+          console.error("Lỗi khi xóa nhiều sản phẩm:", error);
+        }
+      },
+    });
+  };
 
   const base64ToFile = (base64Data, filename) => {
     // Kiểm tra xem base64Data có phải là chuỗi base64 hợp lệ không
@@ -146,57 +191,108 @@ const BrandCategoryDetail = () => {
     }
   };
 
+  const handleOpenAddProductModal = () => {
+    setIsAddProductModalVisible(true);
+  };
+
+  const handleCloseAddProductModal = () => {
+    setIsAddProductModalVisible(false);
+  };
+
   return (
     <>
-      <h1 className="text-lg mb-5">Chi tiết danh mục nhãn hàng</h1>
-      <Form
-        form={form}
-        layout="vertical"
-        style={{ margin: "0 auto" }}
-        initialValues={{
-          brandCategoryName: brandCategoryDetail?.name || "",
-          description: brandCategoryDetail?.description || "",
-        }}
-        onFinish={handleSubmit}
-      >
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              label="Tên danh mục của nhãn hàng"
-              name="brandCategoryName"
-              rules={[{ message: "Nhập danh mục của nhãn hàng..." }]}
-            >
-              <Input initialValues={brandCategoryDetail?.name} />
-            </Form.Item>
-            <Form.Item
-              label="Mô tả"
-              name="description"
-              rules={[{ message: "Nhập mô tả ..." }]}
-            >
-              <TextArea
-                rows={4}
-                placeholder="There are many variations of passages of Lorem Ipsum available."
-              />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item label="Ảnh" name="files">
-              <ImageUpload
-                fileList={fileList}
-                avatar={avatar}
-                setAvatar={setAvatar}
-                setFileList={setFileList}
-              ></ImageUpload>
-            </Form.Item>
-          </Col>
-        </Row>
-        <Form.Item className="flex justify-end">
-          <Button htmlType="submit" type="primary">
-            Lưu
+      <Spin spinning={loading}>
+        <h1 className="text-lg mb-5">Chi tiết danh mục con</h1>
+        <Form
+          form={form}
+          layout="vertical"
+          style={{ margin: "0 auto" }}
+          initialValues={{
+            brandCategoryName: brandCategoryDetail?.name || "",
+            description: brandCategoryDetail?.description || "",
+          }}
+          onFinish={handleSubmit}
+        >
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Tên danh mục của danh mục"
+                name="brandCategoryName"
+                rules={[{ message: "Nhập danh mục ..." }]}
+              >
+                <Input initialValues={brandCategoryDetail?.name} />
+              </Form.Item>
+              <Form.Item
+                label="Mô tả"
+                name="description"
+                rules={[{ message: "Nhập mô tả ..." }]}
+              >
+                <TextArea
+                  rows={4}
+                  placeholder="There are many variations of passages of Lorem Ipsum available."
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Ảnh" name="files">
+                <ImageUpload
+                  fileList={fileList}
+                  setAvatar={setAvatar}
+                  setFileList={setFileList}
+                ></ImageUpload>
+              </Form.Item>
+            </Col>
+          </Row>
+          <Form.Item className="flex justify-end">
+            <Button htmlType="submit" type="primary" loading={loadingButton}>
+              Lưu
+            </Button>
+          </Form.Item>
+        </Form>
+        <hr />
+        {/* New Content Row */}
+        <div className="flex justify-between mt-6">
+          <h1 className="text-lg mb-5">Sản phẩm thuộc danh mục con</h1>
+        </div>
+        <div className="grid grid-cols-3 gap-x-3">
+          <Button
+            type="primary"
+            icon={<AddOutlined />}
+            onClick={handleOpenAddProductModal}
+          >
+            Thêm sản phẩm
           </Button>
-        </Form.Item>
-      </Form>
-      {/* New Content Row */}
+          <Button
+            type="primary"
+            icon={<DeleteOutline />}
+            danger
+            onClick={handleDeleteSelectedProducts}
+            disabled={selectedRowKeys.length === 0}
+          >
+            Xóa sản phẩm đã chọn khỏi danh mục con
+          </Button>
+          <Search
+            placeholder="Nhập ID, tên danh mục con"
+            onSearch={(value) => setSearchKeyword(value)}
+            className="w-auto"
+            enterButton
+          />
+        </div>
+        <AddProductModalBrandCategory
+          setLoadingTable={setLoadingTable}
+          isVisible={isAddProductModalVisible}
+          onClose={handleCloseAddProductModal}
+          currentBrandItemId={brandCategoryId}
+          fetchProducts={fetchProducts}
+        />
+        <ProductTable
+          loading={loadingTable}
+          selectedRowKeys={selectedRowKeys}
+          setSelectedRowKeys={setSelectedRowKeys}
+          searchKeyword={searchKeyword}
+          products={products}
+        ></ProductTable>
+      </Spin >
     </>
   );
 };

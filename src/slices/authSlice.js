@@ -21,7 +21,7 @@ const authSlice = createSlice({
     });
 
     builder.addCase(login.fulfilled, (state, action) => {
-      state.data = action.payload;
+      state.data = action.payload.data;
       state.loading = "success";
     });
 

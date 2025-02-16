@@ -9,14 +9,17 @@ import store from "./store";
 import Navbar from "./components/Navbar/Navbar.jsx";
 import Footer from "./components/Footer";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { LoadingProvider } from "./provider/LoadingProvider/index.jsx";
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <GoogleOAuthProvider clientId="156583417941-6m71jhteinga9ik2djqisifcd79i8uq0.apps.googleusercontent.com">
-    <React.StrictMode>
-      <Provider store={store}>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </Provider>
-    </React.StrictMode>
-  </GoogleOAuthProvider>
+  <LoadingProvider>
+    <GoogleOAuthProvider clientId="156583417941-6m71jhteinga9ik2djqisifcd79i8uq0.apps.googleusercontent.com">
+      <React.StrictMode>
+        <Provider store={store}>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </Provider>
+      </React.StrictMode>
+    </GoogleOAuthProvider>
+  </LoadingProvider>
 );

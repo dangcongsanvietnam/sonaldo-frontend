@@ -1,38 +1,10 @@
-import Navbar from "./components/Navbar/Navbar";
-import { BrowserRouter } from "react-router-dom";
-import Login from "./view/login";
 import { Routes, Route } from "react-router-dom";
-import Home from "./view/Home";
 import Layout from "./components/Layout";
-import Register from "./view/Register";
-import Profile from "./view/Profile";
 import Authentication from "./components/Authentication";
 import Account from "./view/Account";
-import Address from "./view/Address";
-import VerifyEmail from "./components/VerifyEmail";
-import ChangePassword from "./view/ChangePassword";
-import ForgetPassword from "./components/ForgetPassword";
-import ResetPassword from "./components/ResetPassword";
 import AdminAuthentication from "./view/Admin/AdminAuthentication";
-import ProductList from "./view/Admin/Product/ProductList";
-import AddProduct from "./view/Admin/Product/AddProduct";
-import Order from "./view/Admin/Order";
-import UserManagement from "./view/Admin/CustomerManagement";
-import BrandList from "./view/Admin/Brand/BrandList";
-import BrandDetail from "./view/Admin/Brand/BrandDetail";
-import BrandCategoryDetail from "./view/Admin/Brand/BrandDetail/BrandCategoryDetail";
-import { Category } from "@mui/icons-material";
-import CategoryList from "./view/Admin/Category/CategoryList";
-import CustomerManagement from "./view/Admin/CustomerManagement";
-import CategoryDetail from "./view/Admin/Category/CategoryDetail";
-import CategoryItemDetail from "./view/Admin/Category/CategoryDetail/CategoryItemDetail";
-import ProductDetail from "./view/Admin/Product/ProductDetail";
-import AddCategory from "./view/Admin/Category/AddCategory";
-import Addbrand from "./view/Admin/Brand/AddBrand";
-
-import CategoryPageDetail from "./view/Admin/Category/CategoryPageDetail";
-import CategoryPage from "./view/Admin/Category/CategoryPage";
-import { adminRoutes, publicRoutes, userRoutes } from "./routers/routes";
+import { adminRoutes, publicRoutes, userRoutes, publicAdminRoutes } from "./routers/routes";
+import AdminLayout from "./components/AdminLayout";
 
 export default function App() {
   return (
@@ -100,6 +72,12 @@ export default function App() {
           ))}
         </Route>
 
+        <Route>
+          {publicAdminRoutes.map(({ path, Component }) => (
+            <Route key={path} path={path} element={<Component />} />
+          ))}
+        </Route>
+
         {/* User Routes */}
         <Route path="/" element={<Authentication />}>
           <Route element={<Layout />}>
@@ -113,7 +91,7 @@ export default function App() {
 
         {/* Admin Routes */}
 
-        <Route element={<Layout />}>
+        <Route element={<AdminLayout />}>
           <Route path="/admin" element={<AdminAuthentication />}>
             {adminRoutes.map(({ path, Component }) => (
               <Route key={path} path={path} element={<Component />} />

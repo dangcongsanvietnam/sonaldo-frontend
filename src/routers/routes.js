@@ -32,18 +32,32 @@ import Addbrand from "./../view/Admin/Brand/AddBrand";
 import CategoryPageDetail from "./../view/Admin/Category/CategoryPageDetail";
 import CategoryPage from "./../view/Admin/Category/CategoryPage";
 import PublicProductDetail from "../view/PublicProductDetail";
+import AdminLogin from "../view/Admin/AdminLogin";
+import SucessfulPage from "../pages/SuccessfulPage";
+import SearchResults from "../view/Admin/SearchResults";
+import NotificationPage from "../pages/NotificationPage";
+import LogsPage from "../pages/LogsPage";
+import UserOrder from "./../view/Admin/Order";
+import Checkout from "../view/Checkout";
+import Payment from "../view/Payment";
 
 // publicRoutes.js
 export const publicRoutes = [
   { path: "/", Component: Home },
-  { path: "/category/:categoryId", Component: CategoryPageDetail },
-  { path: "/category", Component: CategoryPage },
+  { path: "/public/category/:categoryId", Component: CategoryPageDetail },
+  { path: "/public/category", Component: CategoryPage },
   { path: "/register", Component: Register },
   { path: "/login", Component: Login },
   { path: "/verify-email", Component: VerifyEmail },
   { path: "/forget-password", Component: ForgetPassword },
   { path: "/reset-password", Component: ResetPassword },
   { path: "/product/:id", Component: PublicProductDetail },
+  { path: "/successful-payment", Component: SucessfulPage },
+  { path: "/notification", Component: NotificationPage },
+];
+
+export const publicAdminRoutes = [
+  { path: "/login/admin", Component: AdminLogin },
 ];
 
 // userRoutes.js
@@ -51,6 +65,9 @@ export const userRoutes = [
   { path: "/profile", Component: Profile },
   { path: "/change-password", Component: ChangePassword },
   { path: "/address", Component: Address },
+  { path: "/orders", Component: UserOrder },
+  { path: "/checkout", Component: Checkout },
+  { path: "/orders/:orderId", Component: Payment },
 ];
 
 // adminRoutes.js
@@ -71,4 +88,6 @@ export const adminRoutes = [
   { path: "add-brand", Component: Addbrand },
   { path: "order", Component: Order },
   { path: "customers", Component: CustomerManagement },
+  { path: "search-results", Component: SearchResults },
+  { path: "changelogpage", Component: LogsPage },
 ];

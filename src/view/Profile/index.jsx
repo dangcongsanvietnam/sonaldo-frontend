@@ -16,7 +16,8 @@ dayjs.extend(timezone);
 
 const Profile = () => {
   const dispatch = useDispatch();
-  const user = useSelector((state) => state.user.data);
+  const user = useSelector((state) => state.user?.data);
+  console.log(1111, user);
 
   const handleFinish = async (values) => {
     console.log("Received values from form: ", values);
@@ -57,7 +58,8 @@ const Profile = () => {
     if (token) {
       dispatch(getUserInfo(token))
         .unwrap()
-        .then(() => {
+        .then((res) => {
+          console.log("res", res);
           form.resetFields();
         });
     }
@@ -66,7 +68,6 @@ const Profile = () => {
   const [avatar, setAvatar] = useState(null);
   const isRegister = false;
 
-  console.log(1111, user);
   return (
     <>
       <Form

@@ -16,7 +16,7 @@ const Account = () => {
   const user = useSelector((state) => {
     return state.user.data;
   });
-  console.log(user);
+  console.log(123, user?.avatar?.file?.data);
 
   const {
     token: { colorBgContainer, borderRadiusLG },
@@ -73,7 +73,14 @@ const Account = () => {
       type: "group",
       children: [
         {
-          label: <div className="text-red-500 label">Đơn mua</div>,
+          label: (
+            <div
+              className="text-red-500 label"
+              onClick={() => navigate("/orders")}
+            >
+              Đơn mua
+            </div>
+          ),
           key: "submenu-item-4",
         },
       ],
@@ -88,6 +95,8 @@ const Account = () => {
         return "Đổi mật khẩu";
       case "/address":
         return "Địa chỉ";
+      case "/order":
+        return "Đơn mua";
       default:
         return "Tài khoản của tôi";
     }
@@ -116,7 +125,7 @@ const Account = () => {
             <div className="flex justify-end gap-1 items-center">
               <div className="flex items-center justify-center h-full">
                 <Avatar
-                  src={`data:image/jpeg;base64,${user?.images[0].file.data}`}
+                  src={`data:image/jpeg;base64,${user?.avatar?.file?.data}`}
                   size={40} // Đặt kích thước của Avatar
                 />
               </div>
@@ -132,7 +141,7 @@ const Account = () => {
                     </li>
                     <li
                       className="hover:bg-gray-100 cursor-pointer p-1"
-                      onClick={() => navigate("/Home")}
+                      onClick={() => navigate("/Order")}
                     >
                       Đơn mua
                     </li>

@@ -13,6 +13,8 @@ export const login = createAsyncThunk("auth/login", async (user) => {
   const res = await BASE_URL.post("api/v1/auth/login", user);
 
   Cookies.set("token", res.data.jwt);
+  localStorage.setItem("userId", res.data.userId)
+  localStorage.setItem("role", res.data.role)
 
   return res;
 });
