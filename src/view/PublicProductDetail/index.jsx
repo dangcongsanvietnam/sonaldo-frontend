@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { getProductDetail } from "../../services/productService";
-import { Button, Carousel, Spin } from "antd";
+import { Button, Carousel, Spin, InputNumber } from "antd";
 import "./index.css";
 import { addProductToCart, getUserCart } from "../../services/cartService";
 import Cookies from "js-cookie";
@@ -130,28 +130,36 @@ const PublicProductDetail = () => {
               {publicProductDetail?.price}
             </div>
             <div className="flex items-center space-x-4">
-              <button
+              {/* <button
                 className="bg-gray-300 rounded-full p-2"
                 onClick={handleDecrease}
                 disabled={quantitySelected <= 1}
               >
                 -
               </button>
-              <span className="text-xl">{quantitySelected}</span>
-              <button
+              <span className="text-xl">{quantitySelected}</span> */}
+              <InputNumber
+                min={1}
+                max={publicProductDetail?.quantity}
+                value={quantitySelected}
+                onChange={setQuantitySelected}
+                style={{ width: "80px" }}
+              />
+              <span>Số lượng : {publicProductDetail?.quantity}</span>
+
+              {/* <button
                 className="bg-gray-300 rounded-full p-2"
                 onClick={handleIncrease}
                 disabled={quantitySelected >= publicProductDetail?.quantity}
               >
                 +
-              </button>
+              </button> */}
             </div>
             <div className="mt-2">Trạng thái sản phẩm : {state}</div>
-            <div>Số lượng : {publicProductDetail?.quantity}</div>
             <div>{publicProductDetail?.description}</div>
-            <div className="flex justify-between ">
+            <div className="flex space-x-1 ">
               <button
-                className="rounded-none bg-blue-500 hover:bg-blue-600 text-white font-semibold px-5 py-2 w-1/2 shadow-md transition-all duration-300"
+                className="rounded-none text-blue-500 bg-white border-2 border-blue-500 hover:text-white hover:bg-blue-500 hover:border-blue-500 font-semibold px-5 py-2 w-1/2 shadow-md transition-all duration-300"
                 disabled={quantitySelected <= 0 || state === "Out of Stock"}
                 onClick={() =>
                   handleAddProduct(
@@ -163,7 +171,7 @@ const PublicProductDetail = () => {
                 Thêm vào giỏ hàng
               </button>
               <button
-                className="rounded-none bg-blue-500 hover:bg-blue-600 text-white font-semibold px-5 py-2 w-1/2 shadow-md transition-all duration-300"
+                className="rounded-none text-blue-500 bg-white border-2 border-blue-500 hover:text-white hover:bg-blue-500 hover:border-blue-500 font-semibold px-5 py-2 w-1/2 shadow-md transition-all duration-300"
                 disabled={quantitySelected <= 0 || state === "Out of Stock"}
                 onClick={() => navigate("/orders")}
               >

@@ -148,15 +148,26 @@ const Home = () => {
                   >
                     {product.name}
                   </h2>
-                  <p className="text-gray-500">${product.price}</p>
-                  <Button
-                    className="w-full bg-blue-500 hover:bg-blue-600 text-white"
-                    type="primary"
-                    disabled={product.stockStatus === "InStock" ? false : true}
-                    onClick={() => OnSubmitProduct(product.productId)}
-                  >
-                    Thêm vào giỏ hàng
-                  </Button>
+                  <p className="text-gray-500">{product.price}đ</p>
+                  <div className="flex space-x-1">
+                    <Button
+                      className="rounded-none text-blue-500 bg-white border-2 border-blue-500 hover:text-white hover:bg-blue-500 hover:border-blue-500 font-semibold px-5 py-2 w-1/2 shadow-md transition-all duration-300"
+                      type="primary"
+                      onClick={() => navigate(`/product/${product.productId}`)}
+                    >
+                      Xem chi tiết
+                    </Button>
+                    <Button
+                      className="rounded-none text-blue-500 bg-white border-2 border-blue-500 hover:text-white hover:bg-blue-500 hover:border-blue-500 font-semibold px-5 py-2 w-1/2 shadow-md transition-all duration-300"
+                      type="primary"
+                      disabled={
+                        product.stockStatus === "InStock" ? false : true
+                      }
+                      onClick={() => OnSubmitProduct(product.productId)}
+                    >
+                      Thêm vào giỏ hàng
+                    </Button>
+                  </div>
                 </div>
               </Card>
             ))}

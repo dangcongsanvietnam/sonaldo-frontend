@@ -18,7 +18,6 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { useDispatch, useSelector } from "react-redux";
 import { searchProducts } from "../../services/productService";
-
 import { getAllHotSearch } from "../../services/searchService";
 
 const Navbar = ({ isLoading, cart, categoryList }) => {
@@ -28,6 +27,14 @@ const Navbar = ({ isLoading, cart, categoryList }) => {
   const [searchHistory, setSearchHistory] = useState([]);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  const token = Cookies.get("token");
+
+  console.log("tk", token);
+
+  const handleProfileClick = () => {
+    token ? navigate("/profile") : navigate("/login");
+  };
 
   const tags = useSelector((state) => state?.product?.tags);
   const suggestProducts = useSelector(
@@ -115,9 +122,9 @@ const Navbar = ({ isLoading, cart, categoryList }) => {
             <div>0</div>
             <FontAwesomeIcon icon={faHeart} className="fa-xl" />
           </div>
-          <Link to="/profile">
+          <div onClick={handleProfileClick}>
             <FontAwesomeIcon icon={faUser} className="fa-xl" />
-          </Link>
+          </div>
           <div
             className="flex gap-1"
             onClick={() => setSearchOpen(!searchOpen)}

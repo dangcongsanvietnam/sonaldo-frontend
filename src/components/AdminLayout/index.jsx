@@ -8,8 +8,12 @@ import { useLoading } from "../../provider/LoadingProvider";
 
 const AdminLayout = () => {
   const { isLoading, startLoading, stopLoading } = useLoading();
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem("darkMode") === "true");
-  const [vnMode, setVNMode] = useState(() => localStorage.getItem("vnMode") === "true");
+  const [darkMode, setDarkMode] = useState(
+    () => localStorage.getItem("darkMode") === "true"
+  );
+  const [vnMode, setVNMode] = useState(
+    () => localStorage.getItem("vnMode") === "true"
+  );
   const user = useSelector((state) => state.user.data);
 
   const navigate = useNavigate();
@@ -31,7 +35,9 @@ const AdminLayout = () => {
     if (!user || !user.email) {
       const validateToken = async () => {
         try {
-          const response = await BASE_URL.get(`api/v1/auth/validate-token?token=${token}&role=${role}`);
+          const response = await BASE_URL.get(
+            `api/v1/auth/validate-token?token=${token}&role=${role}`
+          );
           if (response.status === 200) {
             await dispatch(getUserInfo(token));
           } else {
@@ -76,7 +82,11 @@ const AdminLayout = () => {
   return (
     <>
       {isLoading && (
-        <div className={darkMode ? "loading-overlay2 show" : "loading-overlay show"}>
+        <div
+          className={
+            darkMode ? "loading-overlay2 show" : "loading-overlay show"
+          }
+        >
           <img
             src="https://assets-v2.lottiefiles.com/a/ad10a15c-a6d5-11ee-a502-abb0403d8272/du1fB141eN.gif"
             alt="Loading..."
