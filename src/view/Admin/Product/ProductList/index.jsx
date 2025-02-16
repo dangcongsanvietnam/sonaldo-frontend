@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { debounce } from "lodash";
 import {
   Button,
@@ -33,7 +33,8 @@ import "jspdf-autotable";
 import * as XLSX from 'xlsx';
 import '..//..//..//..//utils/roboto'
 import { font_data } from "..//..//..//..//utils/roboto";
-import { Bounce, toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
+import { useLoading } from "../../../../provider/LoadingProvider";
 
 const { Search } = Input;
 const { SHOW_CHILD } = Cascader;
@@ -41,19 +42,22 @@ const { SHOW_CHILD } = Cascader;
 const ProductList = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const firstRender = useRef(true);
 
   const [searchParams, setSearchParams] = useState({
     productName: "",
     status: "",
+    state: "",
     brandCategoryId: "",
     categoryItemIds: [],
   });
 
+  const { startLoading, stopLoading } = useLoading();
   const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
-  const [updateOption, setUpdateOption] = useState("quantity"); // Tùy chọn cập nhật
-  const [updateValue, setUpdateValue] = useState(""); // Giá trị cập nhật
+  const [updateOption, setUpdateOption] = useState("quantity");
+  const [updateValue, setUpdateValue] = useState("");
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  const products = useSelector((state) => state.product?.adminProducts.data);
+  const products = useSelector((state) => state.product?.adminProducts);
   const brands = useSelector((state) => state.brand.brands.data);
   const categories = useSelector((state) => state.category.categories.data);
   const [loading, setLoading] = useState(false);
@@ -67,50 +71,76 @@ const ProductList = () => {
   const [selectedProductId, setSelectedProductId] = useState(null);
 
   useEffect(() => {
-    dispatch(getAdminBrands());
-    dispatch(getAdminCategories());
-    dispatch(getAdminProducts());
-  }, [dispatch]);
-
-  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
     handleSearch();
-  }, [searchParams.categoryItemIds,
-  searchParams.status,
-  searchParams.brandCategoryId,]);
+  }, [searchParams]);
 
   useEffect(() => {
-    dispatch(getAdminProducts({ page: 0, limit: 10 }))
-      .then(() => {
-        toast.success(vnMode
-          ? "Tải dữ liệu sản phẩm thành công."
-          : "Successfully loaded product data.", {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: false,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-          transition: Bounce,
-        });
-      })
-      .catch(() => {
-        toast.error({
-          message: vnMode ? "Thất bại" : "Error",
-          description: vnMode
-            ? "Không thể tải dữ liệu sản phẩm. Vui lòng thử lại!"
-            : "Failed to load product data. Please try again!",
-        });
-      });
-
+    const fetchData = async () => {
+      startLoading();
+      try {
+        await Promise.all([
+          dispatch(getAdminBrands()),
+          dispatch(getAdminCategories())
+        ]);
+      } catch (error) {
+      } finally {
+        stopLoading();
+      }
+    };
+    getProductData();
+    fetchData();
   }, [dispatch]);
 
-  const debouncedSearch = useMemo(() => {
-    return debounce((params) => {
-      dispatch(searchAdminProducts({ ...params, page: 0, limit: 10 }));
-    }, 300);
-  }, [dispatch]);
+  const getProductData = () => {
+    startLoading();
+    try {
+      dispatch(getAdminProducts({ page: 0, limit: 10 }))
+        .unwrap()
+        .then(async () => {
+          toast.success(vnMode ? "Tải dữ liệu sản phẩm thành công." : "Successfully loaded product data.");
+          await stopLoading();
+        }).catch(() => {
+          stopLoading();
+        })
+    } catch (error) {
+      toast.error(vnMode ? "Không thể tải dữ liệu sản phẩm. Vui lòng thử lại!" : "Failed to load product data. Please try again!");
+    }
+  };
+
+  const debouncedSearch = useCallback(
+    debounce(async (params) => {
+      setLoading(true);
+      try {
+        const response = await dispatch(searchAdminProducts({ ...params, page: 0, limit: 10 }));
+        if (!response.payload || response.payload.length === 0) {
+          toast.warning(
+            vnMode
+              ? "Không có sản phẩm nào khớp với tiêu chí tìm kiếm của bạn."
+              : "No products match your search criteria."
+          );
+        } else {
+          toast.success(
+            vnMode
+              ? `Tìm thấy ${response.payload.length} sản phẩm phù hợp.`
+              : `Found ${response.payload.length} matching products.`
+          );
+        }
+      } catch (error) {
+        toast.error(
+          vnMode
+            ? "Đã xảy ra lỗi trong quá trình tìm kiếm. Vui lòng thử lại!"
+            : "An error occurred during the search process. Please try again!"
+        );
+      } finally {
+        setLoading(false);
+      }
+    }, 300),
+    [dispatch]
+  );
 
   const brandOptions = Array.isArray(brands)
     ? brands.map((brand) => ({
@@ -206,9 +236,8 @@ const ProductList = () => {
 
   const processProducts = async (products) => {
     const stateMapping = {
-      active: "In Stock",
-      inactive: "Out of stock",
-      preorder: "Preorder",
+      active: "InStock",
+      inactive: "OutofStock",
     };
 
     for (const product of products) {
@@ -240,21 +269,7 @@ const ProductList = () => {
         : "Successfully imported product data."
     );
 
-    dispatch(getAdminProducts({ page: 0, limit: 10 }))
-      .then(() => {
-        toast.success(
-          vnMode
-            ? "Tải dữ liệu sản phẩm thành công."
-            : "Successfully loaded product data."
-        );
-      })
-      .catch(() => {
-        toast.error(
-          vnMode
-            ? "Không thể tải dữ liệu sản phẩm. Vui lòng thử lại!"
-            : "Failed to load product data. Please try again!"
-        );
-      });
+    getProductData();
   };
 
   const handleDeleteSelectedProducts = async () => {
@@ -267,22 +282,8 @@ const ProductList = () => {
           ? "Xóa tất cả sản phẩm thành công"
           : "Successfully deleted all products"
       );
-      setSelectedRowKeys([]); // Reset danh sách đã chọn
-      dispatch(getAdminProducts({ page: 0, limit: 10 }))
-        .then(() => {
-          toast.success(
-            vnMode
-              ? "Tải dữ liệu sản phẩm thành công."
-              : "Successfully loaded product data."
-          );
-        })
-        .catch(() => {
-          toast.error(
-            vnMode
-              ? "Không thể tải dữ liệu sản phẩm. Vui lòng thử lại!"
-              : "Failed to load product data. Please try again!"
-          );
-        });
+      setSelectedRowKeys([]);
+      getProductData();
 
       setIsModalVisible(false);
     } catch (error) {
@@ -299,25 +300,11 @@ const ProductList = () => {
     setSearchParams({
       productName: "",
       status: "",
+      state: "",
       brandCategoryId: "",
       categoryItemIds: [],
     });
-    await dispatch(getAdminProducts({ page: 0, limit: 10 }))
-      .then(() => {
-        toast.success(
-          vnMode
-            ? "Tải dữ liệu sản phẩm thành công."
-            : "Successfully loaded product data."
-        );
-      })
-      .catch(() => {
-        toast.error(
-          vnMode
-            ? "Không thể tải dữ liệu sản phẩm. Vui lòng thử lại!"
-            : "Failed to load product data. Please try again!"
-        );
-      })
-      .finally(() => setLoading(false));
+    getProductData();
   };
 
   const filter = (inputValue, path) =>
@@ -339,29 +326,7 @@ const ProductList = () => {
       categoryItemIds: searchParams.categoryItemIds.join(","),
     };
 
-    debouncedSearch(formattedParams)
-      ?.then((response) => {
-        if (!response || response.length === 0) {
-          toast.warning(
-            vnMode
-              ? "Không có sản phẩm nào khớp với tiêu chí tìm kiếm của bạn."
-              : "No products match your search criteria."
-          );
-        } else {
-          toast.success(
-            vnMode
-              ? `Tìm thấy ${response.length} sản phẩm phù hợp.`
-              : `Found ${response.length} matching products.`
-          );
-        }
-      })
-      .catch(() => {
-        toast.error(
-          vnMode
-            ? "Đã xảy ra lỗi trong quá trình tìm kiếm. Vui lòng thử lại!"
-            : "An error occurred during the search process. Please try again!"
-        );
-      });
+    debouncedSearch(formattedParams);
   };
 
   const handleDeleteProduct = async () => {
@@ -372,23 +337,7 @@ const ProductList = () => {
       toast.success(
         vnMode ? "Xóa sản phẩm thành công" : "Successfully deleted the product"
       );
-
-      dispatch(getAdminProducts({ page: 0, limit: 10 }))
-        .then(() => {
-          toast.success(
-            vnMode
-              ? "Tải dữ liệu sản phẩm thành công."
-              : "Successfully loaded product data."
-          );
-        })
-        .catch(() => {
-          toast.error(
-            vnMode
-              ? "Không thể tải dữ liệu sản phẩm. Vui lòng thử lại!"
-              : "Failed to load product data. Please try again!"
-          );
-        });
-
+      getProductData();
       setIsModalDeleteVisible(false);
       setSelectedProductId(null);
     } catch (error) {
@@ -401,29 +350,25 @@ const ProductList = () => {
   const handleExportPDF = () => {
     const doc = new jsPDF();
 
-    // Thêm font Roboto vào jsPDF
-    doc.addFileToVFS("Roboto-Regular.ttf", font_data); // RobotoRegular là biến được export từ file roboto.js
+    doc.addFileToVFS("Roboto-Regular.ttf", font_data);
     doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
     doc.setFont("Roboto");
 
-    // Lấy dữ liệu cho bảng
     const tableData = products.map((product) => [
       product.productId,
       product.name,
       product.price,
-      product.stockStatus === "In Stock" ? "Còn hàng" : "Hết hàng", // Xử lý trạng thái để hiển thị tiếng Việt
+      product.stockStatus === "InStock" ? "Còn hàng" : "Hết hàng",
     ]);
 
-    // Tạo bảng với font Roboto
     doc.autoTable({
       head: [["Mã sản phẩm", "Tên sản phẩm", "Giá", "Trạng thái"]],
       body: tableData,
       styles: {
-        font: "Roboto", // Sử dụng font Roboto
+        font: "Roboto",
       },
     });
 
-    // Lưu file PDF
     doc.save("products.pdf");
   };
 
@@ -522,24 +467,8 @@ const ProductList = () => {
           });
       }
 
-      // Đóng modal và làm mới danh sách sản phẩm sau khi cập nhật thành công
       setIsUpdateModalVisible(false);
-      dispatch(getAdminProducts({ page: 0, limit: 10 }))
-        .then(() => {
-          toast.success({
-            message: vnMode ? "Thành công" : "Success",
-            description: vnMode
-              ? "Dữ liệu sản phẩm được tải lại thành công."
-              : "Product data successfully refreshed.",
-          });
-        })
-        .catch(() => {
-          toast.error(
-            vnMode
-              ? "Không thể tải dữ liệu sản phẩm. Vui lòng thử lại!"
-              : "Failed to load product data. Please try again!"
-          );
-        });
+      getProductData();
     } catch (error) {
       toast.error(
         vnMode
@@ -586,8 +515,8 @@ const ProductList = () => {
       sorter: (a, b) => a.stockStatus.localeCompare(b.stockStatus),
       render: (status) => (
         vnMode ?
-          <span>{status === "In Stock" ? "Còn hàng" : "Hết hàng"}</span> :
-          <span>{status === "In Stock" ? "In Stock" : "Out of Stock"}</span>
+          <span>{status === "InStock" ? "Còn hàng" : "Hết hàng"}</span> :
+          <span>{status === "InStock" ? "In Stock" : "Out of Stock"}</span>
       ),
     },
     {
@@ -628,22 +557,8 @@ const ProductList = () => {
 
   return (
     <div>
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick={false}
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        transition={Bounce}
-      />
       <Spin spinning={loading}>
         <div className="search-actions-container flex flex-wrap items-center justify-between gap-4 mb-5 ">
-          {/* Bộ lọc tìm kiếm */}
           <div className="search-filters flex flex-wrap items-center gap-3">
             <Search
               placeholder={vnMode ? "Tìm kiếm theo tên và id" : "Search by name and id"}
@@ -657,7 +572,7 @@ const ProductList = () => {
             />
 
             <Select
-              placeholder={vnMode ? "Trạng thái" : "State"}
+              placeholder={vnMode ? "Số lượng" : "Quantity"}
               value={searchParams.status || undefined}
               defaultValue={undefined}
               onChange={(value) => handleInputChange("status", value)}
@@ -665,14 +580,32 @@ const ProductList = () => {
               allowClear
             >
               {vnMode ? <>
+                <Select.Option value="InStock">Còn hàng</Select.Option>
+                <Select.Option value="OutofStock">Hết hàng</Select.Option>
+              </> : <>
+                <Select.Option value="InStock">In Stock</Select.Option>
+                <Select.Option value="OutofStock">Out of Stock</Select.Option>
+              </>
+              }
+            </Select>
+
+            <Select
+              placeholder={vnMode ? "Trạng thái" : "State"}
+              value={searchParams.state || undefined}
+              defaultValue={undefined}
+              onChange={(value) => handleInputChange("state", value)}
+              className="w-48"
+              allowClear
+            >
+              {vnMode ? <>
                 <Select.Option value="Lock">Khoá</Select.Option>
                 <Select.Option value="Preorder">Đặt trước</Select.Option>
-                <Select.Option value="New Arrival">Sản phẩm mới</Select.Option>
+                <Select.Option value="NewArrival">Sản phẩm mới</Select.Option>
                 <Select.Option value="Normal">Bình thường</Select.Option>
               </> : <>
                 <Select.Option value="Lock">Lock</Select.Option>
                 <Select.Option value="Preorder">Preorder</Select.Option>
-                <Select.Option value="New Arrival">New Arrival</Select.Option>
+                <Select.Option value="NewArrival">New Arrival</Select.Option>
                 <Select.Option value="Normal">Normal</Select.Option>
               </>
               }
@@ -802,13 +735,13 @@ const ProductList = () => {
                 options={vnMode ? [
                   { value: "Lock", label: "Khoá" },
                   { value: "Preorder", label: "Đặt trước" },
-                  { value: "New Arrival", label: "Sản phẩm mới" },
+                  { value: "NewArrival", label: "Sản phẩm mới" },
                   { value: "Normal", label: "Bình thường" },
                 ] :
                   [
                     { value: "Lock", label: "Lock" },
                     { value: "Preorder", label: "Preorder" },
-                    { value: "New Arrival", label: "New Arrival" },
+                    { value: "NewArrival", label: "New Arrival" },
                     { value: "Normal", label: "Normal" },
                   ]}
                 onChange={(value) => setUpdateValue(value)}

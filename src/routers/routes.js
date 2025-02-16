@@ -38,8 +38,6 @@ import NotificationPage from "../pages/NotificationPage";
 import LogsPage from "../pages/LogsPage";
 import ManagerList from "../view/SuperAdmin/Manager/ManagerList";
 import AddManager from "../view/SuperAdmin/Manager/AddManager";
-import UserDetail from "../view/SuperAdmin/Manager/UserDetail";
-import UserDetailPage from "../pages/UserDetailPage";
 import OrderManagement from "../pages/OrderManagement";
 import OrderDetails from "../pages/OrderDetails";
 import DetailPage from "../pages/DetailPage";
@@ -75,7 +73,6 @@ export const userRoutes = [
   { path: "/address", Component: Address },
 ];
 
-// adminRoutes.js
 export const adminRoutes = [
   { path: "products", Component: ProductList },
   { path: "products/:productId", Component: ProductDetail },
@@ -93,7 +90,6 @@ export const adminRoutes = [
   { path: "add-brand", Component: Addbrand },
   { path: "orders", Component: OrderManagement },
   { path: "order-details/:orderId", Component: OrderDetails },
-  { path: "customers", Component: CustomerManagement },
   { path: "search-results", Component: SearchResults },
   { path: "changelogpage", Component: LogsPage },
   { path: "profile", Component: Profile },

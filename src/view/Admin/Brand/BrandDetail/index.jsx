@@ -12,7 +12,7 @@ import {
   updateBrand,
 } from "../../../../services/brandService";
 import BrandCategoryTable from "../../../../components/BrandCategoryTable";
-import { Bounce, toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 const { TextArea, Search } = Input;
 
@@ -54,9 +54,9 @@ const BrandDetail = () => {
     fetchBrandDetail();
   }, [dispatch, brandId, form]);
 
-    useEffect(() => {
-      dispatch(getAdminBrands());
-    }, [dispatch]);
+  useEffect(() => {
+    dispatch(getAdminBrands());
+  }, [dispatch]);
 
   const handleSubmit = (values) => {
     const sortedFileList = [...fileList].reverse();
@@ -85,7 +85,6 @@ const BrandDetail = () => {
       })
   };
 
-
   useEffect(() => {
     if (brandImage && brandImage.length > 0) {
       const newFileList = brandImage.map((img, index) => {
@@ -97,11 +96,11 @@ const BrandDetail = () => {
           originFileObj: file,
         };
       });
-      if (fileList.length === 0) {
-        setFileList(newFileList);
-      }
+      setFileList(newFileList);
+    } else {
+      setFileList([]);
     }
-  }, [brandImage, fileList.length]);
+  }, [brandImage]);
 
   const base64ToFile = (base64Data, filename) => {
     if (!base64Data || !base64Data.startsWith("data:")) {
@@ -190,19 +189,6 @@ const BrandDetail = () => {
 
   return (
     <>
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick={false}
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        transition={Bounce}
-      />
       <Spin spinning={loading}>
         <Tooltip title={vnMode ? 'Danh sách thương hiệu' : 'Brand list'}>
           <Button
@@ -342,18 +328,18 @@ const BrandDetail = () => {
           />
         </div>
         <Modal
-        title={vnMode ? "Xác nhận xóa" : "Confirm Deletion"}
-        open={visible}
-        onCancel={() => setVisible(false)}
-        onOk={handleDelete}
-        confirmLoading={loading}
-      >
-        {loading ? (
-          <Spin />
-        ) : (
-          <p>{vnMode ? "Bạn có chắc chắn muốn xóa các sản phẩm đã chọn không?" : "Are you sure you want to delete the selected products?"}</p>
-        )}
-      </Modal>
+          title={vnMode ? "Xác nhận xóa" : "Confirm Deletion"}
+          open={visible}
+          onCancel={() => setVisible(false)}
+          onOk={handleDelete}
+          confirmLoading={loading}
+        >
+          {loading ? (
+            <Spin />
+          ) : (
+            <p>{vnMode ? "Bạn có chắc chắn muốn xóa các sản phẩm đã chọn không?" : "Are you sure you want to delete the selected products?"}</p>
+          )}
+        </Modal>
       </Spin>
     </>
   );

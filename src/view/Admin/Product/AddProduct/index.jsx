@@ -8,7 +8,7 @@ import { suggestTagsFromText } from "../../../../utils/suggestTagsFromText";
 import ImageUpload from "../../../../components/ImageUpload";
 import { getAdminBrands } from "../../../../services/brandService";
 import { getAdminCategories } from "../../../../services/categoryService";
-import { Bounce, toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 
 const { TextArea } = Input;
@@ -134,7 +134,7 @@ const AddProduct = () => {
     const stateMapping = {
       1: "Lock",
       2: "Preorder",
-      3: "New Arrival",
+      3: "NewArrival",
       4: "Normal"
     };
 
@@ -170,19 +170,6 @@ const AddProduct = () => {
 
   return (
     <>
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick={false}
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        transition={Bounce}
-      />
       <Form form={form} layout="vertical" onFinish={handleSubmit} onValuesChange={(_, allValues) => handleTagBlur(allValues)}>
         <div className="flex gap-x-28">
           <div className="w-1/2 pl-3">

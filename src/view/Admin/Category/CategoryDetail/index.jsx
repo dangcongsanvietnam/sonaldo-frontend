@@ -11,7 +11,7 @@ import {
 } from "../../../../services/categoryService";
 import CategoryItemTable from "../../../../components/CategoryItemTable";
 import { AppstoreAddOutlined, DeleteOutlined, LeftOutlined } from "@ant-design/icons";
-import { Bounce, toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 const { TextArea, Search } = Input;
 
@@ -94,11 +94,11 @@ const CategoryDetail = () => {
           originFileObj: file,
         };
       });
-      if (fileList.length === 0) {
-        setFileList(newFileList);
-      }
+      setFileList(newFileList);
+    } else {
+      setFileList([]);
     }
-  }, [categoryImage, fileList.length]);
+  }, [categoryImage]);
 
   const base64ToFile = (base64Data, filename) => {
     if (!base64Data || !base64Data.startsWith("data:")) {
@@ -194,19 +194,6 @@ const CategoryDetail = () => {
 
   return (
     <>
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick={false}
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        transition={Bounce}
-      />
       <Spin spinning={loading}>
         <Tooltip title={vnMode ? 'Danh sách danh mục' : 'Category list'}>
           <Button

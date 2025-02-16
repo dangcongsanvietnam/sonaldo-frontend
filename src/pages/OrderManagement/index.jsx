@@ -20,7 +20,7 @@ import {
 import { font_data } from '../../utils/roboto';
 import debounce from 'lodash/debounce';
 import moment from 'moment';
-import { Bounce, toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 
 const { RangePicker } = DatePicker;
 
@@ -259,20 +259,6 @@ const OrderManagement = () => {
           <Spin indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />} />
         </div>
       )}
-
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick={false}
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        transition={Bounce}
-      />
 
       <div>
         <div className="flex items-center mb-4">

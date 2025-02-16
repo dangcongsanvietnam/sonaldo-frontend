@@ -409,24 +409,23 @@ const ManagerList = () => {
         setImportFile(null);
     };
 
-
     const handleExportPDF = () => {
         const doc = new jsPDF();
 
-        doc.addFileToVFS("Roboto-Regular.ttf", font_data); // RobotoRegular là biến được export từ file roboto.js
+        doc.addFileToVFS("Roboto-Regular.ttf", font_data);
         doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
         doc.setFont("Roboto");
-        let data = [];
+        let dataDoc = customers;
 
         if (tabKey === "1") {
-            data = customers
+            dataDoc = customers
         } else if (tabKey === "2") {
-            data = managers
+            dataDoc = managers
         } else if (tabKey === "3") {
-            data = users
+            dataDoc = users
         }
 
-        const tableData = data?.map((user) => [
+        const tableData = dataDoc?.map((user) => [
             user.userId,
             user.firstName + " " + user.lastName,
             user.email,
@@ -435,7 +434,6 @@ const ManagerList = () => {
             user.status
         ]);
 
-        // Tạo bảng với font Roboto
         doc.autoTable({
             head: [["Mã", "Tên", "Email", "Số điện thoại", "Ngày sinh", "Trạng thái"]],
             body: tableData,
@@ -444,7 +442,6 @@ const ManagerList = () => {
             },
         });
 
-        // Lưu file PDF
         doc.save("users.pdf");
     };
 
@@ -743,7 +740,7 @@ const ManagerList = () => {
             avatar: null,
         };
 
-        setLoading(true); // Bật loading
+        setLoading(true);
         await dispatch(createUser(updateValues))
             .unwrap()
             .then(() => {
@@ -980,7 +977,7 @@ const ManagerList = () => {
                     </Form.Item>
                     <div className="flex flex-col gap-2 ">
                         <label className="font-semibold" htmlFor="">
-                            Trạng thái
+                            {vnMode ? "Trạng thái" : "State"}
                         </label>
                         <Form.Item
                             name="googleLoginFlag"
@@ -994,15 +991,15 @@ const ManagerList = () => {
                                     }))
                                 }
                                 options={[
-                                    { value: true, label: vnMode ? "Khoá" : "Lock" },
-                                    { value: false, label: vnMode ? "Đặt trước" : "Preorder" },
+                                    { value: true, label: vnMode ? "Mở" : "Unlock" },
+                                    { value: false, label: vnMode ? "Khoá" : "Lock" },
                                 ]}
                             />
                         </Form.Item>
                     </div>
                     <div className="flex flex-col gap-2 ">
                         <label className="font-semibold" htmlFor="">
-                            Quyền
+                        {vnMode ? "Quyền" : "Role"}
                         </label>
                         <Form.Item
                             name="role"
@@ -1016,8 +1013,8 @@ const ManagerList = () => {
                                     }))
                                 }
                                 options={[
-                                    { value: "ROLE_MANAGER", label: vnMode ? "Khoá" : "Lock" },
-                                    { value: "ROLE_USER", label: vnMode ? "Đặt trước" : "Preorder" },
+                                    { value: "ROLE_MANAGER", label: vnMode ? "Quản lý" : "Manager" },
+                                    { value: "ROLE_USER", label: vnMode ? "Người dùng" : "User" },
                                 ]}
                             />
                         </Form.Item>
@@ -1025,7 +1022,7 @@ const ManagerList = () => {
                 </Form>
             </Modal>
             <Modal
-                title={vnMode ? "Thêm Người Dùng" : "Create User"}
+                title={vnMode ? "Dổi mật khẩu" : "Change Password"}
                 open={isChangePasswordModal}
                 onOk={handleChangePassword}
                 onCancel={() => setIsChangePasswordModal(false)}

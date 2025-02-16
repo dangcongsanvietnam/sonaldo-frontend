@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Button,
   Dropdown,
@@ -8,15 +8,17 @@ import {
   Tag,
   Spin,
 } from "antd";
-import { MoreOutlined, EyeOutlined, DeleteOutlined } from "@ant-design/icons";
+import Icon, { MoreOutlined, EyeOutlined, DeleteOutlined, CheckOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { deleteBrand, getAdminBrands } from "../../../../services/brandService";
-import { Bounce, toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
+import { useLoading } from "../../../../provider/LoadingProvider";
 
 const { Search } = Input;
 
 const BrandList = () => {
+  const { startLoading, stopLoading } = useLoading();
   const brands = useSelector((state) => state?.brand?.brands?.data);
   const dispatch = useDispatch();
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
@@ -27,6 +29,32 @@ const BrandList = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const { vnMode } = useOutletContext();
+  const condition = searchKeyword.length > 0;
+  const suffix = condition ? <Icon component={CheckOutlined} type="smile" className="hidden" /> : <span />;
+
+  const fetchData = async () => {
+    startLoading();
+    try {
+      await Promise.all([
+        dispatch(getAdminBrands())
+          .unwrap()
+          .then(async () => {
+            toast.success(vnMode ? "Tải dữ liệu thương hiệu thành công." : "Successfully loaded brand data.");
+            await stopLoading();
+          }).catch(() => {
+            stopLoading();
+          })
+      ]);
+    } catch (error) {
+      toast.error(vnMode ? "Tải dữ liệu thương hiệu thất bại." : "Failed to load brand data.");
+    } finally {
+      stopLoading();
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [dispatch]);
 
   const filteredData = brands
     ?.filter((brand) => {
@@ -75,7 +103,7 @@ const BrandList = () => {
       .unwrap()
       .then(() => {
         toast.success(vnMode ? "Xóa thương hiệu thành công" : "Delete brand successfully");
-        dispatch(getAdminBrands());
+        fetchData();
       })
       .catch(() => {
         toast.error(vnMode ? "Xóa thương hiệu thất bại" : "Failed to delete brand");
@@ -125,7 +153,8 @@ const BrandList = () => {
         vnMode ? "Xóa tất cả thương hiệu thành công!" : "Successfully deleted all brands!"
       );
       setSelectedRowKeys([]);
-      dispatch(getAdminBrands()).finally(() => setLoading(false));
+      fetchData();
+      setLoading(false);
     } catch (error) {
       toast.error(
         vnMode ? "Xóa một số thương hiệu thất bại!" : "Failed to delete some brands!"
@@ -196,19 +225,6 @@ const BrandList = () => {
   ];
   return (
     <>
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick={false}
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        transition={Bounce}
-      />
       <Spin spinning={loading}>
         <div className="flex justify-between">
           <div className="grid-cols-2 grid gap-4 gap-x-3">
@@ -226,6 +242,8 @@ const BrandList = () => {
               onSearch={(value) => setSearchKeyword(value)}
               className="w-auto"
               enterButton
+              allowClear
+              suffix={suffix}
             />
           </div>
         </div>
@@ -243,7 +261,7 @@ const BrandList = () => {
           />
         </div>
         <Modal
-          title={vnMode ? "Bạn có chắc chắn muốn xóa thương hiệu này không?": "Are you sure you want to delete the selected brand?"}
+          title={vnMode ? "Bạn có chắc chắn muốn xóa thương hiệu này không?" : "Are you sure you want to delete the selected brand?"}
           open={isModalVisible}
           onOk={handleConfirmDelete}
           onCancel={handleCancel}
@@ -252,8 +270,8 @@ const BrandList = () => {
           okType="danger"
         >
           <p>{vnMode
-              ? "Hành động này sẽ xóa vĩnh viễn thương hiệu đã chọn."
-              : "This action will permanently delete the selected brand."}</p>
+            ? "Hành động này sẽ xóa vĩnh viễn thương hiệu đã chọn."
+            : "This action will permanently delete the selected brand."}</p>
         </Modal>
         <Modal
           title={
