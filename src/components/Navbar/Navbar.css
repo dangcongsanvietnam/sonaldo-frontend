@@ -1,0 +1,12 @@
+a.py-7.px-3.inline-block.active {
+  border-bottom: 2px solid #49557e;
+}
+
+h1.py-7.hover\:text-blue-500.active {
+  border-bottom: 2px solid #49557e;
+}
+
+.custom-tag {
+  padding: 12px 20px; /* Tăng padding để thẻ cao hơn */
+  font-size: 16px; /* Tăng kích thước font */
+}

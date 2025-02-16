@@ -6,12 +6,15 @@ import productSlice from "./productSlice";
 import brandSlice from "./brandSlice";
 import categorySlice from "./categorySlice";
 import changelogSlice from "./changelogSlice";
-import orderSlice from './orderSlice';
-import reviewSlice from './reviewSlice';
-import questionSlice from './questionSlice';
-import feedbackSlice from './feedbackSlice';
-import emailSlice from './emailSlice';
-import informationSlice from './informationSlice';
+import orderSlice from "./orderSlice";
+import reviewSlice from "./reviewSlice";
+import questionSlice from "./questionSlice";
+import feedbackSlice from "./feedbackSlice";
+import emailSlice from "./emailSlice";
+import informationSlice from "./informationSlice";
+import cartSlice from "./cartSlice";
+import searchSlice from "./searchSlice";
+
 
 const reducers = combineReducers({
   auth: authSlice,
@@ -27,6 +30,10 @@ const reducers = combineReducers({
   feedbacks: feedbackSlice,
   email: emailSlice,
   information: informationSlice,
+  cart: cartSlice,
+  changelog: changelogSlice,
+  search: searchSlice,
+  // order: orderSlice,
 });
 
 export default reducers;

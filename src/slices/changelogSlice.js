@@ -3,7 +3,7 @@ import Cookies from "js-cookie";
 import { getLogs } from "../services/changelogService";
 
 const changelogSlice = createSlice({
-  name: "auth",
+  name: "changelog",
   initialState: {
     loading: "idle",
     data: [],

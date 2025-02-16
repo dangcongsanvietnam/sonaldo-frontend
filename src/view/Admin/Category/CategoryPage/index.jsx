@@ -10,48 +10,58 @@ import { Card, Col, Row } from "antd";
 const CategoryPage = () => {
   const dispatch = useDispatch();
   const { categoryId } = useParams();
-  console.log("ne", categoryId);
 
   useEffect(() => {
     dispatch(getAdminCategories());
     dispatch(getCategoryDetail(categoryId));
-  }, [dispatch]);
+  }, [dispatch, categoryId]);
+
   const navigate = useNavigate();
   const category = useSelector((state) => state?.category?.categories?.data);
 
-  console.log(555, category);
-
-  const handleClick = () => {
-    navigate(`/public/category/${categoryId}`); // Điều hướng tới trang chi tiết của sản phẩm
+  const handleClick = (id) => {
+    navigate(`/category/${id}`); // Điều hướng tới trang chi tiết của sản phẩm
   };
 
   return (
-    <>
-      <Row gutter={16} style={{ maxWidth: "100%", overflowX: "hidden" }}>
+    <div className="p-4 text-center">
+      {/* Bọc bằng div */}
+      <Row
+        gutter={[24, 24]} // Khoảng cách giữa các Card
+        justify="center" // Canh giữa nội dung trong Row
+        wrap // Đảm bảo các item không bị tràn ra ngoài khi không gian hạn chế
+        className="overflow-hidden" // Ngăn chặn thanh scroll ngang
+      >
         {category?.map((item) => (
-          <Col span={8} key={item.id}>
+          <Col
+            key={item.id}
+            xs={24} // Màn hình nhỏ: 1 Card mỗi hàng
+            sm={12} // Màn hình vừa: 2 Card mỗi hàng
+            md={8} // Màn hình lớn: 3 Card mỗi hàng
+            className="flex justify-center" // Căn giữa Card trong cột
+          >
             <Card
               hoverable
-              bordered={true}
-              onClick={() => handleClick()}
-              style={{
-                width: "100%", // Điều chỉnh để Card chiếm hết không gian
-                maxWidth: 240, // Đặt chiều rộng tối đa cho Card
-              }}
+              bordered
+              onClick={() => handleClick(item.categoryId)}
+              className="w-60 text-center" // Chiều rộng cố định cho Card và canh giữa nội dung trong Card
               cover={
                 <img
-                  alt="example"
-                  style={{ width: "100%", objectFit: "cover" }} // Đảm bảo hình ảnh không vượt quá giới hạn
-                  src={`data:image/jpeg;base64,${item?.images[0].file.data}`}
+                  alt={item.categoryName}
+                  className="h-36 object-cover" // Ảnh đẹp và vừa khung
+                  src={`data:image/jpeg;base64,${item?.imageFile?.file?.data}`}
                 />
               }
             >
-              {item.name}
+              <div className="font-bold">{item.categoryName}</div>
+              <div className="text-gray-500">
+                {item.categoryItems?.length} Category items
+              </div>
             </Card>
           </Col>
         ))}
       </Row>
-    </>
+    </div>
   );
 };
 

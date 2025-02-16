@@ -27,7 +27,9 @@ export const getProductDetail = createAsyncThunk(
 export const getProductsByCategoryItem = createAsyncThunk(
   "product/getProductsByCategoryItem",
   async (categoryItemId) => {
-    const res = await BASE_URL.get(`api/v1/products/get-all-by-categoryItem/${categoryItemId}`);
+    const res = await BASE_URL.get(
+      `api/v1/products/get-all-by-categoryItem/${categoryItemId}`
+    );
     return res;
   }
 );
@@ -35,7 +37,9 @@ export const getProductsByCategoryItem = createAsyncThunk(
 export const getProductsByBrandCategory = createAsyncThunk(
   "product/getProductsByBrandCategory",
   async (brandCategoryId) => {
-    const res = await BASE_URL.get(`api/v1/products/get-all-by-brandCategory/${brandCategoryId}`);
+    const res = await BASE_URL.get(
+      `api/v1/products/get-all-by-brandCategory/${brandCategoryId}`
+    );
     return res;
   }
 );
@@ -144,7 +148,7 @@ export const searchAdminProducts = createAsyncThunk(
 
     const config = {
       headers: {
-        "Authorization": `Bearer ${token}`, // Thêm token vào header Authorization
+        Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
       },
       params: {
         productName: params.productName || "",
@@ -157,7 +161,10 @@ export const searchAdminProducts = createAsyncThunk(
     };
 
     try {
-      const res = await BASE_URL.get("api/v1/admin/products/search-product", config);
+      const res = await BASE_URL.get(
+        "api/v1/admin/products/search-product",
+        config
+      );
       return res;
     } catch (error) {
       console.error("Lỗi khi tìm kiếm sản phẩm:", error);
@@ -173,18 +180,22 @@ export const updateProducts = createAsyncThunk(
 
     const config = {
       headers: {
-        "Authorization": `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
       },
       params: {
         object: params.object || "",
         value: params.value || "",
-        productIds: params.productIds || ""
+        productIds: params.productIds || "",
       },
     };
 
     try {
-      const res = await BASE_URL.put("api/v1/admin/products/single-update", {},  config);
-      console.log(res)
+      const res = await BASE_URL.put(
+        "api/v1/admin/products/single-update",
+        {},
+        config
+      );
+      console.log(res);
       return res;
     } catch (error) {
       console.error("Lỗi khi cập nhật sản phẩm:", error);

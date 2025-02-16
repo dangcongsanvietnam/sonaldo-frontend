@@ -1,7 +1,13 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { deleteOrder, getOrderDetail, searchOrders, updateOrderStatus } from "../services/orderService";
+import {
+  deleteOrder,
+  getOrderDetail,
+  searchOrders,
+  updateOrderStatus,
+} from "../services/orderService";
+import { createOrder, getOrder } from "../services/orderService";
 
-const userSlice = createSlice({
+const orderSlice = createSlice({
   name: "user",
   initialState: {
     loading: "idle",
@@ -64,7 +70,35 @@ const userSlice = createSlice({
       state.loading = "Failed";
       state.error = action.error;
     });
+
+    builder.addCase(createOrder.pending, (state) => {
+      state.loading = "pending"; // API đang xử lý
+    });
+
+    builder.addCase(createOrder.fulfilled, (state, action) => {
+      state.loading = "success"; // Cập nhật trạng thái thành công
+    });
+
+    builder.addCase(createOrder.rejected, (state, action) => {
+      state.loading = "failed"; // Cập nhật trạng thái thất bại
+      state.error = action.payload || action.error.message; // Lưu lỗi
+    });
+
+    builder.addCase(getOrder.pending, (state) => {
+      state.loading = "pending"; // API đang xử lý
+    });
+
+    builder.addCase(getOrder.fulfilled, (state, action) => {
+      state.data = action.payload; // Lưu dữ liệu trả về khi thành công
+      state.loading = "success"; // Cập nhật trạng thái thành công
+    });
+
+    builder.addCase(getOrder.rejected, (state, action) => {
+      state.loading = "failed"; // Cập nhật trạng thái thất bại
+      state.error = action.payload || action.error.message; // Lưu lỗi
+    });
   },
 });
 
-export default userSlice.reducer;
+// Export reducer để tích hợp vào store
+export default orderSlice.reducer;

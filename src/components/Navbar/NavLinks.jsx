@@ -4,7 +4,7 @@ import { links } from "./Mylinks";
 import { useDispatch, useSelector } from "react-redux";
 import { getAdminCategories } from "../../services/categoryService";
 
-const NavLinks = ({ categoryList }) => {
+const NavLinks = ({ categoryList, menu, setMenu }) => {
   const [heading, setHeading] = useState("");
   const [subHeading, setSubHeading] = useState("");
   const dispatch = useDispatch();
@@ -15,9 +15,9 @@ const NavLinks = ({ categoryList }) => {
     {
       name: "Sản phẩm theo mục",
       submenu: true,
-      link: "/public/category",
+      link: "/category",
       sublinks: categoryList?.map((item) => ({
-        head: item.name, // Lấy item.name từ categoryList làm head
+        head: item?.categoryName, // Lấy item.name từ categoryList làm head
         sublink: item?.categoryItems?.map((catItem) => ({
           name: catItem?.name, // Lấy item.categoryItems.name cho sublink
           link: `/public/category/${catItem?.categoryItemId}`, // Bạn có thể thay đường link thực tế nếu có
@@ -35,8 +35,11 @@ const NavLinks = ({ categoryList }) => {
               to={link?.link} // Đường link sẽ dẫn tới trang "/products"
             >
               <h1
-                className="py-7 hover:text-blue-500"
+                className={`py-7 hover:text-blue-500 ${
+                  menu === "product" ? "active" : ""
+                }`}
                 onClick={() => {
+                  setMenu("product");
                   heading !== link.name
                     ? setHeading(link.name)
                     : setHeading("");

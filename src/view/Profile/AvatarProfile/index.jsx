@@ -1,13 +1,13 @@
-import { UploadOutlined } from '@ant-design/icons';
+import { UploadOutlined } from "@ant-design/icons";
 import { Button, Upload } from "antd";
 import ImgCrop from "antd-img-crop";
 import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { getUserInfo, updateUserInfo } from "../../../services/userService";
 import { toast } from "react-toastify";
-import './index.css';
+import "./index.css";
 import Cookies from "js-cookie";
-import { useLoading } from '../../../provider/LoadingProvider';
+import { useLoading } from "../../../provider/LoadingProvider";
 
 const AvatarProfile = ({ user, vnMode }) => {
   const { startLoading, stopLoading } = useLoading();
@@ -52,11 +52,17 @@ const AvatarProfile = ({ user, vnMode }) => {
                   stopLoading();
                   setLoading(false);
                 });
-              toast.success(vnMode ? "Cập nhật avatar thành công!" : "Avatar updated successfully!");
+              toast.success(
+                vnMode
+                  ? "Cập nhật avatar thành công!"
+                  : "Avatar updated successfully!"
+              );
             })
             .catch(() => {
               setLoading(false);
-              toast.error(vnMode ? "Cập nhật avatar thất bại!" : "Avatar update failed!");
+              toast.error(
+                vnMode ? "Cập nhật avatar thất bại!" : "Avatar update failed!"
+              );
             });
         };
         img.src = URL.createObjectURL(latestFile.originFileObj);
@@ -105,7 +111,7 @@ const AvatarProfile = ({ user, vnMode }) => {
           className="w-44"
           disabled={loading}
         >
-          {vnMode ? 'Bấm để tải ảnh lên' : 'Click to Upload'}
+          {vnMode ? "Bấm để tải ảnh lên" : "Click to Upload"}
         </Button>
       </Upload>
     </ImgCrop>

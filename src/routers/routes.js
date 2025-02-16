@@ -38,8 +38,6 @@ import NotificationPage from "../pages/NotificationPage";
 import LogsPage from "../pages/LogsPage";
 import ManagerList from "../view/SuperAdmin/Manager/ManagerList";
 import AddManager from "../view/SuperAdmin/Manager/AddManager";
-import UserDetail from "../view/SuperAdmin/Manager/UserDetail";
-import UserDetailPage from "../pages/UserDetailPage";
 import OrderManagement from "../pages/OrderManagement";
 import OrderDetails from "../pages/OrderDetails";
 import DetailPage from "../pages/DetailPage";
@@ -48,6 +46,9 @@ import ClearDataPage from "../pages/ClearDataPage";
 import FeedbackManagementPage from "../pages/FeedbackManagementPage";
 import EmailPage from "../pages/EmailPage";
 import InformationPage from "../pages/Information";
+import UserOrder from "./../view/Admin/Order";
+import Checkout from "../view/Checkout";
+import Payment from "../view/Payment";
 
 // publicRoutes.js
 export const publicRoutes = [
@@ -73,6 +74,9 @@ export const userRoutes = [
   { path: "/profile", Component: Profile },
   { path: "/change-password", Component: ChangePassword },
   { path: "/address", Component: Address },
+  { path: "/orders", Component: UserOrder },
+  { path: "/checkout", Component: Checkout },
+  { path: "/orders/:orderId", Component: Payment },
 ];
 
 // adminRoutes.js
