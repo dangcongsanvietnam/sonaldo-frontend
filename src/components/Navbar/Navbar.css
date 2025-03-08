@@ -10,3 +10,18 @@ h1.py-7.hover\:text-blue-500.active {
   padding: 12px 20px; /* Tăng padding để thẻ cao hơn */
   font-size: 16px; /* Tăng kích thước font */
 }
+
+.ant-drawer .ant-drawer-body {
+  padding: 14px !important;
+}
+
+.active-css {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ant-btn-variant-outlined:hover {
+  background-color: #015AD2 !important;
+  color: white !important;
+  border-color: #015AD2 !important;
+}

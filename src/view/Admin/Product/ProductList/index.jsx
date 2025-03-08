@@ -66,6 +66,7 @@ const ProductList = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isModalDeleteVisible, setIsModalDeleteVisible] = useState(false);
   const [isModalImportVisible, setIsModalImportVisible] = useState(false);
+  const [buttonDeleteLoading, setButtonDeleteLoading] = useState(false);
   const [fileToImport, setFileToImport] = useState(null);
 
   const [selectedProductId, setSelectedProductId] = useState(null);
@@ -273,6 +274,7 @@ const ProductList = () => {
   };
 
   const handleDeleteSelectedProducts = async () => {
+    setButtonDeleteLoading(true);
     try {
       for (const productId of selectedRowKeys) {
         await dispatch(deleteProduct(productId)).unwrap();
@@ -284,14 +286,17 @@ const ProductList = () => {
       );
       setSelectedRowKeys([]);
       getProductData();
+      setButtonDeleteLoading(false);
 
       setIsModalVisible(false);
     } catch (error) {
+      console.log(error)
       toast.error(
         vnMode
-          ? "Xóa một số sản phẩm thất bại"
+          ? "Xóa một số sản phẩm thất bại."
           : "Failed to delete some products"
       );
+      setButtonDeleteLoading(false);
     }
   };
 
@@ -636,14 +641,13 @@ const ProductList = () => {
             </Button>
           </div>
 
-          {/* Nút hành động */}
           <div className="action-buttons flex gap-3">
             <Button
               type="primary"
               icon={<DeleteOutlined />}
               danger
               onClick={() => setIsModalVisible(true)}
-              disabled={selectedRowKeys.length === 0} // Chỉ bật khi có sản phẩm được chọn
+              disabled={selectedRowKeys.length === 0}
             >
               {vnMode ? "Xoá các sản phẩm đã chọn" : "Delete all selected products"}
             </Button>
@@ -791,6 +795,7 @@ const ProductList = () => {
           onCancel={() => setIsModalVisible(false)}
           okText={vnMode ? "Xác nhận" : "Confirm"}
           cancelText={vnMode ? "Hủy bỏ" : "Cancel"}
+          okButtonProps={{ loading: buttonDeleteLoading }}
         >
           <p>
             {vnMode

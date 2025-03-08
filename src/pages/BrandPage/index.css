@@ -1,0 +1,45 @@
+.slick-prev, .slick-next {
+    z-index: 10; /* Make sure they are above the carousel */
+    width: 40px;
+    height: 40px;
+    background-color: rgba(0, 0, 0, 0.6); /* Add background color */
+    border-radius: 50%;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Position the arrows properly */
+.slick-prev {
+    left: -50px;
+}
+
+.slick-next {
+    right: -50px;
+}
+
+/* Style the arrow icons inside */
+.slick-prev::before, .slick-next::before {
+    color: white; /* Make sure the arrow icons are visible */
+    font-size: 20px;
+}
+
+.ant-breadcrumb-separator {
+    font-size: 1.1rem;
+}
+
+.slick-track {
+    height: '550px' !important;
+}
+
+.slick-list {
+    height: '550px' !important;
+}
+
+.slick-slider {
+    height: '550px' !important;
+}
+
+.ant-carousel {
+    height: '550px' !important;
+}

@@ -511,8 +511,6 @@ const UserOrder = () => {
       });
   };
 
-  console.log("srk", selectedRowKeys);
-
   const columns = [
     {
       title: "Tên sản phẩm",
@@ -596,9 +594,8 @@ const UserOrder = () => {
   };
 
   return (
-    <div className="p-4">
-      <ToastContainer />
-      <h1 className="text-xl font-bold mb-4">Giỏ hàng của bạn</h1>
+    <div className="relative h-full">
+      <div className="font-bold text-2xl mb-5">Order</div>
       <Table
         rowSelection={{
           selectedRowKeys,
@@ -610,8 +607,10 @@ const UserOrder = () => {
         pagination={false}
         className="shadow-md border border-gray-200 rounded-lg"
       />
-      {/* Thanh cố định */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-md flex items-center justify-between p-4">
+      
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-md flex items-center justify-between p-4" style={{
+        zIndex: "9000"
+      }}>
         <div className="flex items-center space-x-4">
           <Checkbox
             onChange={(e) =>

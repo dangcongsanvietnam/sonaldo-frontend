@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { Form, Input, Button, message } from "antd";
+import { Form, Input, Button } from "antd";
 import BASE_URL from "../../../api";
 import { useNavigate } from "react-router-dom";
-import { Bounce, toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 const ChangePasswordForm = ({ token, vnMode }) => {
   const [form] = Form.useForm();
@@ -38,7 +38,7 @@ const ChangePasswordForm = ({ token, vnMode }) => {
           setButtonLoading(false)
         })
         .catch(() => {
-          toast.error( vnMode ? "Đổi mật khẩu thất bại" : "Failed to change password");
+          toast.error(vnMode ? "Đổi mật khẩu thất bại" : "Failed to change password");
           setButtonLoading(false)
         });
     } else {
@@ -57,19 +57,6 @@ const ChangePasswordForm = ({ token, vnMode }) => {
 
   return (
     <>
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick={false}
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        transition={Bounce}
-      />
       <Form
         form={form}
         name="change_password"

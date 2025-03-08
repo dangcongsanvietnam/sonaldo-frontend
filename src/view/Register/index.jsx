@@ -2,16 +2,17 @@ import { Button, DatePicker, Form, Input, notification, Upload } from "antd";
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import BASE_URL from "../../api";
-import { EyeInvisibleOutlined, EyeOutlined } from "@ant-design/icons";
+import { ArrowLeftOutlined, EyeInvisibleOutlined, EyeOutlined, GoogleOutlined } from "@ant-design/icons";
 import {
   emailValidator,
   passwordValidator,
   phoneNumberValidator,
 } from "../../utils/validataData";
 import moment from "moment";
-// It's recommended to set locale in entry file globaly.
-import defaultAvatar from "../../assets/download.png"; // Đường dẫn tới ảnh mặc định
+import defaultAvatar from "../../assets/download.png";
 import AvatarProfile from "../Profile/AvatarProfile";
+import './index.css';
+import Logo from '../../assets/logo.png'
 
 export default function Register() {
   const navigate = useNavigate();
@@ -30,6 +31,7 @@ export default function Register() {
 
   const [form] = Form.useForm();
   const [visible, setVisible] = useState(false);
+  const [step, setStep] = useState(1);
 
   const togglePasswordVisibility = () => {
     setVisible(!visible);
@@ -126,141 +128,109 @@ export default function Register() {
     }
   };
 
+  const handleNext = async () => {
+    try {
+      await form.validateFields(["firstName", "lastName", "phoneNumber", "birthday"]);
+      setStep(2);
+    } catch (error) {
+      console.log("Validation failed:", error);
+    }
+  };
+
+  const handleBack = () => setStep(1);
+
   const isRegister = true;
 
   return (
-    <>
-      <div className="py-3 flex items-center justify-center">
-        <Form
-          form={form}
-          onSubmit={handleSubmit}
-          onValuesChange={handleChange}
-          className="w-[400px] border px-6 py-5 rounded shadow-md flex flex-col gap-3"
-        >
-          <h3 className="text-center font-bold uppercase text-[20px]">
-            Đăng ký tài khoản
-          </h3>
-          <div className="flex flex-col gap-2 ">
-            <label className="font-semibold" htmlFor="">
-              Họ
-            </label>
-            <Form.Item
-              name="firstName"
-              rules={[{ required: true, message: "Họ là bắt buộc" }]}
-            >
-              <Input className="h-9" />
-            </Form.Item>
-          </div>
-          <div className="flex flex-col gap-2 ">
-            <label className="font-semibold" htmlFor="">
-              Tên
-            </label>
-            <Form.Item
-              name="lastName"
-              rules={[{ required: true, message: "Tên là bắt buộc" }]}
-            >
-              <Input className="h-9" />
-            </Form.Item>
-          </div>
-          <div className="flex flex-col gap-2">
-            <label className="font-semibold" htmlFor="phoneNumber">
-              Số điện thoại
-            </label>
-            <Form.Item
-              name="phoneNumber"
-              rules={[{ required: true, validator: phoneNumberValidator }]}
-            >
-              <Input className="h-9" addonBefore="+84" />
-            </Form.Item>
-          </div>
-          <div className="flex flex-col gap-2 ">
-            <label className="font-semibold" htmlFor="">
-              Ngày sinh
-            </label>
-            <Form.Item
-              name="birthday"
-              rules={[{ required: true, message: "Ngày sinh là bắt buộc" }]}
-            >
-              <DatePicker onChange={handleDateChange} />
-            </Form.Item>
-          </div>
+    <div className="relative h-screen bg-gray-100">
+      <div className="absolute inset-0 bg-gray-200 clip-diagonal"></div>
+      <div className="relative flex flex-col items-center justify-center h-full">
+        <div className="absolute left-[250px] top-10 text-3xl cursor-pointer text-[#006CB7] hover:text-black" onClick={() => navigate("/")}><ArrowLeftOutlined /></div>
+        <div className="justify-center z-50">
+          <div className="w-full pb-2 text-center">
+            <img src={Logo} alt="LEGO" className="h-20 mx-auto" />
+            <h3 className="text-xl font-bold mb-4">Create your adult LEGO account</h3>
 
-          <div className="flex flex-col gap-2">
-            <label className="font-semibold" htmlFor="">
-              Ảnh đại diện
-            </label>
-            <Form.Item name="avatar" valuePropName="fileList">
-              <AvatarProfile
-                user={user}
-                isRegister={isRegister}
-                setAvatar={setAvatar}
-              />
-            </Form.Item>
-          </div>
+            <div className="flex justify-center gap-4 mb-4">
+              <Button icon={<GoogleOutlined />} shape="circle" size="large" />
+            </div>
 
-          <div className="flex flex-col gap-2 ">
-            <label className="font-semibold" htmlFor="">
-              Email
-            </label>
-            <Form.Item
-              name="email"
-              rules={[
-                {
-                  required: true,
-                  validator: emailValidator,
-                },
-              ]}
-            >
-              <Input className="h-9" />
-            </Form.Item>
+            <p className="text-gray-600">Already have an account? <Link to="/login" className="text-blue-500">Sign in</Link></p>
           </div>
+        </div>
 
-          <div className="flex flex-col gap-2">
-            <label className="font-semibold" htmlFor="password">
-              Mật khẩu
-            </label>
-            <Form.Item
-              name="password"
-              rules={[
-                {
-                  required: true,
-                  validator: passwordValidator,
-                },
-              ]}
-            >
-              <Input
-                type={visible ? "text" : "password"}
-                className="h-9"
-                suffix={
-                  <span
-                    onClick={togglePasswordVisibility}
-                    style={{ cursor: "pointer" }}
-                  >
-                    {visible ? <EyeOutlined /> : <EyeInvisibleOutlined />}
-                  </span>
-                }
-              />
-            </Form.Item>
-            {/* Lỗi sẽ tự động được hiển thị bởi Ant Design */}
-          </div>
+        <div className="flex items-center justify-center">
+          <Form
+            form={form}
+            onFinish={handleSubmit}
+            className="w-[800px] border px-6 py-5 rounded shadow-md bg-white"
+          >
+            {step === 1 ? (
+              <>
+                <h2 className="text-center text-lg font-bold mb-4">Step 1: Personal Details</h2>
+                <div className="grid grid-cols-2 gap-3">
+                  <Form.Item name="firstName" rules={[{ required: true, message: "Họ là bắt buộc" }]}>
+                    <Input placeholder="Họ" className="h-9" />
+                  </Form.Item>
+                  <Form.Item name="lastName" rules={[{ required: true, message: "Tên là bắt buộc" }]}>
+                    <Input placeholder="Tên" className="h-9" />
+                  </Form.Item>
+                </div>
+                <div className="flex space-x-3 justify-center">
+                  <Form.Item name="phoneNumber" rules={[{ required: true, message: "Số điện thoại là bắt buộc" }]}>
+                    <Input className="h-9" addonBefore="+84" placeholder="Số điện thoại" />
+                  </Form.Item>
 
-          <div>
-            <Button
-              onClick={handleSubmit}
-              htmlType="submit"
-              type="primary"
-              className="w-full h-9"
-              loading={loading}
-            >
-              Đăng ký
-            </Button>
-          </div>
-          <div className="text-center">
-            <span>Bạn đã có tài khoản? </span>
-            <Link to="/login">Đăng nhập</Link>
-          </div>
-        </Form>
+                  <Form.Item name="birthday" rules={[{ required: true, message: "Ngày sinh là bắt buộc" }]}>
+                    <DatePicker className="w-full" placeholder="Chọn ngày sinh" />
+                  </Form.Item>
+                  <Form.Item name="avatar" valuePropName="fileList">
+                    <AvatarProfile
+                      user={user}
+                      isRegister={isRegister}
+                      setAvatar={setAvatar}
+                    />
+                  </Form.Item>
+                </div>
+
+                <div className="text-center">
+                  <Button type="primary" className="w-80 py-6 !rounded-full text-lg font-bold mt-2" onClick={handleNext}>
+                    Continue
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="text-center text-lg font-bold mb-4">Step 2: Account Details</h2>
+
+                <Form.Item name="email" rules={[{ required: true, type: "email", message: "Email không hợp lệ" }]}>
+                  <Input placeholder="Email" className="h-9" />
+                </Form.Item>
+
+                <Form.Item name="password" rules={[{ required: true, message: "Mật khẩu là bắt buộc" }]}>
+                  <Input
+                    type={visible ? "text" : "password"}
+                    className="h-9"
+                    placeholder="Mật khẩu"
+                    suffix={
+                      <span onClick={togglePasswordVisibility} style={{ cursor: "pointer" }}>
+                        {visible ? <EyeOutlined /> : <EyeInvisibleOutlined />}
+                      </span>
+                    }
+                  />
+                </Form.Item>
+
+                <div className="flex justify-between">
+                  <Button onClick={handleBack}>Back</Button>
+                  <Button type="primary" htmlType="submit" loading={loading}>
+                    Register
+                  </Button>
+                </div>
+              </>
+            )}
+          </Form>
+        </div>
       </div>
-    </>
+    </div>
   );
 }

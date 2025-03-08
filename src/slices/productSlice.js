@@ -4,9 +4,11 @@ import {
   deleteProduct,
   getAdminProducts,
   getAllProduct,
+  getHotProducts,
   getProductDetail,
   getProductsByBrandCategory,
   getProductsByCategoryItem,
+  getRecommendProducts,
   searchAdminProducts,
   searchProducts,
   updateProduct,
@@ -24,7 +26,9 @@ const productSlice = createSlice({
     suggestProducts: [],
     tags: [],
     customerProduct: [],
-    categoryItemProducts: []
+    categoryItemProducts: [],
+    hotProducts: [],
+    recommend: []
   },
   reducers: {},
   extraReducers: (builder) => {
@@ -41,6 +45,35 @@ const productSlice = createSlice({
       state.loading = "Failed";
       state.error = action.error;
     });
+
+    builder.addCase(getHotProducts.pending, (state) => {
+      state.loading = "pending";
+    });
+
+    builder.addCase(getHotProducts.fulfilled, (state, action) => {
+      state.hotProducts = action.payload;
+      state.loading = "success";
+    });
+
+    builder.addCase(getHotProducts.rejected, (state, action) => {
+      state.loading = "Failed";
+      state.error = action.error;
+    });
+
+    builder.addCase(getRecommendProducts.pending, (state) => {
+      state.loading = "pending";
+    });
+
+    builder.addCase(getRecommendProducts.fulfilled, (state, action) => {
+      state.recommend = action.payload.data;
+      state.loading = "success";
+    });
+
+    builder.addCase(getRecommendProducts.rejected, (state, action) => {
+      state.loading = "Failed";
+      state.error = action.error;
+    });
+
     builder.addCase(searchAdminProducts.pending, (state) => {
       state.loading = "pending";
     });

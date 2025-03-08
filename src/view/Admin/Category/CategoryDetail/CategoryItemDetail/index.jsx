@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Form, Input, Button, Row, Col, Spin, Modal, Tooltip } from "antd";
+import { Form, Input, Button, Row, Col, Spin, Modal, Tooltip, ColorPicker } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import ImageUpload from "../../../../../components/ImageUpload";
@@ -75,6 +75,10 @@ const CategoryItemDetail = () => {
       files: sortedFileList.map((file) => file?.originFileObj),
       categoryId: categoryId,
       categoryItemId: categoryItemId,
+      color:
+        typeof values?.color === "string"
+          ? values.color
+          : values?.color?.toHexString() || "#000000",
     };
 
     if (fileList.length < 1) {
@@ -126,7 +130,7 @@ const CategoryItemDetail = () => {
 
       await dispatch(removeProductsFromCategoryItem(updatedProducts)).unwrap();
 
-      await fetchProducts(); // Ensure fetch completes before setting loading to false
+      await fetchProducts();
       toast.success(vnMode ? "Xóa tất cả sản phẩm thành công" : "Removed all selected products successfully");
       setSelectedRowKeys([]);
     } catch (error) {
@@ -199,6 +203,7 @@ const CategoryItemDetail = () => {
           initialValues={{
             categoryItemName: categoryItemDetail?.name || "",
             description: categoryItemDetail?.description || "",
+            color: categoryItemDetail?.color || ""
           }}
           onFinish={handleSubmit}
         >
@@ -236,6 +241,12 @@ const CategoryItemDetail = () => {
                   fileList={fileList}
                   setFileList={setFileList}
                 />
+              </Form.Item>
+              <Form.Item
+                label={vnMode ? "Màu nền" : "Background Color"}
+                name="color"
+              >
+                <ColorPicker format="hex" />
               </Form.Item>
             </Col>
           </Row>

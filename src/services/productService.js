@@ -16,10 +16,33 @@ export const getAdminProducts = createAsyncThunk(
   }
 );
 
+export const getHotProducts = createAsyncThunk(
+  "product/getHotProducts",
+  async ({ page, limit }) => {
+    const res = await BASE_URL.get(`api/v1/products/hot`, {
+      params: {
+        page: page || 0,
+        limit: limit || 10,
+      },
+    });
+
+    return res.data;
+  }
+);
+
 export const getProductDetail = createAsyncThunk(
   "product/getProductDetail",
   async (productId) => {
     const res = await BASE_URL.get(`api/v1/products/${productId}`);
+    return res;
+  }
+);
+
+export const getRecommendProducts = createAsyncThunk(
+  "product/getRecommendProducts",
+  async (productId) => {
+    const res = await BASE_URL.get(`api/v1/products/suggest/${productId}`);
+    console.log(res)
     return res;
   }
 );
@@ -95,13 +118,12 @@ export const updateProduct = createAsyncThunk(
 export const deleteProduct = createAsyncThunk(
   "product/deleteProduct",
   async (productId) => {
-    // Lấy token từ cookie
-    const token = Cookies.get("token"); // Hoặc tên khác tùy thuộc vào cách bạn lưu trữ token
+    const token = Cookies.get("token");
 
     const config = {
       headers: {
         "Content-Type": "multipart/form-data",
-        Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+        Authorization: `Bearer ${token}`,
       },
     };
 
@@ -110,7 +132,7 @@ export const deleteProduct = createAsyncThunk(
         `api/v1/admin/products/${productId}`,
         config
       );
-      return res; // Trả về dữ liệu từ res
+      return res;
     } catch (error) {
       throw error;
     }
@@ -195,10 +217,8 @@ export const updateProducts = createAsyncThunk(
         {},
         config
       );
-      console.log(res);
       return res;
     } catch (error) {
-      console.error("Lỗi khi cập nhật sản phẩm:", error);
       throw error;
     }
   }

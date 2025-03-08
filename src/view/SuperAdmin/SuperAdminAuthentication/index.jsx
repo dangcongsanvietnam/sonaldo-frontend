@@ -710,9 +710,7 @@ const SuperAdminAuthentication = () => {
     disabled: true,
     label: (
       <div className={`w-64 ${darkMode ? "bg-[#00162A]" : "bg-white"} shadow-lg rounded-lg p-4 cursor-default`}>
-        {/* Header */}
         <div className="flex flex-col items-center text-center">
-          {/* Avatar */}
           <div
             className={`rounded-full border-4 transition-all duration-300 ${darkMode ?
               "hover:border-[#5C6F8F] border-[#334255]" :
@@ -877,6 +875,7 @@ const SuperAdminAuthentication = () => {
               children: item.children?.map((child) => ({
                 ...child,
                 label: <div className="" style={{ paddingLeft: collapsed ? "24px" : "40px" }} onClick={child.onClick}>{child.label}</div>,
+                className: "text-center"
               })),
             }))}
           />

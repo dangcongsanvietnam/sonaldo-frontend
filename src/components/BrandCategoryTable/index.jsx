@@ -1,32 +1,19 @@
-import React from "react";
-import {
-  Button,
-  Dropdown,
-  Input,
-  notification,
-  Modal,
-  Table,
-} from "antd";
-import {
-  MoreOutlined,
-  EyeOutlined,
-  DeleteOutlined,
-} from "@ant-design/icons";
+import React, { useState } from "react";
+import { Button, Dropdown, Modal, Table } from "antd";
+import { MoreOutlined, EyeOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { deleteBrandCategory, getBrandDetail } from "../../services/brandService";
+import { toast } from "react-toastify";
 
-import {
-  deleteBrandCategory
-} from "../../services/brandService";
-
-const { Search } = Input;
-
-const BrandCategoryTable = ({ brandId, selectedRowKeys, setSelectedRowKeys, searchKeyword }) => {
-  const brandCategory = useSelector((state) => {
-    return state?.brand?.brand?.data?.brandCategories;
-  });
+const BrandCategoryTable = ({ brandId, selectedRowKeys, setSelectedRowKeys, searchKeyword, vnMode }) => {
+  const brandCategory = useSelector((state) => state?.brand?.brand?.data?.brandCategories);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [selectedBrandCategoryId, setSelectedBrandCategoryId] = useState(null);
 
   const alphanumericSort = (a, b) => {
     return a.brandCategoryId.localeCompare(b.brandCategoryId, undefined, {
@@ -36,37 +23,42 @@ const BrandCategoryTable = ({ brandId, selectedRowKeys, setSelectedRowKeys, sear
   };
 
   const handleDelete = (brandCategoryId) => {
-    Modal.confirm({
-      title: "Bạn có chắc chắn muốn xóa nhãn hàng này không?",
-      onOk: () => {
-        dispatch(deleteBrandCategory({ brandId, brandCategoryId }))
-          .unwrap()
-          .then(() => {
-            notification.success({ message: "Xóa nhãn hàng thành công" });
-          })
-          .catch((error) => {
-            notification.error({ message: "Xóa nhãn hàng thất bại" });
-            console.error("Lỗi khi xóa:", error);
-          });
-      },
-    });
+    setSelectedBrandCategoryId(brandCategoryId);
+    setIsModalVisible(true);
+  };
+
+  const confirmDelete = () => {
+    setLoading(true);
+    dispatch(deleteBrandCategory({ brandId, brandCategoryId: selectedBrandCategoryId }))
+      .unwrap()
+      .then(() => {
+        dispatch(getBrandDetail(brandId)).finally(() => {
+          setLoading(false);
+        });
+        toast.success(vnMode ? "Xóa nhãn hàng con thành công" : "Deleted sub-brand successfully");
+        setIsModalVisible(false);
+      })
+      .catch(() => {
+        toast.error(vnMode ? "Xóa nhãn hàng thất bại" : "Failed to delete sub-brand");
+        setLoading(false);
+      })
   };
 
   const columns = [
     {
-      title: "Mã thương hiệu",
+      title: vnMode ? "Mã thương hiệu con" : "Sub-brand Id",
       dataIndex: "brandCategoryId",
       sorter: alphanumericSort,
       sortDirections: ["ascend", "descend"],
     },
     {
-      title: "Thương hiêu thuộc thương hiệu sản phẩm",
+      title: vnMode ? "Tên thương hiệu con" : "Sub-Brand Name",
       dataIndex: "brandCategory",
       sorter: (a, b) => a.brandCategory.localeCompare(b.brandCategory),
       sortDirections: ["ascend", "descend"],
     },
     {
-      title: "Ảnh thương hiệu",
+      title: vnMode ? "Ảnh thương hiệu con" : "Image",
       dataIndex: "imageFile",
       render: (imageFile) => (
         <img
@@ -77,7 +69,7 @@ const BrandCategoryTable = ({ brandId, selectedRowKeys, setSelectedRowKeys, sear
       ),
     },
     {
-      title: "Action",
+      title: vnMode ? "Hành động" : "Action",
       key: "operation",
       fixed: "right",
       width: 100,
@@ -89,20 +81,16 @@ const BrandCategoryTable = ({ brandId, selectedRowKeys, setSelectedRowKeys, sear
               <Button
                 className="w-full border-none flex items-center justify-start"
                 icon={<EyeOutlined />}
-                onClick={() => {
-                  navigate(
-                    `/admin/brand/${brandId}/${record?.brandCategoryId}`
-                  );
-                }}
+                onClick={() => navigate(`/admin/brand/${brandId}/${record?.brandCategoryId}`)}
               >
-                Xem chi tiết
+                {vnMode ? "Xem chi tiết" : "View Details"}
               </Button>
               <Button
                 className="w-full border-none flex items-center justify-start"
                 icon={<DeleteOutlined />}
-                onClick={() => handleDelete(record?.brandCategoryId)} // Kích hoạt hàm xóa
+                onClick={() => handleDelete(record?.brandCategoryId)}
               >
-                Xoá
+                {vnMode ? "Xóa" : "Delete"}
               </Button>
             </div>
           )}
@@ -145,6 +133,16 @@ const BrandCategoryTable = ({ brandId, selectedRowKeys, setSelectedRowKeys, sear
           showSorterTooltip={{ target: "sorter-icon" }}
         />
       </div>
+
+      <Modal
+        title={vnMode ? "Xác nhận xóa" : "Confirm Deletion"}
+        open={isModalVisible}
+        onOk={confirmDelete}
+        onCancel={() => setIsModalVisible(false)}
+        okButtonProps={{ loading }}
+      >
+        <p>{vnMode ? "Bạn có chắc chắn muốn xóa nhãn hàng con này không?" : "Are you sure you want to delete this sub-brand?"}</p>
+      </Modal>
     </>
   );
 };

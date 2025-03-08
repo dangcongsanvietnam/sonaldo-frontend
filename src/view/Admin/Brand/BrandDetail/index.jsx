@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Form, Input, Button, Row, Col, Spin, Modal, Tooltip } from "antd";
+import { Form, Input, Button, Row, Col, Spin, Modal, Tooltip, ColorPicker } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import ImageUpload from "../../../../components/ImageUpload";
@@ -13,15 +13,18 @@ import {
 } from "../../../../services/brandService";
 import BrandCategoryTable from "../../../../components/BrandCategoryTable";
 import { toast } from "react-toastify";
+import { useLoading } from "../../../../provider/LoadingProvider";
 
 const { TextArea, Search } = Input;
 
 const BrandDetail = () => {
+  const { startLoading, stopLoading } = useLoading();
   const navigate = useNavigate();
   const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
   const [addBrandCategoryData, setAddBrandCategoryData] = useState({
     name: "",
     description: "",
+    color: ""
   });
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [fileList, setFileList] = useState([]);
@@ -40,14 +43,13 @@ const BrandDetail = () => {
   const [form] = Form.useForm();
   useEffect(() => {
     const fetchBrandDetail = async () => {
+      startLoading();
       try {
-        setLoading(true);
-        await dispatch(getBrandDetail(brandId)).unwrap();
+        await dispatch(getBrandDetail(brandId)).unwrap().finally(() => stopLoading())
         form.resetFields();
       } catch (error) {
         toast.error(vnMode ? "Không thể tải chi tiết thương hiệu." : "Cannot load brand detail.");
-      } finally {
-        setLoading(false);
+        stopLoading();
       }
     };
 
@@ -63,6 +65,10 @@ const BrandDetail = () => {
     const updateValues = {
       name: values?.brandName,
       description: values?.description,
+      color:
+        typeof values?.color === "string"
+          ? values.color
+          : values?.color?.toHexString() || "#000000",
       files: sortedFileList.map((file) => file?.originFileObj),
       brandId: brandId,
     };
@@ -152,6 +158,7 @@ const BrandDetail = () => {
       description: addBrandCategoryData.description,
       files: brandCategoryFileList.map((file) => file.originFileObj),
       brandId: brandId,
+      color: addBrandCategoryData.color
     };
 
     setLoading(true);
@@ -162,7 +169,7 @@ const BrandDetail = () => {
           setLoading(false);
         });
         toast.success(vnMode ? "Thêm thương hiệu con thành công." : "Successsfully added sub-brand");
-        setAddBrandCategoryData({ name: "", description: "" });
+        setAddBrandCategoryData({ name: "", description: "", color: "" });
         setBrandCategoryFileList([]);
         setIsUpdateModalVisible(false);
       })
@@ -207,6 +214,7 @@ const BrandDetail = () => {
           initialValues={{
             brandName: brand?.name || "",
             description: brand?.description || "",
+            color: brand?.color || "#000000"
           }}
           onFinish={handleSubmit}
         >
@@ -233,6 +241,12 @@ const BrandDetail = () => {
                   fileList={fileList}
                   setFileList={setFileList}
                 />
+              </Form.Item>
+              <Form.Item
+                label={vnMode ? "Màu nền" : "Background Color"}
+                name="color"
+              >
+                <ColorPicker format="hex" />
               </Form.Item>
             </Col>
           </Row>
@@ -289,6 +303,18 @@ const BrandDetail = () => {
                   setFileList={setBrandCategoryFileList}
                 />
               </Form.Item>
+              <Form.Item
+                label={vnMode ? "Màu nền" : "Background Color"}
+                name="color"
+              >
+                <ColorPicker format="hex"
+                  onChange={(e) =>
+                    setAddBrandCategoryData((prev) => ({
+                      ...prev,
+                      color: e?.toHexString(),
+                    }))
+                  } />
+              </Form.Item>
             </Form>
           </Modal>
           <div className="flex justify-between">
@@ -325,6 +351,7 @@ const BrandDetail = () => {
             selectedRowKeys={selectedRowKeys}
             setSelectedRowKeys={setSelectedRowKeys}
             searchKeyword={searchKeyword}
+            vnMode={vnMode}
           />
         </div>
         <Modal

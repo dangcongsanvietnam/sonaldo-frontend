@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   Button,
   Cascader,
+  ColorPicker,
   Form,
   Input,
   InputNumber,
@@ -98,6 +99,7 @@ const ProductDetail = () => {
             description: res.data.description || "",
             price: res.data.price || "",
             quantity: res.data.quantity || 0,
+            color: res.data.color || "",
             state: res.data?.state === "Preorder" ? "2" : res.data?.state === "Lock" ? "1" : res.data?.state === "NewArrival" ? "3" : "4" || "",
             brand: [
               res.data.brandCategory?.brandId,
@@ -238,6 +240,7 @@ const ProductDetail = () => {
       3: "NewArrival",
       4: "Normal"
     };
+
     const updateValues = {
       name: values?.productName,
       description: values?.description,
@@ -252,6 +255,10 @@ const ProductDetail = () => {
       status: stateMapping[values.state] || values.state,
       quantity: values?.quantity,
       tagsDescription: filteredTags.join(" "),
+      color:
+        typeof values?.color === "string"
+          ? values.color
+          : values?.color?.toHexString() || "#000000",
     };
 
     if (fileList.length < 1) {
@@ -267,7 +274,6 @@ const ProductDetail = () => {
         dispatch(getProductDetail(productId))
           .unwrap()
           .then((res) => {
-            console.log(res)
             const newCategories = res.data.categoryItems?.map((item) => [
               item.categoryId,
               item.categoryItemId,
@@ -285,6 +291,7 @@ const ProductDetail = () => {
               description: res.data.description || "",
               price: res.data.price || "",
               quantity: res.data.quantity || 0,
+              color: res.data.color || "",
               state: res.data?.state === "Preorder" ? "2" : res.data?.state === "Lock" ? "1" : res.data?.state === "NewArrival" ? "3" : "4" || "",
               brand: [
                 res.data.brandCategory?.brandId,
@@ -384,6 +391,7 @@ const ProductDetail = () => {
           description: productDetail?.description || "",
           price: productDetail?.price || "",
           quantity: productDetail?.quantity || 0,
+          color: productDetail?.color || "",
           state: productDetail?.state === "Preorder" ? "2" : productDetail?.state === "Lock" ? "1" : productDetail?.state === "NewArrival" ? "3" : "4" || "",
           brand: [
             productDetail?.brandCategory?.brandId,
@@ -490,6 +498,12 @@ const ProductDetail = () => {
                 setAvatar={setAvatar}
                 setFileList={setFileList}
               />
+            </Form.Item>
+            <Form.Item
+              label={vnMode ? "Màu nền" : "Background Color"}
+              name="color"
+            >
+              <ColorPicker format="hex" />
             </Form.Item>
 
             <Form.Item label={vnMode ? "Thương hiệu sản phẩm" : "Product brand"} name="brand">

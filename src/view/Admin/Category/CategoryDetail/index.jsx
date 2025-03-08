@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Form, Input, Button, Row, Col, Spin, Modal, Tooltip } from "antd";
+import { Form, Input, Button, Row, Col, Spin, Modal, Tooltip, ColorPicker } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import ImageUpload from "../../../../components/ImageUpload";
@@ -20,6 +20,7 @@ const CategoryDetail = () => {
   const [addCategoryItemData, setAddCategoryItemData] = useState({
     name: "",
     description: "",
+    color: ""
   });
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [fileList, setFileList] = useState([]);
@@ -62,6 +63,10 @@ const CategoryDetail = () => {
       description: values?.description,
       files: sortedFileList.map((file) => file?.originFileObj),
       categoryId: categoryId,
+      color:
+        typeof values?.color === "string"
+          ? values.color
+          : values?.color?.toHexString() || "#000000",
     };
 
     if (fileList.length < 1) {
@@ -81,7 +86,6 @@ const CategoryDetail = () => {
         toast.error(vnMode ? "Cập nhật thất bại" : "Failed to update");
       })
   };
-
 
   useEffect(() => {
     if (categoryImage && categoryImage.length > 0) {
@@ -149,6 +153,7 @@ const CategoryDetail = () => {
       description: addCategoryItemData.description,
       files: categoryItemFileList.map((file) => file.originFileObj),
       categoryId: categoryId,
+      color: addCategoryItemData.color
     };
 
     setLoading(true); // Bật loading
@@ -159,7 +164,7 @@ const CategoryDetail = () => {
           setLoading(false);
         });
         toast.success(vnMode ? "Thêm danh mục con thành công." : "Add new sub-category successfully.");
-        setAddCategoryItemData({ name: "", description: "" });
+        setAddCategoryItemData({ name: "", description: "", color: "" });
         setCategoryItemFileList([]);
         setIsUpdateModalVisible(false);
       })
@@ -212,6 +217,7 @@ const CategoryDetail = () => {
           initialValues={{
             categoryName: category?.name || "",
             description: category?.description || "",
+            color: category?.color || "#000000"
           }}
           onFinish={handleSubmit}
         >
@@ -260,6 +266,12 @@ const CategoryDetail = () => {
                   fileList={fileList}
                   setFileList={setFileList}
                 />
+              </Form.Item>
+              <Form.Item
+                label={vnMode ? "Màu nền" : "Background Color"}
+                name="color"
+              >
+                <ColorPicker format="hex" />
               </Form.Item>
             </Col>
           </Row>
@@ -331,6 +343,18 @@ const CategoryDetail = () => {
                   fileList={categoryItemFileList}
                   setFileList={setCategoryItemFileList}
                 />
+              </Form.Item>
+              <Form.Item
+                label={vnMode ? "Màu nền" : "Background Color"}
+                name="color"
+              >
+                <ColorPicker format="hex"
+                  onChange={(e) =>
+                    setAddCategoryItemData((prev) => ({
+                      ...prev,
+                      color: e?.toHexString(),
+                    }))
+                  } />
               </Form.Item>
             </Form>
           </Modal>

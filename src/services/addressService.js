@@ -43,19 +43,16 @@ export const getAddress = createAsyncThunk(
 export const deleteAddress = createAsyncThunk(
   "address/deleteAddress",
   async (addressId) => {
-    // Lấy token từ cookie
-    const token = Cookies.get("token"); // Hoặc tên khác tùy thuộc vào cách bạn lưu trữ token
+    const token = Cookies.get("token");
 
-    // Tạo cấu hình headers với token
     const config = {
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+        Authorization: `Bearer ${token}`,
       },
     };
 
     try {
-      // Thực hiện request với cấu hình headers
       const res = await BASE_URL.delete(
         `api/v1/addresses/${addressId}`,
         config
@@ -72,14 +69,12 @@ export const deleteAddress = createAsyncThunk(
 export const updateAddress = createAsyncThunk(
   "address/updateAddress",
   async (address) => {
-    // Lấy token từ cookie
-    const token = Cookies.get("token"); // Hoặc tên khác tùy thuộc vào cách bạn lưu trữ token
+    const token = Cookies.get("token");
 
-    // Tạo cấu hình headers với token
     const config = {
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+        Authorization: `Bearer ${token}`,
       },
     };
 
@@ -94,16 +89,13 @@ export const updateAddress = createAsyncThunk(
     };
 
     try {
-      // Thực hiện request với cấu hình headers
       const res = await BASE_URL.put(
-        `api/v1/addresses/${address.id}`,
+        `api/v1/addresses/${address.addressId}`,
         initState,
         config
       );
-      return res.data; // Trả về dữ liệu từ res
+      return res.data;
     } catch (error) {
-      // Xử lý lỗi nếu có
-      console.error("Failed to add address:", error);
       throw error;
     }
   }

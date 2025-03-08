@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { Form, Input, Button } from "antd";
+import { Form, Input, Button, ColorPicker } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import { useDispatch } from "react-redux";
 import { addNewBrand, getAdminBrands } from "../../../services/brandService";
 import { PlusCircleOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import ImageUpload from "../../ImageUpload";
-import { Bounce, toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 const BrandForm = ({ vnMode }) => {
   const navigate = useNavigate();
@@ -23,6 +23,7 @@ const BrandForm = ({ vnMode }) => {
         name: values.brand,
         description: values.description,
         files: fileList.map((file) => file?.originFileObj),
+        color: values.color.toHexString() || "#000000"
       };
 
       setIsSaving(true);
@@ -48,19 +49,6 @@ const BrandForm = ({ vnMode }) => {
 
   return (
     <div>
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick={false}
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        transition={Bounce}
-      />
       <Form
         form={form}
         name="category_brand_form"
@@ -82,6 +70,13 @@ const BrandForm = ({ vnMode }) => {
           rules={[{ message: vnMode ? "Vui lòng nhập mục mô tả!" : "Please enter a description!" }]}
         >
           <TextArea rows={4} placeholder={vnMode ? "Nhập mô tả ..." : "Enter description ..."}></TextArea>
+        </Form.Item>
+
+        <Form.Item
+          label={vnMode ? "Màu nền" : "Background Color"}
+          name="color"
+        >
+          <ColorPicker format="hex" />
         </Form.Item>
 
         <Form.Item label={vnMode ? "Ảnh sản phẩm" : "Product Image"}>

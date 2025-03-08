@@ -49,27 +49,37 @@ import InformationPage from "../pages/Information";
 import UserOrder from "./../view/Admin/Order";
 import Checkout from "../view/Checkout";
 import Payment from "../view/Payment";
+import Brand from "../pages/BrandPage";
+import BrandCategoryPage from "../pages/BrandCategoryPage";
+import CategoryItemPage from "../pages/CategoryItemPage";
+import WishlistPage from "../pages/WishlistPage";
+import WishlistItemPage from "../pages/WishlistItemPage";
+import CreateBlog from "../pages/CreateBlog";
+import EditBlogPage from "../pages/EditBlogPage";
 
-// publicRoutes.js
 export const publicRoutes = [
   { path: "/", Component: Home },
-  { path: "/public/category/:categoryId", Component: CategoryPageDetail },
-  { path: "/public/category", Component: CategoryPage },
-  { path: "/register", Component: Register },
-  { path: "/login", Component: Login },
+  { path: "/category/:categoryId", Component: CategoryPageDetail },
+  { path: "/category/:categoryId/:categoryItemId", Component: CategoryItemPage },
   { path: "/verify-email", Component: VerifyEmail },
   { path: "/forget-password", Component: ForgetPassword },
   { path: "/reset-password", Component: ResetPassword },
   { path: "/product/:id", Component: PublicProductDetail },
   { path: "/successful-payment", Component: SucessfulPage },
   { path: "/notification", Component: NotificationPage },
+  { path: "/brand/:brandId", Component: Brand },
+  { path: "/brand/:brandId/:brandCategoryId", Component: BrandCategoryPage },
+];
+
+export const publicRoutes2 = [
+  { path: "/register", Component: Register },
+  { path: "/login", Component: Login },
 ];
 
 export const publicAdminRoutes = [
   { path: "/login/admin", Component: AdminLogin },
 ];
 
-// userRoutes.js
 export const userRoutes = [
   { path: "/profile", Component: Profile },
   { path: "/change-password", Component: ChangePassword },
@@ -77,6 +87,8 @@ export const userRoutes = [
   { path: "/orders", Component: UserOrder },
   { path: "/checkout", Component: Checkout },
   { path: "/orders/:orderId", Component: Payment },
+  { path: "/wishlists", Component: WishlistPage },
+  { path: "/wishlists/:wishlistId", Component: WishlistItemPage },
 ];
 
 export const adminRoutes = [
@@ -107,7 +119,9 @@ export const superAdminRoutes = [
   { path: "backup-and-restore", Component: BackupRestorePage },
   { path: "delete", Component: ClearDataPage },
   { path: "feedbacks", Component: FeedbackManagementPage },
+  { path: "feedbacks/:blogId", Component: EditBlogPage },
   { path: "emails", Component: EmailPage },
+  { path: "add-blog", Component: CreateBlog },
   { path: "add-user", Component: AddManager },
   { path: "user-detail/:email", Component: DetailPage },
   { path: "search-results", Component: SearchResults },

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Button, Modal, Card, Col, Row, notification, Form } from "antd";
+import { Button, Modal, Card, Col, Row, Form, Tag } from "antd";
 import CreateAddressModal from "../../components/Modal/CreateAddressModal";
 import { useDispatch, useSelector } from "react-redux";
 import Cookies from "js-cookie";
@@ -11,18 +11,32 @@ import {
 } from "../../services/addressService";
 import DeleteAddressModal from "../../components/Modal/DeleteAddressModal";
 import EditAddressModal from "../../components/Modal/EditAddressModal";
-
-const initialState = {
-  fullName: "",
-  phoneNumber: "",
-  address: "",
-  province: "",
-  district: "",
-  commune: "",
-  defaultAddress: false,
-};
+import { PlusOutlined } from "@ant-design/icons";
+import { toast } from "react-toastify";
 
 const Address = () => {
+  const userAddress = useSelector((state) => {
+    const addresses = state?.address?.data || [];
+
+    return addresses
+      .slice() // Create a copy to avoid mutating Redux state
+      .sort((a, b) => {
+        if (a.defaultAddress === b.defaultAddress) {
+          return new Date(b.updatedAt) - new Date(a.updatedAt); // Sort newest to oldest
+        }
+        return b.defaultAddress - a.defaultAddress; // Default address comes first
+      });
+  });
+
+  const initialState = {
+    fullName: "",
+    phoneNumber: "",
+    address: "",
+    province: "",
+    district: "",
+    commune: "",
+    defaultAddress: userAddress.length === 0,
+  };
   const editInitialState = { ...initialState, id: "" };
   const token = Cookies.get("token");
   const [addressId, setAddressId] = useState();
@@ -34,6 +48,7 @@ const Address = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalDeleteOpen, setIsModalDeleteOpen] = useState(false);
   const [isModalEditOpen, setIsModalEditOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const dispatch = useDispatch();
 
@@ -48,10 +63,7 @@ const Address = () => {
     dispatch(updateAddress(editAddress))
       .unwrap()
       .then(() => {
-        notification.success({
-          message: "Thành công",
-          description: "Sửa địa chỉ thành công",
-        });
+        toast.success("Thành công");
 
         if (token) {
           dispatch(getAddress(token));
@@ -59,12 +71,11 @@ const Address = () => {
         setEditAddress(editInitialState);
         setIsModalEditOpen(false);
         form.setFieldsValue(editInitialState);
+        setLoading(false);
       })
       .catch(() => {
-        notification.error({
-          message: "Thất bại",
-          description: "Sửa địa chỉ thất bại",
-        });
+        toast.error("Thất bại");
+        setLoading(false);
       });
   };
 
@@ -72,46 +83,39 @@ const Address = () => {
     dispatch(deleteAddress(addressId))
       .unwrap()
       .then(() => {
-        notification.success({
-          message: "Thành công",
-          description: "Xoá địa chỉ thành công",
-        });
+        toast.success("Thành công");
 
         if (token) {
           dispatch(getAddress(token));
         }
 
         setIsModalDeleteOpen(false);
+        setLoading(false);
       })
       .catch(() => {
-        notification.error({
-          message: "Thất bại",
-          description: "Xoá địa chỉ thất bại",
-        });
+        toast.error("Thất bại");
+        setLoading(false);
       });
   };
 
   const handleOk = () => {
-    setIsModalOpen(false);
+    setLoading(true);
     dispatch(addAddress(address))
       .unwrap()
       .then(() => {
         setAddress(initialState);
-        notification.success({
-          message: "Thành công",
-          description: "Thêm địa chỉ thành công",
-        });
+        toast.success("Thành công");
         if (token) {
           dispatch(getAddress(token));
         }
         form.setFieldsValue(editInitialState);
+        setLoading(false);
+        setIsModalOpen(false);
       })
-      .catch(() =>
-        notification.error({
-          message: "Thất bại",
-          description: "Thêm địa chỉ thất bại",
-        })
-      );
+      .catch(() => {
+        toast.error("Thất bại");
+        setLoading(false);
+      });
   };
 
   const handleCancel = () => {
@@ -127,7 +131,6 @@ const Address = () => {
     }
   }, [dispatch]);
 
-  const userAddress = useSelector((state) => state?.address?.data);
   const handleDelete = (itemId) => {
     setIsModalDeleteOpen(true);
     setAddressId(itemId);
@@ -148,6 +151,7 @@ const Address = () => {
         open={isModalOpen}
         closable={false}
         footer={null}
+        zIndex={10000}
       >
         <CreateAddressModal
           form={form}
@@ -156,13 +160,15 @@ const Address = () => {
           openModal={handleOk}
           editAddress={address}
           isCreateModal={isCreateModal}
+          loading={loading}
         />
       </Modal>
 
-      <Modal open={isModalDeleteOpen} closable={false} footer={null}>
+      <Modal open={isModalDeleteOpen} closable={false} footer={null} zIndex={10000}>
         <DeleteAddressModal
           closeModal={handleCancel}
           openDeleteModal={handleDeleteOk}
+          loading={loading}
         />
       </Modal>
 
@@ -171,6 +177,7 @@ const Address = () => {
         open={isModalEditOpen}
         closable={false}
         footer={null}
+        zIndex={10000}
       >
         <EditAddressModal
           form={form}
@@ -181,20 +188,12 @@ const Address = () => {
           openEditModal={handleEditOk}
           editAddress={editAddress}
           isCreateModal={isCreateModal}
+          loading={loading}
         />
       </Modal>
 
-      <div className="flex justify-between border-b">
-        <div className="uppercase">Địa chỉ của tôi</div>
-        <div className="pb-2">
-          <Button
-            type="primary"
-            onClick={showModal}
-            className="h-[40px] rounded-none"
-          >
-            Thêm địa chỉ mới
-          </Button>
-        </div>
+      <div className="flex justify-between">
+        <div className="font-bold text-2xl mb-5">Address</div>
       </div>
       <div className="pt-1">
         <Row gutter={16}>
@@ -202,9 +201,12 @@ const Address = () => {
             userAddress.map((item, index) => (
               <Col span={24} key={index} style={{ marginBottom: "16px" }}>
                 <Card style={{ width: "100%" }}>
-                  <p>
-                    <strong>Tên:</strong> {item.fullName}
-                  </p>
+                  <div className="space-x-2 flex">
+                    <p>
+                      <strong>Tên:</strong> {item.fullName}
+                    </p>
+                    {item.defaultAddress ? (<Tag color="green">Default</Tag>) : ""}
+                  </div>
                   <p>
                     <strong>Số điện thoại:</strong> {item.phoneNumber}
                   </p>
@@ -214,33 +216,44 @@ const Address = () => {
                   <p>
                     {item.province},{item.district},{item.commune}
                   </p>
-                  <p>{item.defaultAddress ? "Mặc đinh" : ""}</p>
-                  {item.defaultAddress ? (
-                    ""
-                  ) : (
+                  <div className="space-x-2">
+                    {item.defaultAddress ? (
+                      ""
+                    ) : (
+                      <Button
+                        danger
+                        onClick={() => {
+                          handleDelete(item.addressId);
+                        }}
+                      >
+                        Xoá
+                      </Button>
+                    )}
+
                     <Button
                       onClick={() => {
-                        handleDelete(item.id);
+                        console.log("sua", item);
+                        handleEdit(item);
                       }}
                     >
-                      Xoá
+                      Sửa
                     </Button>
-                  )}
-
-                  <Button
-                    onClick={() => {
-                      console.log("sua", item);
-                      handleEdit(item);
-                    }}
-                  >
-                    Sửa
-                  </Button>
+                  </div>
                 </Card>
               </Col>
             ))
           ) : (
-            <p>Không có địa chỉ nào.</p>
+            <></>
           )}
+          <Col span={24} style={{ marginBottom: "16px" }}>
+            <Button
+              type="primary"
+              onClick={showModal}
+              className="h-[40px] w-full !rounded-md py-10 bg-white text-black"
+            >
+              <PlusOutlined className="text-4xl" /> <span className="text-lg">Add Address</span>
+            </Button>
+          </Col>
         </Row>
       </div>
     </>

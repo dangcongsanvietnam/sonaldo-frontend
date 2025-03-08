@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { changeUserStatus, createUser, deleteUser, deleteUserAddress, getAllManagers, getAllUsers, GetUser, getUserInfo, searchUsers, updateUser, updateUserInfo, updateUsers } from "../services/userService";
+import { changeUserStatus, createUser, deleteUser, deleteUserAddress, getAllManagers, getAllUsers, getRecommendations, GetUser, getUserInfo, searchUsers, updateUser, updateUserInfo, updateUsers } from "../services/userService";
 
 const userSlice = createSlice({
   name: "user",
@@ -10,7 +10,8 @@ const userSlice = createSlice({
     users: [],
     managers: [],
     searchUsers: [],
-    userInfo: {}
+    userInfo: {},
+    suggestions: []
   },
   reducers: {},
   extraReducers: (builder) => {
@@ -172,6 +173,20 @@ const userSlice = createSlice({
     });
 
     builder.addCase(deleteUserAddress.rejected, (state, action) => {
+      state.loading = "Failed";
+      state.error = action.error;
+    });
+
+    builder.addCase(getRecommendations.pending, (state) => {
+      state.loading = "pending";
+    });
+
+    builder.addCase(getRecommendations.fulfilled, (state, action) => {
+      state.suggestions = action.payload;
+      state.loading = "success";
+    });
+
+    builder.addCase(getRecommendations.rejected, (state, action) => {
       state.loading = "Failed";
       state.error = action.error;
     });

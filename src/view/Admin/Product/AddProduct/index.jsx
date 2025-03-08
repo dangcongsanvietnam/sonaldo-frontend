@@ -1,4 +1,4 @@
-import { Button, Form, Input, Tag, Cascader, Select, InputNumber } from "antd";
+import { Button, Form, Input, Tag, Cascader, Select, InputNumber, ColorPicker } from "antd";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useOutletContext } from "react-router-dom";
@@ -148,6 +148,7 @@ const AddProduct = () => {
       status: stateMapping[values.state] || values.state,
       tagsDescription: filteredTags.join(" "),
       quantity: values.quantity,
+      color: values.color.toHexString() || "#000000"
     };
 
     if (fileList.length < 1) {
@@ -286,6 +287,13 @@ const AddProduct = () => {
               label={vnMode ? "Ảnh sản phẩm" : "Product Image"}
             >
               <ImageUpload fileList={fileList} setAvatar={setAvatar} setFileList={setFileList} />
+            </Form.Item>
+
+            <Form.Item
+              label={vnMode ? "Màu nền" : "Background Color"}
+              name="color"
+            >
+              <ColorPicker format="hex" />
             </Form.Item>
 
             <Form.Item

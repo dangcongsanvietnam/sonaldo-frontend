@@ -85,6 +85,7 @@ export const updateCategory = createAsyncThunk(
       name: updateValues?.name,
       description: updateValues?.description,
       files: updateValues?.files,
+      color: updateValues?.color
     };
 
     try {
@@ -142,10 +143,8 @@ export const getCategoryItemDetail = createAsyncThunk(
 export const updateCategoryItem = createAsyncThunk(
   "category/updateCategoryItem",
   async (updateValues) => {
-    // Lấy token từ cookie
     const token = Cookies.get("token");
 
-    // Tạo cấu hình headers với token
     const config = {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -157,10 +156,10 @@ export const updateCategoryItem = createAsyncThunk(
       name: updateValues?.name,
       description: updateValues?.description,
       files: updateValues?.files,
+      color: updateValues?.color
     };
 
     try {
-      // Thực hiện request với cấu hình headers
       const res = await BASE_URL.put(
         `api/v1/admin/categories/${updateValues?.categoryId}/${updateValues?.categoryItemId}`,
         initState,
@@ -176,11 +175,11 @@ export const updateCategoryItem = createAsyncThunk(
 export const addNewCategoryItem = createAsyncThunk(
   "category/addNewCategoryItem",
   async (newCategoryItem) => {
-    const token = Cookies.get("token"); // Hoặc tên khác tùy thuộc vào cách bạn lưu trữ token
+    const token = Cookies.get("token");
     const config = {
       headers: {
         "Content-Type": "multipart/form-data",
-        Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+        Authorization: `Bearer ${token}`,
       },
     };
 
@@ -188,6 +187,7 @@ export const addNewCategoryItem = createAsyncThunk(
       name: newCategoryItem.name,
       description: newCategoryItem.description,
       files: newCategoryItem.files,
+      color: newCategoryItem.color
     };
     try {
       const res = await BASE_URL.post(
@@ -195,7 +195,7 @@ export const addNewCategoryItem = createAsyncThunk(
         updateValues,
         config
       );
-      return res.data; // Trả về dữ liệu từ res
+      return res.data;
     } catch (error) {
       throw error;
     }
@@ -221,7 +221,7 @@ export const addProductsToCategoryItem = createAsyncThunk(
         updateValues,
         config
       );
-      return res.data; // Trả về dữ liệu từ res
+      return res.data;
     } catch (error) {
       throw error;
     }
@@ -231,10 +231,10 @@ export const addProductsToCategoryItem = createAsyncThunk(
 export const removeProductsFromCategoryItem = createAsyncThunk(
   "category/removeProductsFromCategoryItem",
   async (updatedProducts) => {
-    const token = Cookies.get("token"); // Hoặc tên khác tùy thuộc vào cách bạn lưu trữ token
+    const token = Cookies.get("token");
     const config = {
       headers: {
-        Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+        Authorization: `Bearer ${token}`,
       },
     };
 

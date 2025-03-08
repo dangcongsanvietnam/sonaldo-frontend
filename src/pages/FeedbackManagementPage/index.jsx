@@ -5,19 +5,25 @@ import {
   Select,
   Modal,
   Form,
+  DatePicker,
+  Dropdown,
 } from 'antd';
 import {
-  DeleteOutlined, SearchOutlined, EditOutlined,
+  SearchOutlined,
   CloseCircleOutlined,
+  MoreOutlined,
+  PlusOutlined,
+  LoadingOutlined,
 } from '@ant-design/icons';
 import { useDispatch, useSelector } from 'react-redux';
-import { useOutletContext } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import moment from 'moment';
-import { deleteFeedback, getAllFeedbacks, replyFeedback } from '../../services/feedbackService';
+import { changeStatus, deleteFeedback, getAllFeedbacks, replyFeedback } from '../../services/feedbackService';
 import { Bounce, toast, ToastContainer } from 'react-toastify';
 import { useLoading } from '../../provider/LoadingProvider';
 
 const { Content } = Layout;
+const { RangePicker } = DatePicker;
 
 const FeedbackManagementPage = () => {
   const { startLoading, stopLoading } = useLoading();
@@ -29,16 +35,19 @@ const FeedbackManagementPage = () => {
   const [feedbackSearch, setFeedbackSearch] = useState('');
   const [feedbackFilter, setFeedbackFilter] = useState({
     state: null,
+    dateRange: null
   });
   const [isLoading, setIsLoading] = useState(false);
   const { vnMode } = useOutletContext();
+  const navigate = useNavigate();
+  const [statusLoading, setStatusLoading] = useState(false);
 
   useEffect(() => {
     const fetchFeedbacks = async () => {
       startLoading();
       setIsLoading(true);
       try {
-        await dispatch(getAllFeedbacks({ ...feedbackFilter, page: feedbackPage - 1 })).unwrap();
+        await dispatch(getAllFeedbacks()).unwrap();
       } catch (error) {
         toast.error(
           vnMode
@@ -88,16 +97,16 @@ const FeedbackManagementPage = () => {
     setFeedbackPage(pagination.current);
   };
 
-  const handleDeleteFeedback = async (feedbackId) => {
+  const handleDeleteFeedback = async (blogId) => {
     setIsLoading(true);
     try {
-      await dispatch(deleteFeedback(feedbackId)).unwrap();
+      await dispatch(deleteFeedback(blogId)).unwrap();
       toast.success(
         vnMode
           ? "Xóa feedback thành công!"
           : "Feedback deleted successfully!"
       );
-      await dispatch(getAllFeedbacks({ ...feedbackFilter, page: feedbackPage - 1 }));
+      await dispatch(getAllFeedbacks());
     } catch (error) {
       toast.error(
         vnMode
@@ -117,27 +126,73 @@ const FeedbackManagementPage = () => {
     setFeedbackPage(1);
   };
 
+  const handleChangeStatus = (item) => {
+    setStatusLoading(true);
+    let state = "Unlock";
+    if (item.state === "Unlock") {
+      state = "Lock";
+    }
+    try {
+      const data = {
+        blogId: item.blogId,
+        state: state
+      }
+      dispatch(changeStatus(data)).then(() => {
+        setStatusLoading(false);
+        toast.success(vnMode ? "Thay đổi thành công" : "Changed successfully");
+        dispatch(getAllFeedbacks());
+      });
+    } catch {
+      setStatusLoading(false);
+      toast.success(vnMode ? "Thay đổi thất bại" : "Failed to change");
+    }
+  }
+
+  const menuItems = (record) => [
+    {
+      key: "view",
+      label: (
+        <span onClick={() => navigate(`/super-admin/feedbacks/${record.blogId}`)}>
+          View Blog
+        </span>
+      ),
+    },
+    {
+      key: "change-status",
+      label: (
+        <span onClick={() => handleChangeStatus(record)}>
+          {statusLoading && (<LoadingOutlined />)}
+          Change Status
+        </span>
+      ),
+    },
+    {
+      key: "delete",
+      label: (
+        <Popconfirm title="Are you sure?" onConfirm={() => handleDeleteFeedback(record.blogId)}>
+          {isLoading && (<LoadingOutlined />)}
+          Delete
+        </Popconfirm>
+      ),
+    },
+  ];
+
   const columns = [
     {
       title: 'ID',
-      dataIndex: 'feedbackId',
-      key: 'feedbackId',
+      dataIndex: 'blogId',
+      key: 'blogId',
     },
     {
-      title: vnMode ? 'Tên' : 'Name',
-      dataIndex: 'name',
-      key: 'name',
+      title: vnMode ? 'Tác giả' : 'Writer',
+      dataIndex: 'writer',
+      key: 'writer',
     },
     {
-      title: vnMode ? 'Email' : 'Email',
-      dataIndex: 'email',
-      key: 'email',
-    },
-    {
-      title: vnMode ? 'Nội dung' : 'Content',
-      dataIndex: 'content',
-      key: 'content',
-      ellipsis: true,
+      title: vnMode ? 'Tiêu đề' : 'Subject',
+      dataIndex: 'subject',
+      key: 'subject',
+      render: (text) => (text.length > 20 ? `${text.substring(0, 20)}...` : text),
     },
     {
       title: vnMode ? 'Thời gian' : 'Time',
@@ -149,39 +204,38 @@ const FeedbackManagementPage = () => {
       title: vnMode ? 'Trạng thái' : 'Status',
       dataIndex: 'state',
       key: 'state',
-      render: (state) => (state ? <Tag color="green">{vnMode ? 'Đã phản hồi' : 'Replied'}</Tag> : <Tag color="red">{vnMode ? 'Chưa phản hồi' : 'Unreplied'}</Tag>),
+      render: (state) => (state === "Unlock" ? <Tag color="green">{vnMode ? 'Mở khoá' : 'Unlock'}</Tag> : <Tag color="red">{vnMode ? 'Ẩn' : 'Hide'}</Tag>),
     },
     {
       title: vnMode ? 'Thao tác' : 'Action',
       key: 'action',
       render: (_, record) => (
-        <Space size="middle">
-          <Button type="primary" icon={<EditOutlined />} onClick={() => handleReplyFeedback(record.feedbackId)}>
-            {vnMode ? 'Phản hồi' : 'Reply'}
-          </Button>
-          <Popconfirm
-            title={vnMode ? 'Bạn có chắc chắn muốn xóa feedback này?' : 'Are you sure you want to delete this feedback?'}
-            onConfirm={() => handleDeleteFeedback(record.feedbackId)}
-            okText={vnMode ? 'Xóa' : 'Delete'}
-            cancelText={vnMode ? 'Hủy' : 'Cancel'}
-          >
-            <Button type="primary" danger icon={<DeleteOutlined />}>
-              {vnMode ? 'Xóa' : 'Delete'}
-            </Button>
-          </Popconfirm>
-        </Space>
+        <Dropdown menu={{ items: menuItems(record) }} trigger={["click"]}>
+          <MoreOutlined className="cursor-pointer" />
+        </Dropdown>
       ),
     },
   ];
 
-  const filteredFeedbacks = feedbacks.content
-    ? feedbacks.content.filter((feedback) => {
-      const matchSearch = feedback.name.toLowerCase().includes(feedbackSearch.toLowerCase())
-        || feedback.email.toLowerCase().includes(feedbackSearch.toLowerCase())
-        || feedback.content.toLowerCase().includes(feedbackSearch.toLowerCase());
-      const matchState = feedbackFilter.state === null || feedback.state === feedbackFilter.state;
-      return matchSearch && matchState;
-    })
+  const filteredFeedbacks = feedbacks ? feedbacks?.filter((feedback) => {
+    const matchSearch =
+      feedback.writer.toLowerCase().includes(feedbackSearch.toLowerCase()) ||
+      feedback.subject.toLowerCase().includes(feedbackSearch.toLowerCase());
+
+    const matchState =
+      feedbackFilter.state === null || feedback.state === feedbackFilter.state;
+
+    const createdAt = new Date(feedback.createdAt);
+
+    const startDate = feedbackFilter.dateRange?.[0]?.startOf("day");
+    const endDate = feedbackFilter.dateRange?.[1]?.endOf("day");
+
+    const matchDate =
+      (!startDate || createdAt >= new Date(startDate)) &&
+      (!endDate || createdAt <= new Date(endDate));
+
+    return matchSearch && matchState && matchDate;
+  })
     : [];
 
   return (
@@ -204,7 +258,7 @@ const FeedbackManagementPage = () => {
         title={vnMode ? 'Phản hồi feedback' : 'Reply Feedback'}
         open={isModalVisible}
         onCancel={handleCancel}
-        footer={null} // Use custom footer inside the form
+        footer={null}
       >
         <Form onFinish={handleSubmit}>
           <Form.Item
@@ -228,31 +282,46 @@ const FeedbackManagementPage = () => {
       <div>
         <div className="flex items-center mb-4">
           <Input.Search
-            placeholder={vnMode ? 'Tìm kiếm theo tên, email, nội dung' : 'Search by name, email, or content'}
+            placeholder={vnMode ? 'Tìm kiếm theo tên tác giả, tiêu đề' : 'Search by author, subject'}
             prefix={<SearchOutlined />}
             value={feedbackSearch}
             onChange={(e) => setFeedbackSearch(e.target.value)}
             className="mr-2 w-[30%]"
           />
           <Space>
+            <RangePicker
+              format="DD/MM/YYYY"
+              onChange={(dates) =>
+                setFeedbackFilter({
+                  ...feedbackFilter,
+                  dateRange: dates,
+                })
+              }
+            />
             <Select
               placeholder={vnMode ? 'Lọc theo trạng thái' : 'Filter by status'}
               value={feedbackFilter.state}
               onChange={(value) => setFeedbackFilter({ ...feedbackFilter, state: value })}
               allowClear
             >
-              <Select.Option value={false}>{vnMode ? 'Chưa phản hồi' : 'Unreplied'}</Select.Option>
-              <Select.Option value={true}>{vnMode ? 'Đã phản hồi' : 'Replied'}</Select.Option>
+              <Select.Option value="Unlock">{vnMode ? 'Mở khoá' : 'Unlock'}</Select.Option>
+              <Select.Option value="Lock">{vnMode ? 'Ẩn' : 'Hide'}</Select.Option>
             </Select>
             <Button icon={<CloseCircleOutlined />} onClick={handleClearFilter}>
               {vnMode ? 'Xóa bộ lọc' : 'Clear filter'}
+            </Button>
+            <Button type='primary' icon={<PlusOutlined />} onClick={() => navigate("/add-blogs")}>
+              {vnMode ? 'Thêm Blog' : 'Add Blog'}
             </Button>
           </Space>
         </div>
 
         <Table
           columns={columns}
-          dataSource={filteredFeedbacks}
+          dataSource={filteredFeedbacks.map((feedback) => ({
+            ...feedback,
+            key: feedback.blogId,
+          }))}
           loading={isLoading}
           pagination={{
             current: feedbackPage,

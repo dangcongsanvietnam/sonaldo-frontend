@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { Form, Input, Button } from "antd";
+import React, { useState } from "react";
+import { Form, Input, Button, ColorPicker } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import { useDispatch } from "react-redux";
-import defaultAvatar from "../../../assets/download.png";
 import { PlusCircleOutlined } from "@ant-design/icons";
 import {
   addNewCategory,
@@ -10,7 +9,7 @@ import {
 } from "../../../services/categoryService";
 import { useNavigate } from "react-router-dom";
 import ImageUpload from "../../ImageUpload";
-import { Bounce, toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 
 const CategoryForm = ({ vnMode }) => {
   const [fileList, setFileList] = useState([]);
@@ -28,6 +27,7 @@ const CategoryForm = ({ vnMode }) => {
         name: values.category,
         description: values.description,
         files: fileList.map((file) => file?.originFileObj),
+        color: values.color?.toHexString() || "#000000"
       };
 
       setIsSaving(true);
@@ -40,7 +40,7 @@ const CategoryForm = ({ vnMode }) => {
               toast.success(vnMode ? "Thêm thành công" : "Add successfully");
               setTimeout(() => {
                 setIsSaving(false);
-                navigate("/admin/brand");
+                navigate("/admin/category");
               }, 1000);
             })
         })
@@ -53,19 +53,6 @@ const CategoryForm = ({ vnMode }) => {
 
   return (
     <>
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick={false}
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-        transition={Bounce}
-      />
       <div className="flex justify-between ">
         <Form
           form={form}
@@ -80,6 +67,12 @@ const CategoryForm = ({ vnMode }) => {
 
           <Form.Item label={vnMode ? "Mô tả cho danh mục" : "Description"} name="description">
             <TextArea placeholder={vnMode ? "Nhập mô tả ..." : "Enter description ..."}></TextArea>
+          </Form.Item>
+          <Form.Item
+            label={vnMode ? "Màu nền" : "Background Color"}
+            name="color"
+          >
+            <ColorPicker format="hex" />
           </Form.Item>
           <Form.Item label={vnMode ? "Ảnh danh mục" : "Category Image"}>
             <ImageUpload vnMode={vnMode} fileList={fileList} setFileList={setFileList} />

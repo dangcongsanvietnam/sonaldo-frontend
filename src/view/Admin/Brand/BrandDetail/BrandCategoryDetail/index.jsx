@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Form, Input, Button, Row, Col, Spin, Modal, Tooltip } from "antd";
+import { Form, Input, Button, Row, Col, Spin, Modal, Tooltip, ColorPicker } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import ImageUpload from "../../../../../components/ImageUpload";
@@ -13,10 +13,12 @@ import ProductTable from "../../../../../components/ProductTable";
 import AddProductModalBrandCategory from "../../../../../components/Modal/AddProductModalBrandCategory";
 import { PlusOutlined, DeleteOutlined, LeftOutlined } from '@ant-design/icons';
 import { toast } from "react-toastify";
+import { useLoading } from "../../../../../provider/LoadingProvider";
 
 const { TextArea, Search } = Input;
 
 const BrandCategoryDetail = () => {
+  const { startLoading, stopLoading } = useLoading();
   const dispatch = useDispatch();
   const { brandId } = useParams();
   const { brandCategoryId } = useParams();
@@ -39,19 +41,22 @@ const BrandCategoryDetail = () => {
   const [fileList, setFileList] = useState([]);
   const [form] = Form.useForm();
   useEffect(() => {
-    setLoading(true);
-    try {
-      dispatch(getBrandCategoryDetail({ brandId, brandCategoryId }))
-        .unwrap()
-        .then(() => {
-          form.resetFields();
-        })
-        .catch(() => {
-        });
-    } finally {
-      setLoading(false);
+    const fetchData = async () => {
+      startLoading();
+      try {
+        await dispatch(getBrandCategoryDetail({ brandId, brandCategoryId }))
+          .unwrap()
+          .then(() => {
+            form.resetFields();
+          })
+          .finally(() => {
+            stopLoading();
+          })
+      } catch {
+        stopLoading();
+      }
     }
-
+    fetchData();
   }, [dispatch]);
 
   useEffect(() => {
@@ -78,6 +83,10 @@ const BrandCategoryDetail = () => {
       files: sortedFileList.map((file) => file?.originFileObj),
       brandId: brandId,
       brandCategoryId: brandCategoryId,
+      color:
+        typeof values?.color === "string"
+          ? values.color
+          : values?.color?.toHexString() || "#000000",
     };
 
     if (fileList.length < 1) {
@@ -196,6 +205,7 @@ const BrandCategoryDetail = () => {
           initialValues={{
             brandCategoryName: brandCategoryDetail?.name || "",
             description: brandCategoryDetail?.description || "",
+            color: brandCategoryDetail?.color || ""
           }}
           onFinish={handleSubmit}
         >
@@ -233,6 +243,12 @@ const BrandCategoryDetail = () => {
                   fileList={fileList}
                   setFileList={setFileList}
                 />
+              </Form.Item>
+              <Form.Item
+                label={vnMode ? "Màu nền" : "Background Color"}
+                name="color"
+              >
+                <ColorPicker format="hex" />
               </Form.Item>
             </Col>
           </Row>

@@ -1,14 +1,43 @@
 /* CSS cho ant-menu-item ant-menu-item-only-child */
-.ant-menu-item.ant-menu-item-only-child {
-  padding: 0 !important; /* Đặt padding bằng 0 và sử dụng !important để đảm bảo ưu tiên cao */
-  margin: 0 !important; /* Đặt margin bằng 0 và sử dụng !important để đảm bảo ưu tiên cao */
-}
-
-/* Nếu bạn muốn điều chỉnh padding của nội dung */
-.ant-menu-item.ant-menu-item-only-child .ant-menu-title-content {
-  padding: 0 !important;
-}
 
 .label {
   padding-left: 30px;
 }
+
+/* .ant-menu-item.ant-menu-item-only-child {
+  height: 50px !important;
+}
+
+.ant-menu .ant-menu-title-content {
+  height: 50px !important;
+} */
+
+.ant-menu-item {
+  height: 60px !important; /* Adjust height as needed */
+  line-height: 60px !important; /* Ensure text is centered */
+  margin: 0px !important;
+  width: 100% !important;
+}
+
+.ant-menu-item-selected {
+  width: 100% !important; /* Prevents selected item from being wider */
+  box-shadow: none !important; /* Removes any extra styling that makes it look wider */
+  background-color: #015AD2 !important;
+  color: white !important;
+}
+
+.ant-breadcrumb-separator {
+  vertical-align: middle;
+  display: inline-block;
+}
+
+.ant-breadcrumb {
+  line-height: 1.2; /* Adjust this value to align properly */
+}
+
+.ant-breadcrumb-link {
+  padding-top: 2px !important;
+}
+
+
+

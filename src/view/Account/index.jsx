@@ -1,180 +1,154 @@
 import React, { useEffect, useState } from "react";
-import { Outlet, useNavigate, useLocation, Link } from "react-router-dom";
-import { Breadcrumb, Layout, Menu, theme, Form } from "antd";
-const { Header, Content, Footer, Sider } = Layout;
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
+import { Breadcrumb, Layout, Menu, theme } from "antd";
+const { Sider } = Layout;
 import { useDispatch, useSelector } from "react-redux";
 import "./index.css";
+import Cookies from "js-cookie";
 
-import { Avatar } from "antd";
 import { logout } from "../../slices/authSlice";
+import {
+  HeartOutlined,
+  HomeOutlined,
+  IdcardOutlined,
+  LogoutOutlined,
+  SettingOutlined,
+  TruckOutlined,
+} from '@ant-design/icons';
+import { getRecommendations } from "../../services/userService";
+
+const siderStyle = {
+  overflow: 'auto',
+  height: '480px',
+  position: 'sticky',
+  insetInlineStart: 0,
+  top: 0,
+  bottom: 0,
+  scrollbarWidth: 'thin',
+  scrollbarGutter: 'stable',
+};
 
 const Account = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { pathname } = location;
   const dispatch = useDispatch();
   const vnMode = true;
+  const currentPath = window.location.pathname;
+  const token = Cookies.get("token");
+  const [defaultSelectedKey, setDefaultSelectedKey] = useState('1');
+  const linkItems = [{ title: "Tài khoản của tôi", href: "/profile" }];
+  const [breadcrumbItems, setBreadcrumbItems] = useState(linkItems);
+
+  const parts = pathname.split("/");
+  const wishlistId = parts.length > 2 ? parts[2] : null;
+
+  const wishlist = useSelector((state) =>
+    state.wishlist?.wishlists?.find((item) => item.wishlistId === wishlistId)
+  );
 
   const user = useSelector((state) => {
     return state.user.data;
   });
-  console.log(123, user?.avatar?.file?.data);
+
+  useEffect(() => {
+    if (token) {
+      dispatch(getRecommendations())
+    }
+  }, [dispatch]);
 
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
-
-  const items = [
-    {
-      label: (
-        <span className="text-red-500 text-lg uppercase">
-          Tài khoản của tôi
-        </span>
-      ),
-      key: "submenu",
-      type: "group",
-      children: [
-        {
-          label: (
-            <div
-              className="text-red-500 label"
-              onClick={() => navigate("/profile")}
-            >
-              Hồ sơ
-            </div>
-          ),
-          key: "submenu-item-1",
-        },
-        {
-          label: (
-            <div
-              className="text-red-500 label"
-              onClick={() => navigate("/change-password")}
-            >
-              Đổi mật khẩu
-            </div>
-          ),
-          key: "submenu-item-2",
-        },
-        {
-          label: (
-            <div
-              className="text-red-500 label"
-              onClick={() => navigate("/address")}
-            >
-              Địa chỉ
-            </div>
-          ),
-          key: "submenu-item-3",
-        },
-      ],
-    },
-    {
-      label: <div className="text-red-500 text-lg uppercase">Đơn của tôi</div>,
-      key: "submenu2",
-      type: "group",
-      children: [
-        {
-          label: (
-            <div
-              className="text-red-500 label"
-              onClick={() => navigate("/orders")}
-            >
-              Đơn mua
-            </div>
-          ),
-          key: "submenu-item-4",
-        },
-      ],
-    },
-  ];
-
-  const getBreadcrumbName = () => {
-    switch (location.pathname) {
-      case "/profile":
-        return "Hồ sơ";
-      case "/change-password":
-        return "Đổi mật khẩu";
-      case "/address":
-        return "Địa chỉ";
-      case "/order":
-        return "Đơn mua";
-      default:
-        return "Tài khoản của tôi";
-    }
-  };
 
   const handleLogout = () => {
     dispatch(logout());
     navigate("/login");
   };
 
+  const items = [
+    { icon: HomeOutlined, label: "Account Overview", data: "/profile" },
+    { icon: TruckOutlined, label: "My Orders", data: "/orders" },
+    { icon: IdcardOutlined, label: "Personal Address & Details", data: "/address" },
+    { icon: HeartOutlined, label: "Wish list", data: "/wishlists" },
+    { icon: SettingOutlined, label: "Account Settings", data: "/change-password" },
+    { icon: LogoutOutlined, label: "Logout", data: "/logout" },
+  ].map((item, index) => ({
+    key: String(index + 1),
+    icon: React.createElement(item.icon),
+    label: (
+      <span>
+        {item.label}
+      </span>
+    ),
+    className: `border !rounded-none cursor-pointer ${item.data === "/profile" ? "!rounded-t-xl" : ""} ${item.data === "/logout" ? "!rounded-b-xl" : ""}`,
+    onClick: item.data === "/logout" ? handleLogout : () => navigate(item.data),
+    data: item.data
+  }));
+
+  useEffect(() => {
+    const basePath = currentPath.split("/")[1];
+    const matchedItem = items.find(item => item.data.split("/")[1] === basePath);
+
+    setDefaultSelectedKey(matchedItem?.key);
+  }, [pathname]);
+
+  useEffect(() => {
+    let newItems = [{ title: "Tài khoản của tôi", href: "/profile", className: '!text-[#015AD2] hover:underline' }];
+
+    if (pathname.startsWith("/wishlists")) {
+      newItems.push({ title: "Yêu thích", href: "/wishlists", className: pathname === '/wishlists' ? 'cursor-default pointer-events-none !text-black' : '!text-[#015AD2] hover:underline' });
+
+      if (wishlistId && wishlist) {
+        newItems.push({ title: wishlist.name, href: "", className: 'cursor-default pointer-events-none !text-black' });
+      }
+    } else {
+      switch (pathname) {
+        case "/profile":
+          newItems.push({ title: "Hồ sơ" });
+          break;
+        case "/change-password":
+          newItems.push({ title: "Đổi mật khẩu" });
+          break;
+        case "/address":
+          newItems.push({ title: "Địa chỉ", href: "", className: pathname === '/address' ? 'cursor-default pointer-events-none !text-black' : '' });
+          break;
+        case "/order":
+          newItems.push({ title: "Đơn mua" });
+          break;
+        default:
+          newItems.push({ title: "Tài khoản của tôi" });
+          break;
+      }
+    }
+
+    setBreadcrumbItems(newItems);
+  }, [pathname, wishlistId, wishlist]);
+
   return (
     <>
-      <Layout style={{ minHeight: "100vh" }}>
-        <Sider style={{ backgroundColor: "white" }}>
-          <Menu mode="inline" items={items} />
+      <div style={{ minHeight: "100vh" }} className="px-3 py-5 bg-[#F2F2F2] flex">
+        <Sider style={siderStyle} width={300} className="bg-[#F2F2F2]">
+          <div className="demo-logo-vertical" />
+          <Menu mode="inline" selectedKeys={[defaultSelectedKey]} items={items}
+            className="!p-0 h-auto rounded-xl"
+          />
         </Sider>
-
-        <Layout>
-          <Header
+        <div className="w-[90%] ml-5 h-full flex flex-col">
+          <Breadcrumb
+            className="flex items-center space-x-1 pt-2 mb-5"
+            items={breadcrumbItems}
+          />
+          <div
             style={{
-              padding: 0,
-              background: colorBgContainer,
-              paddingRight: 50,
+              borderRadius: borderRadiusLG,
             }}
+            className="h-full"
           >
-            <div className="flex justify-end gap-1 items-center">
-              <div className="flex items-center justify-center h-full">
-                <Avatar
-                  src={`data:image/jpeg;base64,${user?.avatar?.file?.data}`}
-                  size={40} // Đặt kích thước của Avatar
-                />
-              </div>
-              <div className="relative group">
-                <div className="cursor-pointer">{`${user?.firstName} ${user?.lastName}`}</div>
-                <div className="absolute right-0 z-50 mt-2 w-40 bg-white shadow-lg rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
-                  <ul className="list-none p-0 m-0 group-hover:opacity-100 group-hover:visible">
-                    <li
-                      className="hover:bg-gray-100 cursor-pointer p-1"
-                      onClick={() => navigate("/Home")}
-                    >
-                      Tài khoản của tôi
-                    </li>
-                    <li
-                      className="hover:bg-gray-100 cursor-pointer p-1"
-                      onClick={() => navigate("/Order")}
-                    >
-                      Đơn mua
-                    </li>
-                    <li
-                      className="hover:bg-gray-100 cursor-pointer p-1"
-                      onClick={handleLogout}
-                    >
-                      Đăng xuất
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </Header>
-          <Content style={{ margin: "0 16px" }}>
-            <Breadcrumb style={{ margin: "16px 0" }}>
-              <Breadcrumb.Item>Tài khoản của tôi</Breadcrumb.Item>
-              <Breadcrumb.Item>{getBreadcrumbName()}</Breadcrumb.Item>
-            </Breadcrumb>
-            <div
-              style={{
-                padding: 24,
-                minHeight: 360,
-                background: colorBgContainer,
-                borderRadius: borderRadiusLG,
-              }}
-            >
-              <Outlet context={{ vnMode }}></Outlet>
-            </div>
-          </Content>
-        </Layout>
-      </Layout>
+            <Outlet context={{ vnMode }}></Outlet>
+          </div>
+        </div>
+      </div>
     </>
   );
 };

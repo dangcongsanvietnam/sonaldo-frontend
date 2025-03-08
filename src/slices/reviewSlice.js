@@ -1,18 +1,16 @@
 // src/slices/reviewSlice.js
 
 import { createSlice } from "@reduxjs/toolkit";
-import { deleteReview } from "../services/reviewService";
+import { addReview, deleteReview, getAllReview } from "../services/reviewService";
 
 const reviewSlice = createSlice({
   name: "review",
   initialState: {
-    // ... your initial state ...
+  reviews: []
   },
   reducers: {
-    // ... your reducers ...
   },
   extraReducers: (builder) => {
-    // ... your other extraReducers ...
 
     builder.addCase(deleteReview.pending, (state) => {
       state.loading = "pending";
@@ -22,6 +20,29 @@ const reviewSlice = createSlice({
       state.loading = "success";
     });
     builder.addCase(deleteReview.rejected, (state, action) => {
+      state.loading = "Failed";
+      state.error = action.error;
+    });
+
+    builder.addCase(getAllReview.pending, (state) => {
+      state.loading = "pending";
+    });
+    builder.addCase(getAllReview.fulfilled, (state, action) => {
+      state.reviews = action.payload;
+      state.loading = "success";
+    });
+    builder.addCase(getAllReview.rejected, (state, action) => {
+      state.loading = "Failed";
+      state.error = action.error;
+    });
+
+    builder.addCase(addReview.pending, (state) => {
+      state.loading = "pending";
+    });
+    builder.addCase(addReview.fulfilled, (state, action) => {
+      state.loading = "success";
+    });
+    builder.addCase(addReview.rejected, (state, action) => {
       state.loading = "Failed";
       state.error = action.error;
     });

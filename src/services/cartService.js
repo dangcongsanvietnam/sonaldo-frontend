@@ -3,24 +3,19 @@ import BASE_URL from "../api";
 import Cookies from "js-cookie";
 
 export const getUserCart = createAsyncThunk("cart/getUserCart", async () => {
-  // Lấy token từ cookie
-  const token = Cookies.get("token"); // Hoặc tên khác tùy thuộc vào cách bạn lưu trữ token
+  const token = Cookies.get("token");
 
-  // Tạo cấu hình headers với token
   const config = {
     headers: {
       "Content-Type": "multipart/form-data",
-      Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+      Authorization: `Bearer ${token}`,
     },
   };
 
   try {
-    // Thực hiện request với cấu hình headers
     const res = await BASE_URL.get(`api/v1/carts`, config);
-    return res; // Trả về dữ liệu từ res
+    return res;
   } catch (error) {
-    // Xử lý lỗi nếu có
-    console.error("Get ko thành công", error);
     throw error;
   }
 });
@@ -28,28 +23,21 @@ export const getUserCart = createAsyncThunk("cart/getUserCart", async () => {
 export const addProductToCart = createAsyncThunk(
   "cart/addProductToCart",
   async ({ productId, quantity }) => {
-    console.log("productIdbe", productId);
-    // Lấy token từ cookie
-    const token = Cookies.get("token"); // Hoặc tên khác tùy thuộc vào cách bạn lưu trữ token
-    console.log(token);
-    // Tạo cấu hình headers với token
+    const token = Cookies.get("token");
     const config = {
       headers: {
-        Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+        Authorization: `Bearer ${token}`,
       },
     };
 
     try {
-      // Thực hiện request với cấu hình headers
       const res = await BASE_URL.post(
         `api/v1/carts/${productId}?quantity=${quantity}`,
         null,
         config
       );
-      return res.data; // Trả về dữ liệu từ res
+      return res.data;
     } catch (error) {
-      // Xử lý lỗi nếu có
-      console.error(error);
       throw error;
     }
   }
@@ -58,28 +46,21 @@ export const addProductToCart = createAsyncThunk(
 export const updateQuantityCartItem = createAsyncThunk(
   "cart/updateQuantityCartItem",
   async ({ cartItemId, quantity }) => {
-    console.log("cartItemId", cartItemId);
-    // Lấy token từ cookie
-    const token = Cookies.get("token"); // Hoặc tên khác tùy thuộc vào cách bạn lưu trữ token
-    console.log(token);
-    // Tạo cấu hình headers với token
+    const token = Cookies.get("token");
     const config = {
       headers: {
-        Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+        Authorization: `Bearer ${token}`,
       },
     };
 
     try {
-      // Thực hiện request với cấu hình headers
       const res = await BASE_URL.put(
         `api/v1/carts/${cartItemId}?quantity=${quantity}`,
         null,
         config
       );
-      return res.data; // Trả về dữ liệu từ res
+      return res.data;
     } catch (error) {
-      // Xử lý lỗi nếu có
-      console.error(error);
       throw error;
     }
   }
@@ -88,24 +69,17 @@ export const updateQuantityCartItem = createAsyncThunk(
 export const removeCartItem = createAsyncThunk(
   "cart/removeCartItem",
   async (cartItemId) => {
-    console.log("cartItemId", cartItemId);
-    // Lấy token từ cookie
-    const token = Cookies.get("token"); // Hoặc tên khác tùy thuộc vào cách bạn lưu trữ token
-    console.log(token);
-    // Tạo cấu hình headers với token
+    const token = Cookies.get("token");
     const config = {
       headers: {
-        Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+        Authorization: `Bearer ${token}`,
       },
     };
 
     try {
-      // Thực hiện request với cấu hình headers
       const res = await BASE_URL.delete(`api/v1/carts/${cartItemId}`, config);
-      return res; // Trả về dữ liệu từ res
+      return res;
     } catch (error) {
-      // Xử lý lỗi nếu có
-      console.error(error);
       throw error;
     }
   }
@@ -114,23 +88,17 @@ export const removeCartItem = createAsyncThunk(
 export const removeAllCartItem = createAsyncThunk(
   "cart/removeAllCartItem",
   async () => {
-    // Lấy token từ cookie
-    const token = Cookies.get("token"); // Hoặc tên khác tùy thuộc vào cách bạn lưu trữ token
-    console.log(token);
-    // Tạo cấu hình headers với token
+    const token = Cookies.get("token");
     const config = {
       headers: {
-        Authorization: `Bearer ${token}`, // Thêm token vào header Authorization
+        Authorization: `Bearer ${token}`,
       },
     };
 
     try {
-      // Thực hiện request với cấu hình headers
       const res = await BASE_URL.delete(`api/v1/carts`, config);
-      return res; // Trả về dữ liệu từ res
+      return res;
     } catch (error) {
-      // Xử lý lỗi nếu có
-      console.error(error);
       throw error;
     }
   }

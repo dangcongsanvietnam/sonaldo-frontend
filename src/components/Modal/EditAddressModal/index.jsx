@@ -12,6 +12,7 @@ const EditAddressModal = ({
   editAddress,
   form,
   isCreateModal,
+  loading
 }) => {
   const handleChange = (changedValues) => {
     setEditAddress((prev) => ({
@@ -68,11 +69,11 @@ const EditAddressModal = ({
             Đặt làm địa chỉ mặc định
           </Checkbox>
         </Form.Item>
-        <div className="flex justify-end pt-14">
+        <div className="flex justify-end pt-14 space-x-2">
           <Button className="w-[20%]" onClick={closeModal}>
             Trở lại
           </Button>
-          <Button className="w-[20%]" type="primary" onClick={openEditModal}>
+          <Button loading={loading} className="w-[20%]" type="primary" onClick={openEditModal}>
             Hoàn thành
           </Button>
         </div>

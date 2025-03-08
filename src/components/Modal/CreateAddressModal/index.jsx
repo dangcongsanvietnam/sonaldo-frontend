@@ -4,6 +4,7 @@ import DropDown from "../DropDown";
 import { Checkbox } from "antd";
 import TextArea from "antd/es/input/TextArea";
 import "./index.css";
+import { useSelector } from "react-redux";
 const CreateAddressModal = ({
   closeModal,
   openModal,
@@ -11,6 +12,7 @@ const CreateAddressModal = ({
   setAddress,
   form,
   editAddress,
+  loading
 }) => {
   const handleChange = (changedValues) => {
     setAddress((prev) => ({
@@ -18,6 +20,11 @@ const CreateAddressModal = ({
       ...changedValues,
     }));
   };
+
+  const userAddress = useSelector((state) => state?.address?.data);
+
+  console.log(123, editAddress)
+
 
   return (
     <>
@@ -69,13 +76,18 @@ const CreateAddressModal = ({
             valuePropName="checked"
             className="w-full"
           >
-            <Checkbox>Đặt làm địa chỉ mặc định</Checkbox>
+            <Checkbox
+              disabled={userAddress?.length < 1}
+            >
+              Đặt làm địa chỉ mặc định
+            </Checkbox>
+
           </Form.Item>
-          <div className="flex justify-end pt-14">
+          <div className="flex justify-end pt-14 space-x-2">
             <Button className="w-[20%]" onClick={closeModal}>
               Trở lại
             </Button>
-            <Button className="w-[20%]" type="primary" onClick={openModal}>
+            <Button loading={loading} className="w-[20%] bg-[#015AD2]" type="primary" onClick={openModal}>
               Hoàn thành
             </Button>
           </div>

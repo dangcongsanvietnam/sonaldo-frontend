@@ -6,7 +6,7 @@ import BASE_URL from "../../api";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { login } from "../../services/authService";
-import { getUserInfo } from "../../services/userService";
+import Google from '../../assets/google-logo.png';
 
 function GoogleLogin() {
   const [user, setUser] = useState(null);
@@ -87,7 +87,7 @@ function GoogleLogin() {
 
   return (
     <div>
-      <Button onClick={loginGoogle}>Sign in with Google 🚀 </Button>
+      <Button className="text-xl !rounded-full px-1 py-2 !bg-white !hover:bg-[#E5E7EB]" onClick={loginGoogle}><img src={Google} alt="LEGO" className="h-6 mx-auto" /></Button>
     </div>
   );
 }

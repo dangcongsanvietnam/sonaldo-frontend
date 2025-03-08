@@ -283,3 +283,23 @@ export const deleteUserAddress = createAsyncThunk(
     }
   }
 );
+
+export const getRecommendations = createAsyncThunk(
+  "product/getRecommendations",
+  async () => {
+    const token = Cookies.get("token");
+
+    const config = {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+      },
+    };
+
+    try {
+      const res = await BASE_URL.get(`api/v1/products/user-suggest`, config);
+      return res.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+);

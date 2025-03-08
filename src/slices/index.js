@@ -14,6 +14,7 @@ import emailSlice from "./emailSlice";
 import informationSlice from "./informationSlice";
 import cartSlice from "./cartSlice";
 import searchSlice from "./searchSlice";
+import wishlistSlice from "./wishlistSlice";
 
 
 const reducers = combineReducers({
@@ -33,6 +34,7 @@ const reducers = combineReducers({
   cart: cartSlice,
   changelog: changelogSlice,
   search: searchSlice,
+  wishlist: wishlistSlice
   // order: orderSlice,
 });
 

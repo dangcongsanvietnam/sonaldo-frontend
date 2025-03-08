@@ -4,3 +4,7 @@ button.slick-arrow.slick-prev {
 button.slick-arrow.slick-next {
   color: blue;
 }
+
+.ant-layout-sider {
+  max-width: 180px !important;
+}

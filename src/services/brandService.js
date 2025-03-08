@@ -90,6 +90,7 @@ export const updateBrand = createAsyncThunk(
       name: updateValues?.name,
       description: updateValues?.description,
       files: updateValues?.files,
+      color: updateValues?.color
     };
 
     try {
@@ -132,6 +133,7 @@ export const updateBrandCategory = createAsyncThunk(
       name: updateValues?.name,
       description: updateValues?.description,
       files: updateValues?.files,
+      color: updateValues?.color
     };
 
     try {
@@ -188,6 +190,7 @@ export const addNewBrandCategory = createAsyncThunk(
       name: newBrandCategory.name,
       description: newBrandCategory.description,
       files: newBrandCategory.files,
+      color: newBrandCategory?.color
     };
 
     try {

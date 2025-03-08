@@ -12,7 +12,7 @@ const ChangePassword = () => {
   const jwt = urlParams.get("jwt");
   const token = Cookies.get("token");
   const [buttonLoading, setButtonLoading] = useState(false);
-  const {vnMode} = useOutletContext();
+  const { vnMode } = useOutletContext();
 
   const handleVerifyPassword = () => {
     setButtonLoading(true);
@@ -41,16 +41,19 @@ const ChangePassword = () => {
 
   return (
     <>
-      {jwt ? (
-        <ConfirmPassword token={token} vnMode={vnMode} />
-      ) : (
-        <ValidatePassword
-          resendMail={resendMail}
-          handleVerifyPassword={handleVerifyPassword}
-          buttonLoading={buttonLoading}
-          vnMode={vnMode}
-        />
-      )}
+      <div className="font-bold text-2xl mb-5">Change Password</div>
+      <div className="bg-white w-full p-6 rounded-md">
+        {jwt ? (
+          <ConfirmPassword token={token} vnMode={vnMode} />
+        ) : (
+          <ValidatePassword
+            resendMail={resendMail}
+            handleVerifyPassword={handleVerifyPassword}
+            buttonLoading={buttonLoading}
+            vnMode={vnMode}
+          />
+        )}
+      </div>
     </>
   );
 };

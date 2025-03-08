@@ -1,0 +1,22 @@
+.custom-tabs .ant-tabs-tab {
+    font-size: 20px;
+    font-weight: bold;
+    color: #555;
+}
+
+.custom-tabs .ant-tabs-tab:hover {
+    font-size: 20px;
+    font-weight: bold;
+    color: #555;
+    text-decoration: underline;
+    text-underline-offset: 18.5px;
+}
+
+.custom-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+    color: #555 !important;
+}
+
+.ant-tabs-ink-bar {
+    height: 5px;
+    background-color: #555 !important;
+}
