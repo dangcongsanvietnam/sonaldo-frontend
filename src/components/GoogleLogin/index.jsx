@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useGoogleLogin } from "@react-oauth/google";
 import axios from "axios";
-import { Button, notification } from "antd";
+import { Button } from "antd";
 import BASE_URL from "../../api";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { login } from "../../services/authService";
 import Google from '../../assets/google-logo.png';
+import { toast } from "react-toastify";
 
-function GoogleLogin() {
+function GoogleLogin({vnMode}) {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -23,7 +24,7 @@ function GoogleLogin() {
     onSuccess: (codeResponse) => {
       setUser(codeResponse);
     },
-    onError: (error) => console.log("Login Failed:", error),
+    onError: (error) => toast.error(error),
   });
 
   useEffect(() => {
@@ -65,29 +66,20 @@ function GoogleLogin() {
                     } else {
                       navigate("/");
                     }
-
-                    notification.success({
-                      message: "Thành công",
-                      description: "Đăng nhập thành công",
-                    });
                   })
-                  .catch((err) => {
-                    console.log(err);
-                    notification.error({
-                      message: "Thất bại",
-                      description: "Đăng nhập thất bại",
-                    });
+                  .catch(() => {
+                    toast.error(vnMode ? "Thất bại" : "Failed");
                   });
               }
             });
         })
-        .catch((err) => console.log("err", err));
+        .catch(() => toast.error(vnMode ? "Thất bại" : "Failed"));
     }
   }, [user]);
 
   return (
     <div>
-      <Button className="text-xl !rounded-full px-1 py-2 !bg-white !hover:bg-[#E5E7EB]" onClick={loginGoogle}><img src={Google} alt="LEGO" className="h-6 mx-auto" /></Button>
+      <Button className="text-xl !rounded-full px-1 py-2 !bg-white !hover:bg-[#E5E7EB]" onClick={loginGoogle}><img src={Google} alt="Baybee" className="h-6 mx-auto" /></Button>
     </div>
   );
 }

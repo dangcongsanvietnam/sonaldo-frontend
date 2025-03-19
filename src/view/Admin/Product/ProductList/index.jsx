@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { debounce } from "lodash";
 import {
   Button,
@@ -43,6 +43,7 @@ const ProductList = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const firstRender = useRef(true);
+  const { vnMode } = useOutletContext();
 
   const [searchParams, setSearchParams] = useState({
     productName: "",
@@ -52,6 +53,13 @@ const ProductList = () => {
     categoryItemIds: [],
   });
 
+  const getLocalizedText = (text) => {
+    if (!text) return "";
+    const parts = text.split(" || ");
+    return vnMode ? parts[1]?.trim() || parts[0]?.trim() : parts[0]?.trim();
+  };
+  const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value);
+
   const { startLoading, stopLoading } = useLoading();
   const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
   const [updateOption, setUpdateOption] = useState("quantity");
@@ -60,8 +68,8 @@ const ProductList = () => {
   const products = useSelector((state) => state.product?.adminProducts);
   const brands = useSelector((state) => state.brand.brands.data);
   const categories = useSelector((state) => state.category.categories.data);
+
   const [loading, setLoading] = useState(false);
-  const { vnMode } = useOutletContext();
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isModalDeleteVisible, setIsModalDeleteVisible] = useState(false);
@@ -102,13 +110,11 @@ const ProductList = () => {
       dispatch(getAdminProducts({ page: 0, limit: 10 }))
         .unwrap()
         .then(async () => {
-          toast.success(vnMode ? "Tải dữ liệu sản phẩm thành công." : "Successfully loaded product data.");
           await stopLoading();
         }).catch(() => {
           stopLoading();
         })
     } catch (error) {
-      toast.error(vnMode ? "Không thể tải dữ liệu sản phẩm. Vui lòng thử lại!" : "Failed to load product data. Please try again!");
     }
   };
 
@@ -117,19 +123,6 @@ const ProductList = () => {
       setLoading(true);
       try {
         const response = await dispatch(searchAdminProducts({ ...params, page: 0, limit: 10 }));
-        if (!response.payload || response.payload.length === 0) {
-          toast.warning(
-            vnMode
-              ? "Không có sản phẩm nào khớp với tiêu chí tìm kiếm của bạn."
-              : "No products match your search criteria."
-          );
-        } else {
-          toast.success(
-            vnMode
-              ? `Tìm thấy ${response.payload.length} sản phẩm phù hợp.`
-              : `Found ${response.payload.length} matching products.`
-          );
-        }
       } catch (error) {
         toast.error(
           vnMode
@@ -145,11 +138,11 @@ const ProductList = () => {
 
   const brandOptions = Array.isArray(brands)
     ? brands.map((brand) => ({
-      label: brand?.brandName,
+      label: getLocalizedText(brand?.brandName),
       value: brand?.brandId,
       children: Array.isArray(brand.brandCategories)
         ? brand.brandCategories.map((subBrand) => ({
-          label: subBrand?.name,
+          label: getLocalizedText(subBrand?.name),
           value: subBrand?.brandCategoryId,
         }))
         : [],
@@ -158,11 +151,11 @@ const ProductList = () => {
 
   const categoryOptions = Array.isArray(categories)
     ? categories.map((category) => ({
-      label: category?.categoryName,
+      label: getLocalizedText(category?.categoryName),
       value: category?.categoryId,
       children: Array.isArray(category.categoryItems)
         ? category.categoryItems.map((subCategory) => ({
-          label: subCategory?.name,
+          label: getLocalizedText(subCategory?.name),
           value: subCategory?.categoryItemId,
         }))
         : [],
@@ -290,7 +283,6 @@ const ProductList = () => {
 
       setIsModalVisible(false);
     } catch (error) {
-      console.log(error)
       toast.error(
         vnMode
           ? "Xóa một số sản phẩm thất bại."
@@ -361,7 +353,7 @@ const ProductList = () => {
 
     const tableData = products.map((product) => [
       product.productId,
-      product.name,
+      getLocalizedText(product.name),
       product.price,
       product.stockStatus === "InStock" ? "Còn hàng" : "Hết hàng",
     ]);
@@ -496,7 +488,9 @@ const ProductList = () => {
     {
       title: vnMode ? "Sản phẩm" : "Product",
       dataIndex: "name",
-      sorter: (a, b) => a.name.localeCompare(b.name),
+      sorter: (a, b) =>
+        getLocalizedText(a.name).localeCompare(getLocalizedText(b.name)),
+      render: (name) => <span>{getLocalizedText(name)}</span>,
     },
     {
       title: vnMode ? "Ảnh sản phẩm" : "Image",
@@ -513,25 +507,46 @@ const ProductList = () => {
       title: vnMode ? "Giá" : "Price",
       dataIndex: "price",
       sorter: (a, b) => a.price - b.price,
+      render: (price) => <span>{formatCurrency(price)}</span>,
     },
     {
       title: vnMode ? "Trạng thái hàng" : "Stock",
       dataIndex: "stockStatus",
       sorter: (a, b) => a.stockStatus.localeCompare(b.stockStatus),
       render: (status) => (
-        vnMode ?
-          <span>{status === "InStock" ? "Còn hàng" : "Hết hàng"}</span> :
-          <span>{status === "InStock" ? "In Stock" : "Out of Stock"}</span>
+        <span>
+          {vnMode
+            ? status === "InStock"
+              ? "Còn hàng"
+              : "Hết hàng"
+            : status === "InStock"
+              ? "In Stock"
+              : "Out of Stock"}
+        </span>
       ),
     },
     {
       title: vnMode ? "Trạng thái" : "State",
       dataIndex: "state",
-      sorter: (a, b) => a.stockStatus.localeCompare(b.stockStatus),
+      sorter: (a, b) => a.state.localeCompare(b.state),
       render: (status) => (
-        vnMode ?
-          <span>{status === "Lock" ? "Khoá" : (status === "Normal" ? "Bình thường" : (status === "Preorder" ? "Đặt trước" : "Sản phẩm mới"))}</span> :
-          <span>{status === "Lock" ? "Lock" : (status === "Normal" ? "Normal" : (status === "Preorder" ? "Preorder" : "New Arrival"))}</span>
+        <span>
+          {vnMode
+            ? status === "Lock"
+              ? "Khoá"
+              : status === "Normal"
+                ? "Bình thường"
+                : status === "Preorder"
+                  ? "Đặt trước"
+                  : "Sản phẩm mới"
+            : status === "Lock"
+              ? "Lock"
+              : status === "Normal"
+                ? "Normal"
+                : status === "Preorder"
+                  ? "Preorder"
+                  : "New Arrival"}
+        </span>
       ),
     },
     {
@@ -547,8 +562,9 @@ const ProductList = () => {
           <MoreOutlined style={{ cursor: "pointer", fontSize: 16 }} />
         </Dropdown>
       ),
-    }
+    },
   ];
+
 
   const data = products?.map((product, index) => ({
     key: index,
@@ -619,6 +635,7 @@ const ProductList = () => {
             <Cascader
               options={brandOptions}
               maxTagCount="responsive"
+              value={searchParams.brandCategoryId}
               showCheckedStrategy={SHOW_CHILD}
               showSearch={{ filter }}
               onChange={(value) => handleInputChange("brandCategoryId", value ? value[1] : "")}
@@ -629,6 +646,7 @@ const ProductList = () => {
             <Cascader
               options={categoryOptions}
               multiple
+              value={searchParams.categoryItemIds}
               maxTagCount="responsive"
               showCheckedStrategy={SHOW_CHILD}
               showSearch={{ filter }}

@@ -18,7 +18,7 @@ const DetailPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const userDetail = useSelector((state) => state.user.userInfo);
-  const { email } = useParams();
+  const { email, role } = useParams();
   const [form] = Form.useForm();
   const [editing, setEditing] = useState(false);
   const [deleteReviewModalVisible, setDeleteReviewModalVisible] = useState(false);
@@ -71,7 +71,7 @@ const DetailPage = () => {
   const [loadingDeleteOrderButton, setLoadingDeleteOrderButton] = useState(false);
 
   useEffect(() => {
-    dispatch(GetUser(email)).unwrap().then((res) => {
+    dispatch(GetUser({email, role})).unwrap().then((res) => {
       setFormValues(res.data);
       setBirthday(res.data?.birthday)
     })
@@ -647,7 +647,7 @@ const DetailPage = () => {
           renderItem={(item) => (
             <List.Item
               actions={[
-                <DeleteOutline
+                <DeleteOutlined
                   key="delete"
                   onClick={() => handleDeleteAddress(item.addressId)}
                   className="cursor-pointer text-red-400"

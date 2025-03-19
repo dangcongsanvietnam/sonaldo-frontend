@@ -3,7 +3,7 @@ import axios from "axios";
 import { Form, Select } from "antd";
 import "./Dropdown.css"; // Import the CSS file
 
-const Dropdown = ({ setAddress, editAddress, isCreateModal }) => {
+const Dropdown = ({ setAddress, editAddress, isCreateModal, vnMode }) => {
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [communes, setCommunes] = useState([]);
@@ -30,7 +30,6 @@ const Dropdown = ({ setAddress, editAddress, isCreateModal }) => {
   }, [provinces, districts, communes]);
 
   useEffect(() => {
-    // Fetch provinces
     axios
       .get("https://esgoo.net/api-tinhthanh/1/0.htm")
       .then((response) => {
@@ -40,14 +39,12 @@ const Dropdown = ({ setAddress, editAddress, isCreateModal }) => {
         }));
         setProvinces(provinceOptions);
       })
-      .catch((error) => {
-        console.error("Error fetching provinces:", error);
+      .catch(() => {
       });
   }, []);
 
   useEffect(() => {
     if (selectedProvince) {
-      // Fetch districts
       axios
         .get(`https://esgoo.net/api-tinhthanh/2/${selectedProvince}.htm`)
         .then((response) => {
@@ -57,8 +54,7 @@ const Dropdown = ({ setAddress, editAddress, isCreateModal }) => {
           }));
           setDistricts(districtOptions);
         })
-        .catch((error) => {
-          console.error("Error fetching districts:", error);
+        .catch(() => {
         });
     } else {
       setDistricts([]);
@@ -67,7 +63,6 @@ const Dropdown = ({ setAddress, editAddress, isCreateModal }) => {
 
   useEffect(() => {
     if (selectedDistrict) {
-      // Fetch communes
       axios
         .get(`https://esgoo.net/api-tinhthanh/3/${selectedDistrict}.htm`)
         .then((response) => {
@@ -77,8 +72,7 @@ const Dropdown = ({ setAddress, editAddress, isCreateModal }) => {
           }));
           setCommunes(communeOptions);
         })
-        .catch((error) => {
-          console.error("Error fetching communes:", error);
+        .catch(() => {
         });
     } else {
       setCommunes([]);
@@ -124,33 +118,44 @@ const Dropdown = ({ setAddress, editAddress, isCreateModal }) => {
     <div>
       <Form.Item name="province">
         <Select
-          labelInValue={false}
+          showSearch
+          filterOption={(input, option) =>
+            option.label.toLowerCase().includes(input.toLowerCase())
+          }
           fieldNames="province"
           className="custom-select h-[38px] w-[40%]"
           options={provinces}
           onChange={handleProvinceChange}
-          placeholder="Chọn tỉnh/thành phố"
+          placeholder={vnMode ? "Chọn tỉnh/thành phố" : "Choose Province"}
         ></Select>
       </Form.Item>
       <Form.Item name="district">
         <Select
+          showSearch
+          filterOption={(input, option) =>
+            option.label.toLowerCase().includes(input.toLowerCase())
+          }
           fieldNames="district"
           className="custom-select h-[38px] w-[30%]"
           options={districts}
           onChange={handleDistrictChange}
           disabled={!selectedProvince}
-          placeholder="Chọn quận/huyện"
+          placeholder={vnMode ? "Chọn quận/huyện" : "Choose District"}
         ></Select>
       </Form.Item>
 
       <Form.Item name="commune">
         <Select
+          showSearch
+          filterOption={(input, option) =>
+            option.label.toLowerCase().includes(input.toLowerCase())
+          }
           fieldNames="commune"
           className="custom-select  h-[38px] w-[30%]"
           options={communes}
           onChange={handleCommuneChange}
           disabled={!selectedDistrict}
-          placeholder="Chọn xã phường"
+          placeholder={vnMode ? "Chọn xã phường" : "Choose Commune"}
         ></Select>
       </Form.Item>
     </div>

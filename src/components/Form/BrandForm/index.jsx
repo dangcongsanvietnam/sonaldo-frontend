@@ -62,6 +62,11 @@ const BrandForm = ({ vnMode }) => {
           rules={[{ message: vnMode ? "Vui lòng nhập nhãn hàng!" : "Please enter the brand name!" }]}
         >
           <Input placeholder={vnMode ? "Nhập nhãn hàng ..." : "Enter brand name ..."} />
+          <small className="text-gray-500">
+            {vnMode
+              ? 'Nhập theo định dạng: "English || Tiếng Việt"'
+              : 'Enter in format: "English || Vietnamese"'}
+          </small>
         </Form.Item>
 
         <Form.Item
@@ -70,6 +75,11 @@ const BrandForm = ({ vnMode }) => {
           rules={[{ message: vnMode ? "Vui lòng nhập mục mô tả!" : "Please enter a description!" }]}
         >
           <TextArea rows={4} placeholder={vnMode ? "Nhập mô tả ..." : "Enter description ..."}></TextArea>
+          <small className="text-gray-500">
+            {vnMode
+              ? 'Nhập theo định dạng: "English || Tiếng Việt"'
+              : 'Enter in format: "English || Vietnamese"'}
+          </small>
         </Form.Item>
 
         <Form.Item

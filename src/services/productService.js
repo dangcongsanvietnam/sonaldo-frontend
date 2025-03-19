@@ -42,7 +42,6 @@ export const getRecommendProducts = createAsyncThunk(
   "product/getRecommendProducts",
   async (productId) => {
     const res = await BASE_URL.get(`api/v1/products/suggest/${productId}`);
-    console.log(res)
     return res;
   }
 );

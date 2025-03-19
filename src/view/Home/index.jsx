@@ -1,31 +1,30 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getAllProduct, getHotProducts, getProductDetail } from "../../services/productService";
-import { Button, Card, Input, Modal, Rate, Tabs, Tag } from "antd"; // Sử dụng Card từ Ant Design
+import { getAllProduct, getHotProducts } from "../../services/productService";
+import { Button, Card, Input, Modal, Rate, Tabs, Tag } from "antd";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import { addProductToCart, getUserCart } from "../../services/cartService";
 import { toast } from "react-toastify";
 import Cookies from "js-cookie";
 import './index.css'
 import { getRecommendations } from "../../services/userService";
-import { ArrowRightOutlined, HeartFilled, HeartOutlined, LeftOutlined, RightOutlined, ShoppingCartOutlined } from "@ant-design/icons";
-import { addToFavorite, getAllWishlist, removeFromFavorite } from "../../services/wishlistService";
+import { ArrowRightOutlined, HeartFilled, HeartOutlined, ShoppingCartOutlined } from "@ant-design/icons";
+import { addToFavorite, createWishlist, getAllWishlist, removeFromFavorite } from "../../services/wishlistService";
+import { useDrawer } from "../../components/Layout";
 
 const Home = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const setCart = useOutletContext();
   const wishlists = useSelector(state => state.wishlist.wishlists);
   const [wishlistedProducts, setWishlistedProducts] = useState(new Set());
   const [addLoading, setAddLoading] = useState("" || null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isWishlistModalVisible, setIsWishlistModalVisible] = useState(false);
   const [isLoginModalVisible, setIsLoginModalVisible] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [currentIndex2, setCurrentIndex2] = useState(0);
+  const [bagLoading, setBagLoading] = useState("");
   const hotTag = useSelector((state) => state?.search?.data);
-  const itemsPerPage = 5;
-  const vnMode = true;
+  const { toggleDrawer } = useDrawer();
+  const { vnMode } = useOutletContext();
   const getLocalizedText = (text) => {
     if (!text) return "";
     const parts = text.split(" || ");
@@ -62,12 +61,12 @@ const Home = () => {
     },
     {
       key: '2',
-      label: 'Popular',
+      label: vnMode ? "Phổ biến" : 'Popular',
       children: renderProductList2(),
     },
     {
       key: '3',
-      label: 'Personal',
+      label: vnMode ? "Đề xuất cho bạn" : 'Personal',
       children: renderProductList(),
     },
   ];
@@ -91,16 +90,14 @@ const Home = () => {
 
   const token = Cookies.get("token");
 
-  const userCart = useSelector((state) => state.cart?.userCart);
-
-  useEffect(() => {
-    dispatch(getAllWishlist());
-  }, [dispatch]);
-
   useEffect(() => {
     if (token) {
+      dispatch(getAllWishlist());
+      dispatch(getUserCart());
       dispatch(getRecommendations())
     }
+    dispatch(getAllProduct({ page: 1, limit: 10 }));
+    dispatch(getHotProducts({ page: 1, limit: 10 }));
   }, [dispatch]);
 
   useEffect(() => {
@@ -109,34 +106,6 @@ const Home = () => {
     );
     setWishlistedProducts(productIds);
   }, [wishlists]);
-
-  useEffect(() => {
-    dispatch(getAllProduct({ page: 1, limit: 10 }));
-    dispatch(getHotProducts({ page: 1, limit: 10 }));
-    dispatch(getUserCart());
-  }, [dispatch]);
-
-  const OnSubmitProduct = (productId) => {
-    if (!token) {
-      navigate("/login");
-    } else {
-      dispatch(addProductToCart({ productId, quantity: 1 }))
-        .unwrap()
-        .then(() => {
-          dispatch(getUserCart())
-            .unwrap()
-            .then((res) => {
-              console.log("res home", res.data);
-              setCart(res.data);
-              toast.success("Sản phẩm đã được thêm vào giỏ hàng!");
-            });
-        });
-    }
-  };
-
-  const onChange = (key) => {
-    console.log(key);
-  };
 
   const addToFavourite = (product) => {
     const token = Cookies.get("token");
@@ -149,6 +118,26 @@ const Home = () => {
 
     let foundWishlist = null;
     let foundWishlistItem = null;
+
+    if (wishlists.length === 0) {
+      dispatch(createWishlist("Favorite"))
+        .unwrap()
+        .then((newWishlist) => {
+          const data = {
+            productId: product.productId,
+            wishlistId: newWishlist.wishlistId
+          };
+          return dispatch(addToFavorite(data)).unwrap();
+        })
+        .then(() => {
+          setWishlistedProducts((prev) => new Set(prev).add(product.productId));
+        })
+        .catch(() => {
+          toast.error(vnMode ? "Thêm vào yêu thích thất bại!" : "Failed to add!");
+        })
+        .finally(() => dispatch(getAllWishlist()));
+      return;
+    }
 
     for (const wishlist of wishlists) {
       for (const wishlistItem of wishlist.wishlistItems) {
@@ -174,7 +163,6 @@ const Home = () => {
             newSet.delete(product.productId);
             return newSet;
           });
-          toast.success(vnMode ? "Đã xóa khỏi danh sách yêu thích!" : "Removed from favorites!");
         })
         .catch(() => {
           toast.error(vnMode ? "Xóa khỏi danh sách yêu thích thất bại!" : "Failed to remove!");
@@ -190,7 +178,6 @@ const Home = () => {
           .unwrap()
           .then(() => {
             setWishlistedProducts((prev) => new Set(prev).add(product.productId));
-            toast.success(vnMode ? "Thêm vào yêu thích thành công!" : "Added to favorites!");
           })
           .catch(() => {
             toast.error(vnMode ? "Thêm vào yêu thích thất bại!" : "Failed to add!");
@@ -213,7 +200,6 @@ const Home = () => {
       .unwrap()
       .then(() => {
         setWishlistedProducts((prev) => new Set(prev).add(selectedProduct.productId));
-        toast.success(vnMode ? "Thêm vào yêu thích thành công!" : "Added to favorites!");
       })
       .catch(() => {
         toast.error(vnMode ? "Thêm vào yêu thích thất bại!" : "Failed to add!");
@@ -227,80 +213,67 @@ const Home = () => {
 
 
   function renderProductList() {
-    const nextSlide = () => {
-      if (currentIndex + itemsPerPage < recommendations.length) {
-        setCurrentIndex(currentIndex + 1);
-      }
-    };
-
-    const prevSlide = () => {
-      if (currentIndex > 0) {
-        setCurrentIndex(currentIndex - 1);
-      }
-    };
-
     const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value);
 
-
     return (
-      <div className="relative w-full h-auto overflow-hidden">
+      <div className="relative w-full h-auto">
         {recommendations?.length > 0 ? (
-          <div className="flex items-center">
-            <button onClick={prevSlide} disabled={currentIndex === 0}
-              className="absolute top-1/2 left-0 transform -translate-y-1/2 bg-white p-3 shadow-md rounded-full z-10">
-              <LeftOutlined />
-            </button>
-            <button onClick={nextSlide} disabled={currentIndex + itemsPerPage >= recommendations.length}
-              className="absolute top-1/2 right-0 transform -translate-y-1/2 bg-white p-3 shadow-md rounded-full z-10">
-              <RightOutlined />
-            </button>
-            <div className="w-full overflow-hidden">
-              <div className="flex transition-transform duration-300"
-                style={{ transform: `translateX(-${currentIndex * (100 / itemsPerPage)}%)` }}>
-                {recommendations.map((product, index) => {
-                  const isWishlisted = wishlistedProducts.has(product.productId);
-                  return (
-                    <div key={index} className="px-6 py-6 shrink-0 w-1/4" style={{ height: 600 }}>
-                      <Card
-                        cover={
-                          <div className="relative">
-                            <div
-                              className="bg-white absolute top-4 right-4 rounded-full p-2 shadow-md cursor-pointer z-10"
-                              style={{ width: "35px", height: "35px" }}
-                              onClick={() => addToFavourite(product)}
-                            >
-                              {isWishlisted ? (
-                                <HeartFilled className="text-red-500 text-xl" />
-                              ) : (
-                                <HeartOutlined className="text-red-500 text-xl" />
-                              )}
-                            </div>
-                            <img
-                              src={`data:image/jpeg;base64,${product?.imageUrl?.file.data}`}
-                              className="h-[250px] w-full object-cover rounded-t-lg"
-                              style={{ width: "100%" }}
-                            />
+          <div className="w-full overflow-x-auto scroll-smooth whitespace-nowrap">
+            <div className="flex space-x-6">
+              {recommendations.map((product, index) => {
+                const isWishlisted = wishlistedProducts.has(product.productId);
+                return (
+                  <div key={index} className="shrink-0 w-[250px]">
+                    <Card
+                      cover={
+                        <div className="relative">
+                          <div
+                            className="bg-white absolute top-4 right-4 rounded-full p-2 shadow-md cursor-pointer z-10"
+                            style={{ width: "35px", height: "35px" }}
+                            onClick={() => addToFavourite(product)}
+                          >
+                            {isWishlisted ? (
+                              <HeartFilled className="text-red-500 text-xl" />
+                            ) : (
+                              <HeartOutlined className="text-red-500 text-xl" />
+                            )}
                           </div>
-                        }
-                        className="shadow-lg rounded-3xl transition-transform duration-300 ease-in-out hover:scale-105"
-                      >
-                        <div className="h-48 relative">
-                          <h3 className="font-semibold text-base line-clamp-3">{product.name}</h3>
-                          <div className="flex">
-                            <Rate allowHalf value={product.avgVoting} className="mb-2 mr-2 text-sm" disabled />
-                            <p className="text-gray-600">({product.votingQuantity})</p>
-                          </div>
-                          <p className="text-xl font-bold">{formatCurrency(product.price)} vnđ</p>
-
-                          <Button type="primary" icon={<ShoppingCartOutlined />} className="absolute h-10 w-full !rounded-full bottom-0">
-                            {vnMode ? 'Thêm vào giỏ hàng' : 'Add to Cart'}
-                          </Button>
+                          <img
+                            src={`data:image/jpeg;base64,${product?.imageUrl?.file.data}`}
+                            className="h-[250px] w-full object-cover rounded-t-lg"
+                            onClick={() => navigate(`/product/${product.productId}`)}
+                          />
                         </div>
-                      </Card>
-                    </div>
-                  );
-                })}
-              </div>
+                      }
+                      className="shadow-lg rounded-3xl transition-transform duration-300 ease-in-out hover:scale-105"
+                    >
+                      <div className="h-48 relative">
+                        <h3
+                          className="font-semibold text-base line-clamp-3"
+                          onClick={() => navigate(`/product/${product.productId}`)}
+                        >
+                          {product.name}
+                        </h3>
+                        <div className="flex">
+                          <Rate allowHalf value={product.avgVoting} className="mb-2 mr-2 text-sm" disabled />
+                          <p className="text-gray-600">({product.votingQuantity})</p>
+                        </div>
+                        <p className="text-xl font-bold">{formatCurrency(product.price)} vnđ</p>
+
+                        <Button
+                          type="primary"
+                          loading={bagLoading === product.productId}
+                          onClick={() => handleAddProduct(product?.productId, 1)}
+                          icon={<ShoppingCartOutlined />}
+                          className="absolute h-10 w-full !rounded-full bottom-0"
+                        >
+                          {vnMode ? 'Thêm vào giỏ hàng' : 'Add to Cart'}
+                        </Button>
+                      </div>
+                    </Card>
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : (
@@ -313,80 +286,67 @@ const Home = () => {
   }
 
   function renderProductList2() {
-    const nextSlide = () => {
-      if (currentIndex2 + itemsPerPage < hotProductList.length) {
-        setCurrentIndex2(currentIndex2 + 1);
-      }
-    };
-
-    const prevSlide = () => {
-      if (currentIndex > 0) {
-        setCurrentIndex2(currentIndex2 - 1);
-      }
-    };
-
     const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value);
 
     return (
-      <div className="relative w-full h-auto overflow-hidden">
+      <div className="relative w-full h-auto">
         {hotProductList?.length > 0 ? (
-          <div className="flex items-center">
-            <button onClick={prevSlide} disabled={currentIndex2 === 0}
-              className="absolute top-1/2 left-0 transform -translate-y-1/2 bg-white p-3 shadow-md rounded-full z-10">
-              <LeftOutlined />
-            </button>
-            <button onClick={nextSlide} disabled={currentIndex2 + itemsPerPage >= hotProductList.length}
-              className="absolute top-1/2 right-0 transform -translate-y-1/2 bg-white p-3 shadow-md rounded-full z-10">
-              <RightOutlined />
-            </button>
-            <div className="w-full overflow-hidden">
-              <div className="flex transition-transform duration-300"
-                style={{ transform: `translateX(-${currentIndex2 * (100 / itemsPerPage)}%)` }}>
-                {hotProductList.map((product, index) => {
-                  const isWishlisted = wishlistedProducts.has(product.productId);
-                  return (
-                    <div key={index} className="px-6 py-6 shrink-0 w-1/4" style={{ height: 600 }}>
-                      <Card
-                        cover={
-                          <div className="relative">
-                            <div
-                              className="bg-white absolute top-4 right-4 rounded-full p-2 shadow-md cursor-pointer z-10"
-                              style={{ width: "35px", height: "35px" }}
-                              onClick={() => addToFavourite(product)}
-                            >
-                              {isWishlisted ? (
-                                <HeartFilled className="text-red-500 text-xl" />
-                              ) : (
-                                <HeartOutlined className="text-red-500 text-xl" />
-                              )}
-                            </div>
-                            <img
-                              src={`data:image/jpeg;base64,${product?.imageUrl?.file.data}`}
-                              className="h-[250px] w-full object-cover rounded-t-lg"
-                              style={{ width: "100%" }}
-                            />
+          <div className="w-full overflow-x-auto scroll-smooth whitespace-nowrap">
+            <div className="flex space-x-6 p-6">
+              {hotProductList.map((product, index) => {
+                const isWishlisted = wishlistedProducts.has(product.productId);
+                return (
+                  <div key={index} className="shrink-0 w-[250px]">
+                    <Card
+                      cover={
+                        <div className="relative">
+                          <div
+                            className="bg-white absolute top-4 right-4 rounded-full p-2 shadow-md cursor-pointer z-10"
+                            style={{ width: "35px", height: "35px" }}
+                            onClick={() => addToFavourite(product)}
+                          >
+                            {isWishlisted ? (
+                              <HeartFilled className="text-red-500 text-xl" />
+                            ) : (
+                              <HeartOutlined className="text-red-500 text-xl" />
+                            )}
                           </div>
-                        }
-                        className="shadow-lg rounded-3xl transition-transform duration-300 ease-in-out hover:scale-105 cursor-pointer"
-                        onClick={() => navigate(`/product/${product.productId}`)}
-                      >
-                        <div className="h-48 relative">
-                          <h3 className="font-semibold text-base line-clamp-3">{product.name}</h3>
-                          <div className="flex">
-                            <Rate allowHalf value={product.avgVoting} className="mb-2 mr-2 text-sm" disabled />
-                            <p className="text-gray-600">({product.votingQuantity})</p>
-                          </div>
-                          <p className="text-xl font-bold">{formatCurrency(product.price)} vnđ</p>
-
-                          <Button type="primary" icon={<ShoppingCartOutlined />} className="absolute h-10 w-full !rounded-full bottom-0">
-                            {vnMode ? 'Thêm vào giỏ hàng' : 'Add to Cart'}
-                          </Button>
+                          <img
+                            src={`data:image/jpeg;base64,${product?.imageUrl?.file.data}`}
+                            className="h-[250px] w-full object-cover rounded-t-lg"
+                            onClick={() => navigate(`/product/${product.productId}`)}
+                          />
                         </div>
-                      </Card>
-                    </div>
-                  );
-                })}
-              </div>
+                      }
+                      className="shadow-lg rounded-3xl transition-transform duration-300 ease-in-out hover:scale-105"
+                    >
+                      <div className="h-48 relative">
+                        <h3
+                          className="font-semibold text-base line-clamp-3"
+                          onClick={() => navigate(`/product/${product.productId}`)}
+                        >
+                          {product.name}
+                        </h3>
+                        <div className="flex">
+                          <Rate allowHalf value={product.avgVoting} className="mb-2 mr-2 text-sm" disabled />
+                          <p className="text-gray-600">({product.votingQuantity})</p>
+                        </div>
+                        <p className="text-xl font-bold">{formatCurrency(product.price)} vnđ</p>
+
+                        <Button
+                          type="primary"
+                          loading={bagLoading === product.productId}
+                          onClick={() => handleAddProduct(product?.productId, 1)}
+                          icon={<ShoppingCartOutlined />}
+                          className="absolute h-10 w-full !rounded-full bottom-0"
+                        >
+                          {vnMode ? 'Thêm vào giỏ hàng' : 'Add to Cart'}
+                        </Button>
+                      </div>
+                    </Card>
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : (
@@ -398,74 +358,107 @@ const Home = () => {
     );
   }
 
+  const handleAddProduct = (productId, quantitySelected) => {
+    setBagLoading(productId);
+    if (!token) {
+      navigate("/login");
+    } else {
+      dispatch(addProductToCart({ productId, quantity: quantitySelected }))
+        .unwrap()
+        .then(() => {
+          dispatch(getUserCart())
+            .unwrap()
+            .then(() => {
+              toggleDrawer();
+              setBagLoading("");
+            });
+        }).catch(() => {
+          toast.error(vnMode ? "Thêm sản phẩm thất bại!" : "Failed to add!");
+          setBagLoading("");
+        });
+    }
+  };
+
   return (
     <>
       <div className="bg-gray-100 min-h-screen">
-        <div className="relative w-full h-[350px] lg:h-[400px] bg-black flex items-center justify-between p-10">
+        <div className="relative w-full h-[300px] sm:h-[350px] lg:h-[400px] bg-black flex items-center justify-center p-5 sm:p-10">
           <div className="absolute inset-0">
             <img
               src="https://www.lego.com/cdn/cs/set/assets/bltfc4613ebd350e8da/1996-2025-Homepage-Hero-Standard-42207-Large.jpg?fit=crop&format=webply&quality=80&width=1600&height=500&dpr=1.5"
               alt="Lego F1 Car"
-              className="w-full h-full"
+              className="w-full h-full object-cover"
             />
           </div>
 
-          <div className="absolute right-10 z-10 flex flex-col items-end text-white max-w-xl">
-            <h2 className="text-lg lg:text-2xl uppercase tracking-wide text-gray-300">
+          <div className="absolute inset-0 bg-black/50 sm:bg-transparent"></div>
+
+          <div className="absolute z-10 flex flex-col sm:right-10 items-center sm:items-end text-white max-w-lg text-center sm:text-right p-4 sm:p-0">
+            <h2 className="text-sm sm:text-lg uppercase tracking-wide text-gray-300">
               TECHNIC
             </h2>
-            <h1 className="text-2xl lg:text-5xl font-bold mt-2">
+            <h1 className="text-xl sm:text-2xl lg:text-5xl font-bold mt-2">
               Race like a champion
             </h1>
-            <p className="text-sm lg:text-lg text-gray-400 mt-3">
+            <p className="text-xs sm:text-sm lg:text-lg text-gray-400 mt-3">
               Build and display new LEGO® F1® sets like the Ferrari SF-24 F1 Car.
             </p>
 
-            {/* Buttons */}
-            <div className="flex space-x-4 mt-5">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 mt-5">
               <Button
                 type="default"
                 size="large"
-                className="px-6 py-2 text-lg border-gray-400 text-white"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 text-base sm:text-lg border-gray-400 text-white"
               >
                 Shop all new →
               </Button>
-              <Button type="default" size="large" className="px-6 py-2 text-lg">
+              <Button
+                type="default"
+                size="large"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 text-base sm:text-lg"
+              >
                 Shop collection →
               </Button>
             </div>
           </div>
         </div>
-        <div className="flex justify-center pt-4 pb-8 bg-[#E4E5EC]">
-          {categories?.categories?.map((category, index) => (
-            <div key={index} className="text-center" style={{
-              width: '160px'
-            }}>
-              <div key={category.name} className={`text-center p-4 rounded-lg cursor-pointer hover:opacity-80 text-white font-bold text-lg flex items-center justify-center`} style={{ width: 160, height: 160 }}>
-                <img onClick={() => navigate(`/brand/${brandId}/${category.brandCategoryId}`)} src={`data:image/jpeg;base64,${category.imageFile.file.data}`} className="w-full max-h-full object-contain transition-transform duration-300 ease-in-out hover:scale-110 rounded-xl" />
+
+        <div className="overflow-x-auto whitespace-nowrap py-4 bg-[#E4E5EC]">
+          <div className="flex gap-4 md:justify-center">
+            {categories?.categories?.map((category, index) => (
+              <div key={index} className="flex flex-col items-center w-[120px] sm:w-[160px] flex-shrink-0">
+                <div
+                  key={category.name}
+                  className="w-[120px] sm:w-[160px] h-[120px] sm:h-[160px] text-center p-4 rounded-lg cursor-pointer hover:opacity-80 text-white font-bold text-lg flex items-center justify-center"
+                >
+                  <img
+                    onClick={() => navigate(`/brand/${brandId}/${category.brandCategoryId}`)}
+                    src={`data:image/jpeg;base64,${category.imageFile.file.data}`}
+                    className="w-full h-full object-contain transition-transform duration-300 ease-in-out hover:scale-110 rounded-xl"
+                  />
+                </div>
+                <div className="font-semibold text-xs truncate w-[120px] sm:w-[160px] text-center mt-2">
+                  {category.categoryName}
+                </div>
               </div>
-              <div className="font-semibold text-xs truncate overflow-hidden whitespace-nowrap" style={{
-                width: '160px'
-              }}>
-                {category.categoryName}
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-        <div className="font-bold text-3xl my-20 text-center">Find the perfect set</div>
-        <div className="px-6">
-          <Tabs defaultActiveKey="1" items={items} onChange={onChange} className="custom-tabs" />
+
+        <div className="font-bold text-xl md:text-3xl my-10 md:my-20 text-center">
+          {vnMode ? "Khám phá sản phẩm phù hợp" : "Find the perfect set"}
+        </div>
+        <div className="px-4 md:px-6">
+          <Tabs defaultActiveKey="1" items={items} className="custom-tabs" />
         </div>
         <div className="p-5 mx-5 border bg-white rounded-lg">
-          <div className="font-bold text-lg mb-5">Hot Tags</div>
-          <div className="flex">
-            {hotTag?.map((tag) => {
-              return (
-                <div key={tag.tagId}>
-                  <Tag color="gold">#{tag.tagName}</Tag>
-                </div>
-              );
-            })}
+          <div className="font-bold text-lg mb-5">{vnMode ? "Tag Nổi Bật" : "Hot Tags"}</div>
+          <div className="flex flex-wrap gap-2">
+            {hotTag?.map((tag) => (
+              <Tag key={tag.tagId} color="gold" className="text-sm px-3 py-1">
+                #{tag.tagName}
+              </Tag>
+            ))}
           </div>
         </div>
         <Modal

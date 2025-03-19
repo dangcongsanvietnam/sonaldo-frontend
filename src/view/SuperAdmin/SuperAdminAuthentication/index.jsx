@@ -22,8 +22,7 @@ import SockJS from "sockjs-client";
 import Cookies from "js-cookie";
 import './index.css'
 import { logout } from "../../../slices/authSlice";
-import { getAllManagers, getAllUsers, getUserInfo } from "../../../services/userService";
-import BASE_URL from "../../../api";
+import { getAllManagers, getAllUsers } from "../../../services/userService";
 import { debounce } from "lodash";
 import { useLoading } from "../../../provider/LoadingProvider";
 
@@ -117,7 +116,7 @@ const SuperAdminAuthentication = () => {
 
     const combinedMenuItems = [
       ...fixedItems,
-      ...menuItems.filter((item) => !fixedItems.some((fixed) => fixed.key === item.key)), // Avoid duplicate fixed items
+      ...menuItems.filter((item) => !fixedItems.some((fixed) => fixed.key === item.key)),
     ];
 
     const legalParents = ["profile", "change-password"];
@@ -672,7 +671,7 @@ const SuperAdminAuthentication = () => {
       return [
         {
           label: (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", paddingLeft: collapsed ? "20px" : "30px" }}>
+            <div style={{ display: "flex", gap: "8px" }}>
               <UserOutlined />
               {vnMode ? "Thông tin cá nhân" : "Profile"}
             </div>
@@ -682,7 +681,7 @@ const SuperAdminAuthentication = () => {
         },
         {
           label: (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", paddingLeft: collapsed ? "20px" : "30px" }}>
+            <div style={{ display: "flex", gap: "8px" }}>
               <KeyOutlined />
               {vnMode ? "Đổi mật khẩu" : "Change Password"}
             </div>
@@ -692,7 +691,7 @@ const SuperAdminAuthentication = () => {
         },
         {
           label: (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", paddingLeft: collapsed ? "20px" : "30px" }}>
+            <div style={{ display: "flex", gap: "8px" }}>
               <RollbackOutlined />
               {vnMode ? "Quay về trang chủ" : "Back to the board"}
             </div>
@@ -762,17 +761,6 @@ const SuperAdminAuthentication = () => {
       </div>
     ),
   }));
-
-  if (searchResults.length > 0) {
-    menuItems2.push({
-      key: "show-all",
-      label: (
-        <Button className="w-full mt-2" type="primary" onClick={handleShowAll}>
-          Hiển thị tất cả
-        </Button>
-      ),
-    });
-  }
 
   return (
     <ConfigProvider
@@ -874,7 +862,7 @@ const SuperAdminAuthentication = () => {
               ...item,
               children: item.children?.map((child) => ({
                 ...child,
-                label: <div className="" style={{ paddingLeft: collapsed ? "24px" : "40px" }} onClick={child.onClick}>{child.label}</div>,
+                label: <div className="!pl-0" onClick={child.onClick}>{child.label}</div>,
                 className: "text-center"
               })),
             }))}
@@ -935,6 +923,18 @@ const SuperAdminAuthentication = () => {
                   trigger={["click"]}
                   open={dropdownVisible}
                   onOpenChange={handleVisibilityChange}
+                  dropdownRender={(menu) => (
+                    <div style={{ maxHeight: "240px", overflowY: "auto", display: "flex", flexDirection: "column" }}>
+                      <div style={{ flex: "1", overflowY: "auto" }}>{menu}</div>
+                      {searchResults.length > 0 && (
+                        <div className="p-2 border-t bg-white sticky bottom-0">
+                          <Button className="w-full" type="primary" onClick={handleShowAll}>
+                            Hiển thị tất cả
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 >
                   <Input.Search
                     placeholder={

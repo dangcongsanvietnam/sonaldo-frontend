@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Badge, Breadcrumb, Button, Card, Carousel, Checkbox, ConfigProvider, Drawer, Input, InputNumber, Modal, Rate, Select, Slider } from "antd";
+import { Badge, Breadcrumb, Button, Card, Checkbox, ConfigProvider, Drawer, Input, InputNumber, Modal, Pagination, Rate, Select, Slider } from "antd";
 import { ArrowRightOutlined, ClearOutlined, HeartFilled, HeartOutlined, ShoppingCartOutlined } from "@ant-design/icons";
-import { Option } from "antd/es/mentions";
 import { Filter } from "lucide-react";
 import './index.css'
 import { useDispatch, useSelector } from "react-redux";
@@ -12,6 +11,11 @@ import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { getProductsByBrandCategory } from "../../services/productService";
 import Cookies from "js-cookie";
 import { addToFavorite, getAllWishlist, removeFromFavorite } from "../../services/wishlistService";
+import { useDrawer } from "../../components/Layout";
+import { addProductToCart, getUserCart } from "../../services/cartService";
+
+const { Option } = Select;
+const PRODUCTS_PER_PAGE = 20;
 
 const Brand = () => {
     const { vnMode } = useOutletContext();
@@ -41,28 +45,29 @@ const Brand = () => {
                 description: getLocalizedText(brandCategory.description),
             })),
         };
-    }, [brandData]);
+    }, [brandData, vnMode]);
 
-    const ageList = [
-        { name: "0-2 Years || 0-2 Tuổi", count: 0, disabled: true },
-        { name: "3-4 Years || 3-4 Tuổi", count: 0, disabled: true },
-        { name: "5-7 Years || 5-7 Tuổi", count: 0, disabled: true },
-        { name: "8-10 Years || 8-10 Tuổi", count: 0, disabled: true },
-        { name: "11-12 Years || 11-12 Tuổi", count: 0, disabled: true },
-        { name: "13-14 Years || 13-14 Tuổi", count: 0, disabled: true },
-        { name: "15-16 Years || 15-16 Tuổi", count: 0, disabled: true },
-        { name: "17 Years || 17 Tuổi", count: 0, disabled: true },
-        { name: "18+ Years || 18+ Tuổi", count: 0, disabled: true }
-    ].map(age => ({ ...age, name: getLocalizedText(age.name) }));
+    const ageList = useMemo(() => {
+        return [
+            { name: "0-2 Years || 0-2 Tuổi", count: 0, disabled: true },
+            { name: "3-4 Years || 3-4 Tuổi", count: 0, disabled: true },
+            { name: "5-7 Years || 5-7 Tuổi", count: 0, disabled: true },
+            { name: "8-10 Years || 8-10 Tuổi", count: 0, disabled: true },
+            { name: "11-12 Years || 11-12 Tuổi", count: 0, disabled: true },
+            { name: "13-14 Years || 13-14 Tuổi", count: 0, disabled: true },
+            { name: "15-16 Years || 15-16 Tuổi", count: 0, disabled: true },
+            { name: "17 Years || 17 Tuổi", count: 0, disabled: true },
+            { name: "18+ Years || 18+ Tuổi", count: 0, disabled: true }
+        ].map(age => ({ ...age, name: getLocalizedText(age.name) }));
+    }, [vnMode]);
 
     const [open, setOpen] = useState(false);
-    const [topCategory1, setTopCategory1] = useState({});
-    const [topCategory2, setTopCategory2] = useState({});
-    const [productsCategory1, setProductsCategory1] = useState([]);
-    const [productsCategory2, setProductsCategory2] = useState([]);
+    const [bagLoading, setBagLoading] = useState("");
     const [allProducts, setAllProducts] = useState([]);
     const [categoryList, setCategoryList] = useState([]);
     const [ageCategory, setAgeCategory] = useState([]);
+    const token = Cookies.get("token");
+    const { toggleDrawer } = useDrawer();
     const [filters, setFilters] = useState({
         category: [],
         age: [],
@@ -81,6 +86,15 @@ const Brand = () => {
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [isWishlistModalVisible, setIsWishlistModalVisible] = useState(false);
     const [isLoginModalVisible, setIsLoginModalVisible] = useState(false);
+    const products = filterMode ? displayedProducts : allProducts;
+    const totalProducts = products.length;
+    const totalPages = Math.ceil(totalProducts / PRODUCTS_PER_PAGE);
+    const [currentPage, setCurrentPage] = useState(1);
+
+    const paginatedProducts = products.slice(
+        (currentPage - 1) * PRODUCTS_PER_PAGE,
+        currentPage * PRODUCTS_PER_PAGE
+    );
 
     useEffect(() => {
         const inStock = allProducts.filter(product => product.quantity > 0).length;
@@ -90,11 +104,11 @@ const Brand = () => {
     }, [allProducts]);
 
     useEffect(() => {
-            const productIds = new Set(
-                wishlists.flatMap(wishlist => wishlist.wishlistItems.map(item => item.productId))
-            );
-            setWishlistedProducts(productIds);
-        }, [wishlists]);
+        const productIds = new Set(
+            wishlists.flatMap(wishlist => wishlist.wishlistItems.map(item => item.productId))
+        );
+        setWishlistedProducts(productIds);
+    }, [wishlists]);
 
     useEffect(() => {
         const fetchBrandDetail = async () => {
@@ -132,15 +146,6 @@ const Brand = () => {
 
                 const categoryProducts = await Promise.all(productPromises);
                 const sortedCategories = categoryProducts.sort((a, b) => b.products.length - a.products.length);
-
-                if (sortedCategories.length > 0) {
-                    setTopCategory1(sortedCategories[0]);
-                    setProductsCategory1(sortedCategories[0].products);
-                }
-                if (sortedCategories.length > 1) {
-                    setTopCategory2(sortedCategories[1]);
-                    setProductsCategory2(sortedCategories[1].products);
-                }
 
                 const allProductsArray = sortedCategories.flatMap(category => category.products);
                 const categoryMap = new Map();
@@ -183,8 +188,10 @@ const Brand = () => {
         };
 
         fetchBrandDetail();
-        dispatch(getAllWishlist());
-    }, [dispatch, brandId, navigate]);
+        if (token) {
+            dispatch(getAllWishlist());
+        }
+    }, [dispatch, brandId, navigate, vnMode]);
 
     useEffect(() => {
         const sortedAllProducts = sortProducts(filterMode ? displayedProducts : allProducts, sortOption);
@@ -213,8 +220,8 @@ const Brand = () => {
     }));
 
     const availabilityOptions = [
-        { label: vnMode ? `In Stock (${inStockCount})` : `Còn hàng (${inStockCount})`, value: "inStock", disabled: inStockCount === 0 },
-        { label: vnMode ? `Out of Stock (${outOfStockCount})` : `Hết hàng (${outOfStockCount})`, value: "outOfStock", disabled: outOfStockCount === 0 }
+        { label: vnMode ? `Còn hàng (${inStockCount})` : `In Stock (${inStockCount})`, value: "inStock", disabled: inStockCount === 0 },
+        { label: vnMode ? `Hết hàng (${outOfStockCount})` : `Out of Stock (${outOfStockCount})`, value: "outOfStock", disabled: outOfStockCount === 0 }
     ];
 
     const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value);
@@ -238,6 +245,27 @@ const Brand = () => {
             ...prev,
             priceRange: values,
         }));
+    };
+
+    const handleAddProduct = (productId, quantitySelected) => {
+        setBagLoading(productId);
+        if (!token) {
+            navigate("/login");
+        } else {
+            dispatch(addProductToCart({ productId, quantity: quantitySelected }))
+                .unwrap()
+                .then(() => {
+                    dispatch(getUserCart())
+                        .unwrap()
+                        .then(() => {
+                            toggleDrawer();
+                            setBagLoading("");
+                        });
+                }).catch(() => {
+                    toast.error(vnMode ? "Sản phẩm đã hết hàng" : "This product is out of stock");
+                    setBagLoading("");
+                });
+        }
     };
 
     const sortProducts = (products, sortOption) => {
@@ -269,8 +297,8 @@ const Brand = () => {
                 default:
                     return products;
             }
-        } catch (error) {
-            toast.error(getLocalizedText("Failed to filter. || Có lỗi khi lọc."));
+        } catch {
+            toast.error(vnMode ? "Có lỗi khi lọc." : "Failed to filter.");
         } finally {
             setFilterLoading(false);
         }
@@ -305,8 +333,8 @@ const Brand = () => {
 
             setDisplayedProducts(filtered);
             setFilterMode(true);
-        } catch (error) {
-            toast.error(getLocalizedText("Failed to filter. || Có lỗi khi lọc."));
+        } catch {
+            toast.error(vnMode ? "Có lỗi khi lọc." : "Failed to filter.");
         } finally {
             setFilterLoading(false);
         }
@@ -323,8 +351,8 @@ const Brand = () => {
             });
             setDisplayedProducts([]);
             setFilterMode(false);
-        } catch (error) {
-            toast.error(getLocalizedText("Failed to filter. || Có lỗi khi lọc."));
+        } catch {
+            toast.error(vnMode ? "Có lỗi khi lọc." : "Failed to filter.");
         } finally {
             setFilterLoading(false);
         }
@@ -370,7 +398,6 @@ const Brand = () => {
                         newSet.delete(product.productId);
                         return newSet;
                     });
-                    toast.success(vnMode ? "Đã xóa khỏi danh sách yêu thích!" : "Removed from favorites!");
                 })
                 .catch(() => {
                     toast.error(vnMode ? "Xóa khỏi danh sách yêu thích thất bại!" : "Failed to remove!");
@@ -386,7 +413,6 @@ const Brand = () => {
                     .unwrap()
                     .then(() => {
                         setWishlistedProducts((prev) => new Set(prev).add(product.productId));
-                        toast.success(vnMode ? "Thêm vào yêu thích thành công!" : "Added to favorites!");
                     })
                     .catch(() => {
                         toast.error(vnMode ? "Thêm vào yêu thích thất bại!" : "Failed to add!");
@@ -410,7 +436,6 @@ const Brand = () => {
             .unwrap()
             .then(() => {
                 setWishlistedProducts((prev) => new Set(prev).add(selectedProduct.productId));
-                toast.success(vnMode ? "Thêm vào yêu thích thành công!" : "Added to favorites!");
             })
             .catch(() => {
                 toast.error(vnMode ? "Thêm vào yêu thích thất bại!" : "Failed to add!");
@@ -438,18 +463,27 @@ const Brand = () => {
                     separator=">"
                     className="mb-4 font-bold"
                     style={{ fontSize: "18px", color: "#1F4ABC" }}
-                >
-                    <Breadcrumb.Item>
-                        <span onClick={() => navigate("/")} className="cursor-pointer text-sm underline">
-                            {vnMode ? 'Trang Chủ' : 'Home'}
-                        </span>
-                    </Breadcrumb.Item>
-                    <Breadcrumb.Item>
-                        <span onClick={() => navigate(`/brand/${brandId}`)} className="cursor-pointer text-sm text-[#1F4ABC] underline">
-                            {brand?.name || "Brand"}
-                        </span>
-                    </Breadcrumb.Item>
-                </Breadcrumb>
+                    items={[
+                        {
+                            title: (
+                                <span onClick={() => navigate("/")} className="cursor-pointer text-sm underline">
+                                    {vnMode ? "Trang Chủ" : "Home"}
+                                </span>
+                            ),
+                        },
+                        {
+                            title: (
+                                <span
+                                    onClick={() => navigate(`/brand/${brandId}`)}
+                                    className="cursor-pointer text-sm text-[#1F4ABC] underline"
+                                >
+                                    {brand?.name || "Brand"}
+                                </span>
+                            ),
+                        },
+                    ]}
+                />
+
                 <h1 style={{
                     fontSize: "50px",
                     marginBottom: "10px"
@@ -459,186 +493,35 @@ const Brand = () => {
                 }}>{brand?.description}</p>
                 {brand?.brandCategories?.length > 1 && (
                     <div>
-                        <div className="mb-6">
-                            {brand?.brandCategories?.length > 5 ? (
-                                <Carousel
-                                    arrows
-                                    slidesToShow={6}
-                                    className="w-full"
-                                    dots={false}
-                                    centerMode={false}
-                                    infinite={true}
-                                >
-                                    {brand?.brandCategories?.map((category, index) => (
-                                        <div key={index} className="text-center">
-                                            <div key={category.name} className={`text-center p-4 rounded-lg cursor-pointer hover:opacity-80 text-white font-bold text-lg flex items-center justify-center`} style={{ width: 202, height: 202 }}>
-                                                <img onClick={() => navigate(`/brand/${brandId}/${category.brandCategoryId}`)} src={`data:image/jpeg;base64,${category.imageFile.file.data}`} className="w-full max-h-full object-contain transition-transform duration-300 ease-in-out hover:scale-110" />
-                                            </div>
-                                            {category.name}
+                        <div className="overflow-x-auto whitespace-nowrap py-4">
+                            <div className="flex gap-4 md:justify-center">
+                                {brand?.brandCategories?.map((category, index) => (
+                                    <div key={index} className="flex flex-col items-center w-[120px] sm:w-[160px] flex-shrink-0">
+                                        <div
+                                            key={category.name}
+                                            className="w-[120px] sm:w-[160px] h-[120px] sm:h-[160px] text-center p-4 rounded-lg cursor-pointer hover:opacity-80 text-white font-bold text-lg flex items-center justify-center"
+                                        >
+                                            <img
+                                                onClick={() => navigate(`/brand/${brandId}/${category.brandCategoryId}`)}
+                                                src={`data:image/jpeg;base64,${category.imageFile.file.data}`}
+                                                className="w-full h-full object-contain transition-transform duration-300 ease-in-out hover:scale-110 rounded-xl"
+                                            />
                                         </div>
-                                    ))}
-                                </Carousel>) : (
-                                <div className="flex justify-center">
-                                    {brand?.brandCategories?.map((category, index) => (
-                                        <div key={index} className="text-center">
-                                            <div key={category.name} className={`text-center p-4 rounded-lg cursor-pointer hover:opacity-80 text-white font-bold text-lg flex items-center justify-center`} style={{ width: 202, height: 202 }}>
-                                                <img onClick={() => navigate(`/brand/${brandId}/${category.brandCategoryId}`)} src={`data:image/jpeg;base64,${category.imageFile.file.data}`} className="w-full max-h-full object-contain transition-transform duration-300 ease-in-out hover:scale-110" />
-                                            </div>
-                                            {category.name}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="mb-6">
-                            <div className={`bg-[${topCategory1.color}] text-black p-6 rounded-lg flex flex-col justify-between w-full`}>
-                                <div className="flex">
-                                    <img src={`data:image/jpeg;base64,${topCategory1.imageFile?.file.data}`} className={`w-full max-h-full object-contain mr-6 rounded-2xl transition-transform duration-300 ease-in-out hover:scale-110`} style={{ width: 200, height: 200, backgroundColor: 'black' }} />
-                                    <div>
-                                        <h2 className="text-2xl font-bold mb-2">{topCategory1.name}</h2>
-                                        <p>{topCategory1.description}</p>
-                                        <div className="p-2">
-                                            <Button onClick={() => navigate(`/brand/${brandId}/${topCategory1.brandCategoryId}`)} className="mt-4 bg-white text-black font-bold border-black !rounded-full w-60 h-11" style={{ borderRadius: "9999px" }}>
-                                                {vnMode ? 'Xem' : 'Shop All'} {topCategory1.name}
-                                            </Button>
+                                        <div className="font-semibold text-xs truncate w-[120px] sm:w-[160px] text-center mt-2">
+                                            {category.brandCategoryName}
                                         </div>
                                     </div>
-                                </div>
+                                ))}
                             </div>
-
-                            <Carousel
-                                arrows
-                                slidesToShow={4}
-                                className="w-full mt-6"
-                                arrowSize={16}
-                                dots={false}
-                                infinite={true}
-                            >
-                                {topCategory1?.products?.map((product, index) => {
-                                    const isWishlisted = wishlistedProducts.has(product.productId);
-
-                                    return (
-                                        <div key={index} className="px-6">
-                                            <Card
-                                                cover={
-                                                    <div className="relative">
-                                                        <div
-                                                            className="bg-white absolute top-4 right-4 rounded-full p-2 shadow-md cursor-pointer z-10"
-                                                            style={{ width: "35px", height: "35px" }}
-                                                            onClick={() => addToFavourite(product)}
-                                                        >
-                                                            {isWishlisted ? (
-                                                                <HeartFilled className="text-red-500 text-xl" />
-                                                            ) : (
-                                                                <HeartOutlined className="text-red-500 text-xl" />
-                                                            )}
-                                                        </div>
-                                                        <img
-                                                            src={`data:image/jpeg;base64,${product?.images[0]?.file.data}`}
-                                                            className="h-[250px] w-full object-cover rounded-t-lg"
-                                                        />
-                                                    </div>
-                                                }
-                                                className="shadow-lg rounded-3xl transition-transform duration-300 ease-in-out hover:scale-105"
-                                                style={{ width: 300, height: 500 }}
-                                            >
-                                                <div className="h-48 relative">
-                                                    <h3 className="font-semibold text-base line-clamp-3">{product.name}</h3>
-                                                    <div className="flex">
-                                                        <Rate allowHalf value={product.avgVoting} className="mb-2 mr-2 text-sm" disabled />
-                                                        <p className="text-gray-600">({product.votingQuantity})</p>
-                                                    </div>
-                                                    <p className="text-xl font-bold">{formatCurrency(product.price)} vnđ</p>
-
-                                                    <Button type="primary" icon={<ShoppingCartOutlined />} className="absolute h-10 w-full !rounded-full bottom-0">
-                                                        {vnMode ? 'Thêm vào giỏ hàng' : 'Add to Cart'}
-                                                    </Button>
-                                                </div>
-                                            </Card>
-                                        </div>
-                                    );
-                                })}
-                            </Carousel>
                         </div>
 
-                        <div className="mb-6">
-                            <div className={`bg-[${topCategory2.color}] text-black p-6 rounded-lg flex flex-col justify-between w-full`}>
-                                <div className="flex">
-                                    <img src={`data:image/jpeg;base64,${topCategory2.imageFile?.file.data}`} className={`w-full max-h-full object-contain mr-6 rounded-2xl transition-transform duration-300 ease-in-out hover:scale-110`} style={{ width: 200, height: 200, backgroundColor: 'black' }} />
-                                    <div>
-                                        <h2 className="text-2xl font-bold mb-2">{topCategory2.name}</h2>
-                                        <p>{topCategory2.description}</p>
-                                        <div className="p-2">
-                                            <Button onClick={() => navigate(`/brand/${brandId}/${topCategory2.brandCategoryId}`)} className="mt-4 bg-white text-black font-bold border-black !rounded-full w-60 h-11" style={{ borderRadius: "9999px" }}>
-                                                {vnMode ? 'Xem' : 'Shop All'} {topCategory2.name}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <Carousel
-                                arrows
-                                slidesToShow={4}
-                                className="w-full mt-6"
-                                arrowSize={16}
-                                dots={false}
-                                infinite={true}
-                            >
-                                {topCategory2?.products?.map((product, index) => {
-                                    const isWishlisted = wishlistedProducts.has(product.productId);
-
-                                    return (
-                                        <div key={index} className="px-6">
-                                            <Card
-                                                cover={
-                                                    <div className="relative">
-                                                        <div
-                                                            className="bg-white absolute top-4 right-4 rounded-full p-2 shadow-md cursor-pointer z-10"
-                                                            style={{ width: "35px", height: "35px" }}
-                                                            onClick={() => addToFavourite(product)}
-                                                        >
-                                                            {isWishlisted ? (
-                                                                <HeartFilled className="text-red-500 text-xl" />
-                                                            ) : (
-                                                                <HeartOutlined className="text-red-500 text-xl" />
-                                                            )}
-                                                        </div>
-                                                        <img
-                                                            src={`data:image/jpeg;base64,${product?.images[0]?.file.data}`}
-                                                            className="h-[250px] w-full object-cover rounded-t-lg"
-                                                        />
-                                                    </div>
-                                                }
-                                                className="shadow-lg rounded-3xl transition-transform duration-300 ease-in-out hover:scale-105"
-                                                style={{ width: 300, height: 500 }}
-                                            >
-                                                <div className="h-48 relative">
-                                                    <h3 className="font-semibold text-base line-clamp-3">{product.name}</h3>
-                                                    <div className="flex">
-                                                        <Rate allowHalf value={product.avgVoting} className="mb-2 mr-2 text-sm" disabled />
-                                                        <p className="text-gray-600">({product.votingQuantity})</p>
-                                                    </div>
-                                                    <p className="text-xl font-bold">{formatCurrency(product.price)} vnđ</p>
-
-                                                    <Button type="primary" icon={<ShoppingCartOutlined />} className="absolute h-10 w-full !rounded-full bottom-0">
-                                                        {vnMode ? 'Thêm vào giỏ hàng' : 'Add to Cart'}
-                                                    </Button>
-                                                </div>
-                                            </Card>
-                                        </div>
-                                    );
-                                })}
-                            </Carousel>
-                        </div>
                     </div>
                 )}
 
                 <div>
                     <div className="flex justify-between items-center my-10">
                         <span className="text-lg font-semibold">{allProducts.length} {vnMode ? "sản phẩm" : "products"}</span>
-                        <div className="flex w-1/4">
+                        <div className="flex">
                             <div className="flex mr-2">
                                 <Button
                                     danger
@@ -655,7 +538,7 @@ const Brand = () => {
                                     </Button>
                                 </Badge>
                             </div>
-                            <Select defaultValue="default" onChange={handleSortChange} className="w-48">
+                            <Select defaultValue="default" onChange={handleSortChange} className="">
                                 <Option value="default">{vnMode ? 'Sắp xếp' : 'Sort By'}</Option>
                                 <Option value="price-low-high">{vnMode ? 'Giá: Thấp đến cao' : 'Price: Low to High'}</Option>
                                 <Option value="price-high-low">{vnMode ? 'Giá: Cao đến thấp' : 'Price: High to Low'}</Option>
@@ -667,7 +550,7 @@ const Brand = () => {
                         </div>
                     </div>
                     <div className="hidden md:block w-1/4">
-                        <Drawer open={open} onClose={() => setOpen(false)} title={vnMode ? 'Lọc' : "Filters"} placement="left" width={300}>
+                        <Drawer zIndex={10000} open={open} onClose={() => setOpen(false)} title={vnMode ? 'Lọc' : "Filters"} placement="left" width={300}>
                             <div className="space-y-4">
                                 <div>
                                     <h3 className="text-lg font-semibold">{vnMode ? "Danh mục" : "Category"}</h3>
@@ -743,64 +626,92 @@ const Brand = () => {
                             </div>
                         </Drawer>
                     </div>
-                    <div className="grid grid-cols-4 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                         {filterLoading ? (
                             <div className="col-span-4 flex justify-center items-center h-96">
                                 <Spin size="large" />
                             </div>
-                        ) : (
-                            (filterMode ? displayedProducts : allProducts).length > 0 ? (
-                                (filterMode ? displayedProducts : allProducts).map((product, index) => {
-                                    const isWishlisted = wishlistedProducts.has(product.productId);
-
-                                    return (
-                                        <div key={index} className="px-6">
-                                            <Card
-                                                cover={
-                                                    <div className="relative">
-                                                        <div
-                                                            className="bg-white absolute top-4 right-4 rounded-full p-2 shadow-md cursor-pointer z-10"
-                                                            style={{ width: "35px", height: "35px" }}
-                                                            onClick={() => addToFavourite(product)}
-                                                        >
-                                                            {isWishlisted ? (
-                                                                <HeartFilled className="text-red-500 text-xl" />
-                                                            ) : (
-                                                                <HeartOutlined className="text-red-500 text-xl" />
-                                                            )}
-                                                        </div>
-                                                        <img
-                                                            src={`data:image/jpeg;base64,${product?.images[0]?.file.data}`}
-                                                            className="h-[250px] w-full object-cover rounded-t-lg"
-                                                        />
+                        ) : totalProducts > 0 ? (
+                            paginatedProducts.map((product, index) => {
+                                const isWishlisted = wishlistedProducts.has(product.productId);
+                                return (
+                                    <div key={index} className="px-6">
+                                        <Card
+                                            cover={
+                                                <div className="relative">
+                                                    <div
+                                                        className="bg-white absolute top-4 right-4 rounded-full p-2 shadow-md cursor-pointer z-10"
+                                                        style={{ width: "35px", height: "35px" }}
+                                                        onClick={() => addToFavourite(product)}
+                                                    >
+                                                        {isWishlisted ? (
+                                                            <HeartFilled className="text-red-500 text-xl" />
+                                                        ) : (
+                                                            <HeartOutlined className="text-red-500 text-xl" />
+                                                        )}
                                                     </div>
-                                                }
-                                                className="shadow-lg rounded-3xl transition-transform duration-300 ease-in-out hover:scale-105"
-                                                style={{ width: 300, height: 500 }}
-                                            >
-                                                <div className="h-48 relative">
-                                                    <h3 className="font-semibold text-base line-clamp-3">{product.name}</h3>
-                                                    <div className="flex">
-                                                        <Rate allowHalf value={product.avgVoting} className="mb-2 mr-2 text-sm" disabled />
-                                                        <p className="text-gray-600">({product.votingQuantity})</p>
-                                                    </div>
-                                                    <p className="text-xl font-bold">{formatCurrency(product.price)} vnđ</p>
-
-                                                    <Button type="primary" icon={<ShoppingCartOutlined />} className="absolute h-10 w-full !rounded-full bottom-0">
-                                                        {vnMode ? 'Thêm vào giỏ hàng' : 'Add to Cart'}
-                                                    </Button>
+                                                    <img
+                                                        src={`data:image/jpeg;base64,${product?.images[0]?.file.data}`}
+                                                        className="h-[250px] w-full object-cover rounded-t-lg"
+                                                        style={{ width: "100%" }}
+                                                        onClick={() => navigate(`/product/${product.productId}`)}
+                                                    />
                                                 </div>
-                                            </Card>
-                                        </div>
-                                    );
-                                })
-                            ) : (
-                                <div className="col-span-4 text-center py-10 text-gray-500">
-                                    <p>{vnMode ? "Không tìm thấy sản phẩm nào phù hợp với bộ lọc của bạn." : "No products found matching your filters."}</p>
-                                </div>
-                            )
+                                            }
+                                            className="shadow-lg rounded-3xl transition-transform duration-300 ease-in-out hover:scale-105"
+                                        >
+                                            <div className="h-48 relative">
+                                                <h3
+                                                    className="font-semibold text-base line-clamp-3"
+                                                    onClick={() => navigate(`/product/${product.productId}`)}
+                                                >
+                                                    {product.name}
+                                                </h3>
+                                                <div className="flex">
+                                                    <Rate
+                                                        allowHalf
+                                                        value={product.avgVoting}
+                                                        className="mb-2 mr-2 text-sm"
+                                                        disabled
+                                                    />
+                                                    <p className="text-gray-600">({product.votingQuantity})</p>
+                                                </div>
+                                                <p className="text-xl font-bold">{formatCurrency(product.price)} vnđ</p>
+                                                <Button
+                                                    type="primary"
+                                                    loading={bagLoading === product.productId}
+                                                    onClick={() => handleAddProduct(product?.productId, 1)}
+                                                    icon={<ShoppingCartOutlined />}
+                                                    className="absolute h-10 w-full !rounded-full bottom-0"
+                                                >
+                                                    {vnMode ? "Thêm vào giỏ hàng" : "Add to Cart"}
+                                                </Button>
+                                            </div>
+                                        </Card>
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div className="col-span-4 text-center py-10 text-gray-500">
+                                <p>
+                                    {vnMode
+                                        ? "Không tìm thấy sản phẩm nào phù hợp với bộ lọc của bạn."
+                                        : "No products found matching your filters."}
+                                </p>
+                            </div>
                         )}
                     </div>
+
+                    {totalPages > 1 && (
+                        <div className="flex justify-center mt-6">
+                            <Pagination
+                                current={currentPage}
+                                total={totalProducts}
+                                pageSize={PRODUCTS_PER_PAGE}
+                                onChange={setCurrentPage}
+                            />
+                        </div>
+                    )}
                 </div>
                 <Modal
                     title="Hey! Save your amazing wish list"

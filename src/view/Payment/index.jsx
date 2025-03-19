@@ -5,10 +5,9 @@ import { Spin, Alert, Tag, Table } from "antd";
 import { getOrder } from "../../services/orderService";
 
 const Payment = () => {
-  const { orderId } = useParams(); // Lấy orderId từ URL
+  const { orderId } = useParams();
   const dispatch = useDispatch();
 
-  // Gọi API lấy thông tin thanh toán
   useEffect(() => {
     if (orderId) {
       dispatch(getOrder(orderId));
@@ -16,10 +15,6 @@ const Payment = () => {
   }, [dispatch, orderId]);
 
   const payment = useSelector((state) => state?.order?.data);
-
-  console.log("pm", payment);
-
-  // Hiển thị thông tin thanh toán nếu có
 
   const dataSource = payment?.cartItems || [];
 

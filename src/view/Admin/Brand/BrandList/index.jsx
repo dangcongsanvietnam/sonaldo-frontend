@@ -31,6 +31,11 @@ const BrandList = () => {
   const { vnMode } = useOutletContext();
   const condition = searchKeyword.length > 0;
   const suffix = condition ? <Icon component={CheckOutlined} type="smile" className="hidden" /> : <span />;
+  const getLocalizedText = (text) => {
+    if (!text) return "";
+    const parts = text.split(" || ");
+    return vnMode ? parts[1]?.trim() || parts[0]?.trim() : parts[0]?.trim();
+  };
 
   const fetchData = async () => {
     startLoading();
@@ -81,7 +86,11 @@ const BrandList = () => {
       brandId: brand?.brandId,
       brandName: brand?.brandName,
       imageFile: brand?.imageFile?.file?.data,
-      brandCategories: brand?.brandCategories,
+      brandCategories: brand?.brandCategories?.map((brandCategory) => ({
+        ...brandCategory,
+        brandId: brand.brandId,
+        brandName: brand.brandName,
+      })),
     }));
 
   const alphanumericSort = (a, b) => {
@@ -176,8 +185,9 @@ const BrandList = () => {
     {
       title: vnMode ? "Tên Thương Hiệu" : "Brand Name",
       dataIndex: "brandName",
-      sorter: (a, b) => a.brand.localeCompare(b.brand),
+      sorter: (a, b) => a.brandName.localeCompare(b.brandName),
       sortDirections: ["ascend", "descend"],
+      render: (brandName) => getLocalizedText(brandName),
     },
     {
       title: vnMode ? "Ảnh Thương Hiệu" : "Brand Image",
@@ -196,12 +206,13 @@ const BrandList = () => {
       render: (items) =>
         items && items.length > 0 ? (
           items.map((item, index) => (
-            <Tag onClick={() => {
-              navigate(
-                `/admin/brand/${item.brandId}/${item?.brandCategoryId}`
-              );
-            }} className="cursor-pointer" color="blue" key={index}>
-              {item.name}
+            <Tag
+              onClick={() => navigate(`/admin/brand/${item.brandId}/${item?.brandCategoryId}`)}
+              className="cursor-pointer"
+              color="blue"
+              key={index}
+            >
+              {getLocalizedText(item.name)}
             </Tag>
           ))
         ) : (
@@ -223,6 +234,7 @@ const BrandList = () => {
       ),
     },
   ];
+
   return (
     <>
       <Spin spinning={loading}>

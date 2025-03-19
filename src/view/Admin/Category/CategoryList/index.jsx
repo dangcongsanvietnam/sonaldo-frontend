@@ -35,6 +35,12 @@ const CategoryList = () => {
   const condition = searchKeyword.length > 0;
   const suffix = condition ? <Icon component={CheckOutlined} type="smile" className="hidden" /> : <span />;
 
+  const getLocalizedText = (text) => {
+    if (!text) return "";
+    const parts = text.split(" || ");
+    return vnMode ? parts[1]?.trim() || parts[0]?.trim() : parts[0]?.trim();
+  };
+
   const filteredData = categories
     ?.filter((category) => {
       const matchesCategoryId = category?.categoryId
@@ -168,6 +174,7 @@ const CategoryList = () => {
       dataIndex: "category",
       sorter: (a, b) => a.category.localeCompare(b.category),
       sortDirections: ["ascend", "descend"],
+      render: (category) => getLocalizedText(category),
     },
     {
       title: vnMode ? "Ảnh Danh Mục" : "Category Image",
@@ -186,12 +193,13 @@ const CategoryList = () => {
       render: (items) =>
         items && items.length > 0 ? (
           items.map((item, index) => (
-            <Tag onClick={() => {
-              navigate(
-                `/admin/category/${item.categoryId}/${item?.categoryItemId}`
-              );
-            }} className="cursor-pointer" color="blue" key={index}>
-              {item.name}
+            <Tag
+              onClick={() => navigate(`/admin/category/${item.categoryId}/${item?.categoryItemId}`)}
+              className="cursor-pointer"
+              color="blue"
+              key={index}
+            >
+              {getLocalizedText(item.name)}
             </Tag>
           ))
         ) : (

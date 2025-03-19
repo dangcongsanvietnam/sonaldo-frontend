@@ -1,383 +1,3 @@
-// // import React, { useEffect, useState } from "react";
-// // import { useDispatch, useSelector } from "react-redux";
-// // import { Table, InputNumber, Button, Popconfirm } from "antd";
-// // import {
-// //   getUserCart,
-// //   updateQuantityCartItem,
-// //   // removeCartItem,
-// //   removeCartItem,
-// //   removeAllCartItem,
-// // } from "../../../services/cartService";
-// // import { ToastContainer, toast } from "react-toastify";
-
-// // const UserOrder = () => {
-// //   const dispatch = useDispatch();
-// //   const [cartQuantity, setCartQuantity] = useState([]); // Khởi tạo state cho số lượng sản phẩm
-// //   // Lấy dữ liệu giỏ hàng khi component được render
-// //   useEffect(() => {
-// //     dispatch(getUserCart());
-// //   }, [dispatch]);
-
-// //   const userCart = useSelector((state) => state?.cart?.userCart?.cartItems);
-// //   const userCart2 = useSelector((state) => state?.cart?.userCart);
-// //   console.log("uc", userCart2);
-
-// //   // Cập nhật cartQuantity khi userCart thay đổi
-// //   useEffect(() => {
-// //     if (userCart) {
-// //       setCartQuantity(
-// //         userCart.map((item) => ({
-// //           cartItemId: item.cartItemId,
-// //           quantity: item.quantity,
-// //           totalPrice: item.totalPrice,
-// //         }))
-// //       );
-// //     }
-// //   }, [userCart]);
-
-// //   // Hàm xử lý khi thay đổi số lượng
-// //   const handleQuantityChange = (item, newQuantity) => {
-// //     // Cập nhật state cục bộ
-// //     setCartQuantity((prevCart) =>
-// //       prevCart?.map((cartItem) =>
-// //         cartItem?.cartItemId === item.cartItemId
-// //           ? {
-// //               ...cartItem,
-// //               quantity: newQuantity,
-// //               totalPrice: newQuantity * (item.totalPrice / item.quantity),
-// //             }
-// //           : cartItem
-// //       )
-// //     );
-
-// //     // Gửi yêu cầu cập nhật số lượng lên backend
-// //     if (newQuantity > 0) {
-// //       dispatch(
-// //         updateQuantityCartItem({
-// //           cartItemId: item?.cartItemId,
-// //           quantity: newQuantity,
-// //         })
-// //       );
-// //     } else {
-// //       // Xử lý nếu số lượng bằng 0 (tùy chọn)
-// //       dispatch(
-// //         updateQuantityCartItem({
-// //           cartItemId: item?.cartItemId,
-// //           quantity: 0,
-// //         })
-// //       );
-// //     }
-// //   };
-
-// //   // Hàm xử lý khi xóa sản phẩm
-// //   const handleRemoveAll = (cartItemId) => {
-// //     dispatch(removeAllCartItem())
-// //       .unwrap()
-// //       .then((res) => {
-// //         dispatch(getUserCart()).then(() => {
-// //           toast.success("Sản phẩm đã được xóa toàn bộ!");
-// //         });
-// //       })
-// //       .catch((err) => {
-// //         toast.error("Đã xảy ra lỗi khi xóa sản phẩm!");
-// //       });
-// //   };
-
-// //   const handleDeleteCartItem = (cartItemId) => {
-// //     dispatch(removeCartItem(cartItemId))
-// //       .unwrap()
-// //       .then((res) => {
-// //         dispatch(getUserCart()).then(() => {
-// //           toast.success("Sản phẩm đã được xóa thành công!");
-// //         });
-// //       })
-// //       .catch((err) => {
-// //         toast.error("Đã xảy ra lỗi khi xóa sản phẩm!");
-// //       });
-// //   };
-
-// //   // Cấu hình các cột trong bảng
-// //   const columns = [
-// //     {
-// //       title: "Tên sản phẩm",
-// //       dataIndex: "productName",
-// //       key: "productName",
-// //     },
-// //     {
-// //       title: "Đơn giá",
-// //       dataIndex: "price",
-// //       key: "price",
-// //       render: (_, record) =>
-// //         `${(record.totalPrice / record.quantity).toLocaleString()}₫`,
-// //     },
-
-// //     {
-// //       title: "Số lượng",
-// //       dataIndex: "quantity",
-// //       key: "quantity",
-// //       render: (quantity, record) => (
-// //         <InputNumber
-// //           min={0}
-// //           value={
-// //             cartQuantity.find(
-// //               (cartItem) => cartItem.cartItemId === record.cartItemId
-// //             )?.quantity
-// //           }
-// //           onChange={(value) => handleQuantityChange(record, value)}
-// //           className="w-20"
-// //         />
-// //       ),
-// //     },
-// //     {
-// //       title: "Số tiền",
-// //       key: "totalPrice",
-// //       dataIndex: "totalPrice",
-// //       render: (_, record) => {
-// //         const cartItem = cartQuantity.find(
-// //           (cartItem) => cartItem?.cartItemId === record.cartItemId
-// //         );
-
-// //         console.log("tt", cartItem);
-
-// //         return cartItem ? `${cartItem.totalPrice.toLocaleString()}₫` : "0₫";
-// //       },
-// //     },
-// //     {
-// //       title: "Thao tác",
-// //       key: "action",
-// //       render: (_, record) => (
-// //         <Popconfirm
-// //           title="Bạn có chắc muốn xóa sản phẩm này?"
-// //           onConfirm={() => handleDeleteCartItem(record.cartItemId)}
-// //           okText="Có"
-// //           cancelText="Không"
-// //         >
-// //           <Button danger>Xóa</Button>
-// //         </Popconfirm>
-// //       ),
-// //     },
-// //   ];
-
-// //   return (
-// //     <div className="p-4">
-// //       <ToastContainer />
-// //       <h1 className="text-xl font-bold mb-4">Đơn hàng của bạn</h1>
-// //       <Table
-// //         columns={columns}
-// //         dataSource={userCart}
-// //         rowKey="cartItemId"
-// //         pagination={false}
-// //         className="shadow-md border border-gray-200 rounded-lg"
-// //       />
-// //       <div className="pt-2">
-// //         <Button onClick={() => handleRemoveAll()}>Xoá toàn bộ sản phẩm</Button>
-// //       </div>
-// //     </div>
-// //   );
-// // };
-
-// // export default UserOrder;
-
-// import React, { useEffect, useState } from "react";
-// import { useDispatch, useSelector } from "react-redux";
-// import { Table, InputNumber, Button, Popconfirm, Modal } from "antd";
-// import {
-//   getUserCart,
-//   updateQuantityCartItem,
-//   removeCartItem,
-//   removeAllCartItem,
-// } from "../../../services/cartService";
-// import { ToastContainer, toast } from "react-toastify";
-
-// const UserOrder = () => {
-//   const dispatch = useDispatch();
-//   const [cartQuantity, setCartQuantity] = useState([]); // Khởi tạo state cho số lượng sản phẩm
-//   const [isModalVisible, setIsModalVisible] = useState(false);
-//   const [currentItem, setCurrentItem] = useState(null);
-//   const notify = () => toast("Wow so easy!");
-
-//   useEffect(() => {
-//     dispatch(getUserCart());
-//   }, [dispatch]);
-
-//   const userCart = useSelector((state) => state?.cart?.userCart?.cartItems);
-
-//   useEffect(() => {
-//     if (userCart) {
-//       setCartQuantity(
-//         userCart.map((item) => ({
-//           cartItemId: item.cartItemId,
-//           quantity: item.quantity,
-//           totalPrice: item.totalPrice,
-//         }))
-//       );
-//     }
-//   }, [userCart]);
-
-//   const handleQuantityChange = (item, newQuantity) => {
-//     setCartQuantity((prevCart) =>
-//       prevCart?.map((cartItem) =>
-//         cartItem?.cartItemId === item.cartItemId
-//           ? {
-//               ...cartItem,
-//               quantity: newQuantity,
-//               totalPrice: newQuantity * (item.totalPrice / item.quantity),
-//             }
-//           : cartItem
-//       )
-//     );
-
-//     if (newQuantity > 0) {
-//       dispatch(
-//         updateQuantityCartItem({
-//           cartItemId: item?.cartItemId,
-//           quantity: newQuantity,
-//         })
-//       );
-//     } else {
-//       setCurrentItem(item);
-//       setIsModalVisible(true);
-//       return;
-//     }
-//   };
-
-//   const handleRemoveAll = () => {
-//     dispatch(removeAllCartItem())
-//       .unwrap()
-//       .then((res) => {
-//         dispatch(getUserCart()).then(() => {
-//           toast.success("Sản phẩm đã được xóa toàn bộ!");
-//         });
-//       })
-//       .catch((err) => {
-//         toast.error("Đã xảy ra lỗi khi xóa sản phẩm!");
-//       });
-//   };
-
-//   const handleDeleteCartItem = (cartItemId) => {
-//     dispatch(removeCartItem(cartItemId))
-//       .unwrap()
-//       .then((res) => {
-//         dispatch(getUserCart()).then(() => {
-//           toast.success("Sản phẩm đã được xóa thành công!");
-//         });
-//       })
-//       .catch((err) => {
-//         toast.error("Đã xảy ra lỗi khi xóa sản phẩm!");
-//       });
-//   };
-
-//   const columns = [
-//     {
-//       title: "Tên sản phẩm",
-//       dataIndex: "productName",
-//       key: "productName",
-//     },
-//     {
-//       title: "Đơn giá",
-//       dataIndex: "price",
-//       key: "price",
-//       render: (_, record) =>
-//         `${(record.totalPrice / record.quantity).toLocaleString()}₫`,
-//     },
-//     {
-//       title: "Số lượng",
-//       dataIndex: "quantity",
-//       key: "quantity",
-//       render: (quantity, record) => (
-//         <InputNumber
-//           min={0}
-//           value={
-//             cartQuantity.find(
-//               (cartItem) => cartItem.cartItemId === record.cartItemId
-//             )?.quantity
-//           }
-//           onChange={(value) => handleQuantityChange(record, value)}
-//           className="w-20"
-//         />
-//       ),
-//     },
-//     {
-//       title: "Số tiền",
-//       key: "totalPrice",
-//       dataIndex: "totalPrice",
-//       render: (_, record) => {
-//         const cartItem = cartQuantity.find(
-//           (cartItem) => cartItem?.cartItemId === record.cartItemId
-//         );
-
-//         return cartItem ? `${cartItem.totalPrice.toLocaleString()}₫` : "0₫";
-//       },
-//     },
-//     {
-//       title: "Thao tác",
-//       key: "action",
-//       render: (_, record) => (
-//         <Popconfirm
-//           title="Bạn có chắc muốn xóa sản phẩm này?"
-//           onConfirm={() => handleDeleteCartItem(record.cartItemId)}
-//           okText="Có"
-//           cancelText="Không"
-//         >
-//           <Button danger>Xóa</Button>
-//         </Popconfirm>
-//       ),
-//     },
-//   ];
-
-//   const rowSelection = {
-//     onChange: (selectedRowKeys, selectedRows) => {
-//       console.log("Hàng được chọn: ", selectedRows);
-//       toast.info(
-//         `Bạn đã chọn ${selectedRows.length} sản phẩm: ${selectedRows
-//           .map((row) => row.productName)
-//           .join(", ")}`
-//       );
-//     },
-//   };
-
-//   const handleConfirmDelete = () => {
-//     if (currentItem) {
-//       handleDeleteCartItem(currentItem.cartItemId);
-//       setIsModalVisible(false);
-//       setCurrentItem(null);
-//     }
-//   };
-
-//   return (
-//     <div className="p-4">
-//       <ToastContainer />
-//       <h1 className="text-xl font-bold mb-4">Đơn hàng của bạn</h1>
-//       <Table
-//         rowSelection={rowSelection} // Thêm rowSelection
-//         columns={columns}
-//         dataSource={userCart}
-//         rowKey="cartItemId"
-//         pagination={false}
-//         className="shadow-md border border-gray-200 rounded-lg"
-//       />
-//       <div className="pt-2">
-//         <Button onClick={() => handleRemoveAll()}>Xoá toàn bộ sản phẩm</Button>
-//       </div>
-//       <Modal
-//         title="Xóa sản phẩm"
-//         open={isModalVisible}
-//         onOk={handleConfirmDelete}
-//         onCancel={() => {
-//           setIsModalVisible(false);
-//           dispatch(getUserCart());
-//         }}
-//         okText="Xóa"
-//         cancelText="Hủy"
-//       >
-//         <p>Bạn có chắc muốn xóa sản phẩm này không?</p>
-//       </Modal>
-//     </div>
-//   );
-// };
-
-// export default UserOrder;
-
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Table, InputNumber, Button, Popconfirm, Modal, Checkbox } from "antd";
@@ -387,9 +7,9 @@ import {
   removeCartItem,
   removeAllCartItem,
 } from "../../../services/cartService";
-import { ToastContainer, toast } from "react-toastify";
+import { toast } from "react-toastify";
 import { debounce } from "lodash";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 
 const UserOrder = () => {
   const dispatch = useDispatch();
@@ -398,7 +18,8 @@ const UserOrder = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [currentItem, setCurrentItem] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [warningModalVisible, setWarningModalVisible] = useState(false); // State cho modal cảnh báo
+  const [warningModalVisible, setWarningModalVisible] = useState(false);
+  const { vnMode } = useOutletContext();
 
   const navigate = useNavigate();
 
@@ -420,45 +41,20 @@ const UserOrder = () => {
     }
   }, [userCart]);
 
-  // const handleQuantityChange = (item, newQuantity) => {
-  //   setCartQuantity((prevCart) =>
-  //     prevCart?.map((cartItem) =>
-  //       cartItem?.cartItemId === item.cartItemId
-  //         ? {
-  //             ...cartItem,
-  //             quantity: newQuantity,
-  //             totalPrice: newQuantity * (item.totalPrice / item.quantity),
-  //           }
-  //         : cartItem
-  //     )
-  //   );
-
-  //   if (newQuantity > 0) {
-  //     dispatch(
-  //       updateQuantityCartItem({
-  //         cartItemId: item?.cartItemId,
-  //         quantity: newQuantity,
-  //       })
-  //     )
-  //       .unwrap()
-  //       .then((res) => dispatch(getUserCart()));
-  //   } else {
-  //     setCurrentItem(item);
-  //     setIsModalVisible(true);
-  //     return;
-  //   }
-  // };
-
   const handleQuantityChange = debounce((item, newQuantity) => {
-    setIsProcessing(true); // Disable interaction while processing
+    if (newQuantity > item.productQuantity) {
+      toast.warn(vnMode ? "Số lượng mới không thể nhiều hơn số lượng sản phẩm" : "New quantity cannot larger than product's quantity");
+      return;
+    }
+    setIsProcessing(true);
     setCartQuantity((prevCart) =>
       prevCart?.map((cartItem) =>
         cartItem?.cartItemId === item.cartItemId
           ? {
-              ...cartItem,
-              quantity: newQuantity,
-              totalPrice: newQuantity * (item.totalPrice / item.quantity),
-            }
+            ...cartItem,
+            quantity: newQuantity,
+            totalPrice: newQuantity * (item.totalPrice / item.quantity),
+          }
           : cartItem
       )
     );
@@ -471,30 +67,29 @@ const UserOrder = () => {
         })
       )
         .unwrap()
-        .then((res) => {
-          setIsProcessing(false); // Re-enable interaction after request finishes
-          dispatch(getUserCart()); // Refresh cart data
+        .then(() => {
+          setIsProcessing(false);
+          dispatch(getUserCart());
         })
         .catch(() => {
           setIsProcessing(false);
-          toast.error("Đã xảy ra lỗi khi cập nhật số lượng!");
+          toast.error(vnMode ? "Đã xảy ra lỗi khi cập nhật số lượng!" : "Failed while updating quantity");
         });
     } else {
       setCurrentItem(item);
       setIsModalVisible(true);
     }
-  }, 800); // Debounce time in milliseconds (500ms)
+  }, 1000);
 
   const handleRemoveAll = () => {
     dispatch(removeAllCartItem())
       .unwrap()
       .then(() => {
         dispatch(getUserCart()).then(() => {
-          toast.success("Sản phẩm đã được xóa toàn bộ!");
         });
       })
       .catch(() => {
-        toast.error("Đã xảy ra lỗi khi xóa sản phẩm!");
+        toast.error(vnMode ? "Đã xảy ra lỗi khi xóa sản phẩm!" : "Failed while deleting all products");
       });
   };
 
@@ -503,35 +98,35 @@ const UserOrder = () => {
       .unwrap()
       .then(() => {
         dispatch(getUserCart()).then(() => {
-          toast.success("Sản phẩm đã được xóa thành công!");
         });
       })
       .catch(() => {
-        toast.error("Đã xảy ra lỗi khi xóa sản phẩm!");
+        toast.error(vnMode ? "Đã xảy ra lỗi khi xóa sản phẩm!" : "Failed while deleting a product");
       });
   };
 
   const columns = [
     {
-      title: "Tên sản phẩm",
+      title: vnMode ? "Tên sản phẩm" : "Product Name",
       dataIndex: "productName",
       key: "productName",
     },
     {
-      title: "Đơn giá",
+      title: vnMode ? "Đơn giá" : "Price",
       dataIndex: "price",
       key: "price",
       render: (_, record) =>
         `${(record.totalPrice / record.quantity).toLocaleString()}₫`,
     },
     {
-      title: "Số lượng",
+      title: vnMode ? "Số lượng" : "Quantity",
       dataIndex: "quantity",
       key: "quantity",
       render: (quantity, record) => (
         <InputNumber
           disabled={isProcessing}
           min={0}
+          max={record.productQuantity}
           value={
             cartQuantity.find(
               (cartItem) => cartItem.cartItemId === record.cartItemId
@@ -543,7 +138,7 @@ const UserOrder = () => {
       ),
     },
     {
-      title: "Số tiền",
+      title: vnMode ? "Tổng số tiền" : "Total Price",
       key: "totalPrice",
       dataIndex: "totalPrice",
       render: (_, record) => {
@@ -555,16 +150,16 @@ const UserOrder = () => {
       },
     },
     {
-      title: "Thao tác",
+      title: vnMode ? "Thao tác" : "Actions",
       key: "action",
       render: (_, record) => (
         <Popconfirm
-          title="Bạn có chắc muốn xóa sản phẩm này?"
+          title={vnMode ? "Bạn có chắc muốn xóa sản phẩm này?" : "Are you sure want to delete this product"}
           onConfirm={() => handleDeleteCartItem(record.cartItemId)}
-          okText="Có"
-          cancelText="Không"
+          okText={vnMode ? "Có" : "Yes"}
+          cancelText={vnMode ? "Không" : "No"}
         >
-          <Button danger>Xóa</Button>
+          <Button danger>{vnMode ? "Xóa" : "Delete"}</Button>
         </Popconfirm>
       ),
     },
@@ -587,7 +182,7 @@ const UserOrder = () => {
 
   const handleCheckout = () => {
     if (selectedRowKeys.length === 0) {
-      setWarningModalVisible(true); // Hiển thị modal nếu chưa chọn sản phẩm
+      setWarningModalVisible(true);
     } else {
       navigate("/checkout", { state: { selectedRowKeys } });
     }
@@ -595,23 +190,29 @@ const UserOrder = () => {
 
   return (
     <div className="relative h-full">
-      <div className="font-bold text-2xl mb-5">Order</div>
-      <Table
-        rowSelection={{
-          selectedRowKeys,
-          onChange: (keys) => setSelectedRowKeys(keys),
-        }}
-        columns={columns}
-        dataSource={userCart}
-        rowKey="cartItemId"
-        pagination={false}
-        className="shadow-md border border-gray-200 rounded-lg"
-      />
-      
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-md flex items-center justify-between p-4" style={{
-        zIndex: "9000"
-      }}>
-        <div className="flex items-center space-x-4">
+      <div className="font-bold text-xl md:text-2xl mb-3 md:mb-5">{vnMode ? "Giỏ hàng" : "Cart"}</div>
+
+      <div className="w-full overflow-x-auto">
+        <div className="min-w-[700px] md:min-w-full">
+          <Table
+            rowSelection={{
+              selectedRowKeys,
+              onChange: (keys) => setSelectedRowKeys(keys),
+            }}
+            columns={columns}
+            dataSource={userCart}
+            rowKey="cartItemId"
+            pagination={false}
+            className="shadow-md border border-gray-200 rounded-lg"
+          />
+        </div>
+      </div>
+
+      <div
+        className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-md flex flex-col md:flex-row items-center md:justify-between p-3 md:p-4 space-y-2 md:space-y-0"
+        style={{ zIndex: "9000" }}
+      >
+        <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4 w-full">
           <Checkbox
             onChange={(e) =>
               setSelectedRowKeys(
@@ -620,32 +221,30 @@ const UserOrder = () => {
             }
             checked={selectedRowKeys.length === userCart?.length}
           >
-            Chọn tất cả
+            {vnMode ? "Chọn tất cả" : "Select All"}
           </Checkbox>
-          <Button danger onClick={handleRemoveAll}>
-            Xóa toàn bộ sản phẩm
+          <Button danger className="text-sm md:text-base w-full md:w-auto" onClick={handleRemoveAll}>
+            {vnMode ? "Xóa toàn bộ" : "Delete All"}
           </Button>
         </div>
-        <div className="text-lg font-semibold">
-          Tổng thanh toán ({totalItems}) sản phẩm:{" "}
-          <span className="text-red-600">
-            ₫{totalSelectedPrice.toLocaleString()}
-          </span>
+
+        <div className="text-sm md:text-lg font-semibold text-center">
+          {vnMode ? "Tổng thanh toán" : "Total Bill"} ({totalItems}) {vnMode ? "sản phẩm:" : "products:"}{" "}
+          <span className="text-red-600">vn₫{totalSelectedPrice.toLocaleString()}</span>
         </div>
+
         <Button
           type="primary"
           size="large"
-          onClick={
-            // () => navigate("/checkout", { state: { selectedRowKeys } })
-            handleCheckout
-          }
+          className="w-full md:w-auto"
+          onClick={handleCheckout}
         >
-          Mua hàng
+          {vnMode ? "Mua hàng" : "Checkout"}
         </Button>
       </div>
 
       <Modal
-        title="Xóa sản phẩm"
+        title={vnMode ? "Xóa sản phẩm" : "Delete product"}
         open={isModalVisible}
         onOk={handleConfirmDelete}
         onCancel={async () => {
@@ -653,10 +252,10 @@ const UserOrder = () => {
           await dispatch(getUserCart());
           setIsProcessing(false);
         }}
-        okText="Xóa"
-        cancelText="Hủy"
+        okText={vnMode ? "Xóa" : "Delete"}
+        cancelText={vnMode ? "Hủy" : "Cancel"}
       >
-        <p>Bạn có chắc muốn xóa sản phẩm này không?</p>
+        <p>{vnMode ? "Bạn có chắc muốn xóa sản phẩm này không?" : "Are you sure want to delete this product"}</p>
       </Modal>
 
       <Modal
@@ -673,9 +272,10 @@ const UserOrder = () => {
           </Button>,
         ]}
       >
-        <p className="pb-10">Bạn vẫn chưa chọn sản phẩm nào để mua!</p>
+        <p className="pb-10">{vnMode ? "Bạn vẫn chưa chọn sản phẩm nào để mua!" : "You didn't choose any product yet!"}</p>
       </Modal>
     </div>
+
   );
 };
 

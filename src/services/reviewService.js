@@ -33,7 +33,6 @@ export const getAllReview = createAsyncThunk(
 
     try {
       const res = await BASE_URL.get(`api/v1/reviews/${productId}`);
-      console.log(res)
       return res.data;
     } catch (error) {
       throw error;

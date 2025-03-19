@@ -225,12 +225,15 @@ export const changeUserPassword = createAsyncThunk(
 
 export const GetUser = createAsyncThunk(
   "product/getUser",
-  async (email) => {
+  async ({email, role}) => {
     const token = Cookies.get("token");
 
     const config = {
       headers: {
         "Authorization": `Bearer ${token}`,
+      },
+      params: {
+        role: role,
       },
     };
 
@@ -288,10 +291,14 @@ export const getRecommendations = createAsyncThunk(
   "product/getRecommendations",
   async () => {
     const token = Cookies.get("token");
+    const userId = localStorage.getItem("userId");
 
     const config = {
       headers: {
         "Authorization": `Bearer ${token}`,
+      },
+      params: {
+        userId: userId,
       },
     };
 

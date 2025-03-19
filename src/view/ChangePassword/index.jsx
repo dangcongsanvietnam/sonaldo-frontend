@@ -13,6 +13,7 @@ const ChangePassword = () => {
   const token = Cookies.get("token");
   const [buttonLoading, setButtonLoading] = useState(false);
   const { vnMode } = useOutletContext();
+  const role = localStorage.getItem("role")
 
   const handleVerifyPassword = () => {
     setButtonLoading(true);
@@ -24,7 +25,7 @@ const ChangePassword = () => {
           Authorization: `Bearer ${token}`,
         },
         params: {
-          dataHref: 'super-admin/change-password?jwt='
+          dataHref: role === "ROLE_ADMIN" ? 'super-admin/change-password?jwt=' : role === "ROLE_MANAGER" ? 'admin/change-password?jwt=' : 'change-password?jwt='
         }
       }
     )
@@ -41,7 +42,7 @@ const ChangePassword = () => {
 
   return (
     <>
-      <div className="font-bold text-2xl mb-5">Change Password</div>
+      <div className="font-bold text-2xl mb-5">{vnMode ? "Đổi mật khẩu" : "Change Password"}</div>
       <div className="bg-white w-full p-6 rounded-md">
         {jwt ? (
           <ConfirmPassword token={token} vnMode={vnMode} />

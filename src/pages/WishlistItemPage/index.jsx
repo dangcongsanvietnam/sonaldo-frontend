@@ -1,58 +1,50 @@
-import { useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { Button, Card, Input, Modal, Rate, Select, Typography } from "antd";
-import { ArrowRightOutlined, DeleteOutlined, EditOutlined, HeartFilled, HeartOutlined, LeftOutlined, LoadingOutlined, PlusCircleOutlined, RightOutlined, ShoppingCartOutlined, ShoppingOutlined } from "@ant-design/icons";
-import { useEffect, useState } from "react";
+import { DeleteOutlined, EditOutlined, LoadingOutlined, PlusCircleOutlined, ShoppingCartOutlined, ShoppingOutlined } from "@ant-design/icons";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
-import { addToFavorite, deleteWishlist, getAllWishlist, removeFromFavorite, updateWishlist } from "../../services/wishlistService";
+import { deleteWishlist, getAllWishlist, removeFromFavorite, updateWishlist } from "../../services/wishlistService";
 import { useDispatch, useSelector } from "react-redux";
 import BeeBg from '../../assets/bee-bg.png';
 const { Title, Text } = Typography;
 import Cookies from "js-cookie";
 import './index.css';
+import { addProductToCart, getUserCart } from "../../services/cartService";
+import { useDrawer } from "../../components/Layout";
 
 const WishlistItemPage = () => {
     const { wishlistId } = useParams();
-    const vnMode = true;
+    const vnMode = useOutletContext();
     const dispatch = useDispatch();
     const [sortOption, setSortOption] = useState("default");
     const [isAddModalVisible, setIsAddModalVisible] = useState(false);
     const [filterLoading, setFilterLoading] = useState(false);
     const [wishlistName, setWishlistName] = useState("");
     const [loading, setLoading] = useState(false);
-    const [isWishlistModalVisible, setIsWishlistModalVisible] = useState(false);
-    const [selectedProduct, setSelectedProduct] = useState(null);
     const [loadingDelete, setLoadingDelete] = useState("" || null);
-    const [addLoading, setAddLoading] = useState("" || null);
+    const [bagLoading, setBagLoading] = useState("");
+    const token = Cookies.get("token");
+    const { toggleDrawer } = useDrawer();
+    const navigate = useNavigate();
     const wishlists = useSelector(state => state?.wishlist?.wishlists);
-    const [isLoginModalVisible, setIsLoginModalVisible] = useState(false);
     const getLocalizedText = (text) => {
         if (!text) return "";
         const parts = text.split(" || ");
         return vnMode ? parts[1]?.trim() || parts[0]?.trim() : parts[0]?.trim();
     };
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const itemsPerPage = 3;
-    const suggestions = useSelector((state) => {
-        return state.user.suggestions;
-    })
-    const recommendations = suggestions.map((item) => {
-        return {
-            ...item,
-            name: getLocalizedText(item.name),
-            description: getLocalizedText(item.description)
-        }
-    })
     const transformedWishlistData = wishlists?.find(w => w?.wishlistId === wishlistId);
-    const wishlistData = transformedWishlistData
-        ? {
+    const wishlistData = useMemo(() => {
+        if (!transformedWishlistData) return null;
+
+        return {
             ...transformedWishlistData,
+            totalCost: transformedWishlistData.wishlistItems?.reduce((sum, item) => sum + (item.price || 0), 0),
             wishlistItems: transformedWishlistData.wishlistItems?.map(item => ({
                 ...item,
-                productName: getLocalizedText(item.productName),
+                productName: getLocalizedText(item.productName, vnMode),
             })),
-        }
-        : null;
-    const [wishlistedProducts, setWishlistedProducts] = useState(new Set());
+        };
+    }, [transformedWishlistData, vnMode]);
     const [products, setProducts] = useState([]);
     const newestItems = wishlistData?.wishlistItems
         ?.slice()
@@ -72,17 +64,8 @@ const WishlistItemPage = () => {
     }, [wishlistData, products]);
 
     useEffect(() => {
-        const productIds = new Set(
-            wishlists.flatMap(wishlist => wishlist.wishlistItems.map(item => item.productId))
-        );
-        setWishlistedProducts(productIds);
-    }, [wishlists]);
-
-    useEffect(() => {
         const sortedAllProducts = sortProducts(products, sortOption);
-        console.log(1111, sortedAllProducts)
         if (JSON.stringify(sortedAllProducts) !== JSON.stringify(products)) {
-            console.log(1223)
             setProducts(sortedAllProducts);
         }
     }, [sortOption]);
@@ -103,29 +86,37 @@ const WishlistItemPage = () => {
         setLoadingDelete(wishlistId);
         try {
             await dispatch(deleteWishlist(wishlistId));
-            toast.success("Wishlist deleted successfully!");
-            dispatch(getAllWishlist());
         } catch (error) {
             toast.error("Failed to delete wishlist. Please try again.");
         } finally {
+            dispatch(getAllWishlist());
             setLoadingDelete(null);
-        }
-    };
-
-    const nextSlide = () => {
-        if (currentIndex + itemsPerPage < recommendations.length) {
-            setCurrentIndex(currentIndex + 1);
-        }
-    };
-
-    const prevSlide = () => {
-        if (currentIndex > 0) {
-            setCurrentIndex(currentIndex - 1);
         }
     };
 
     const handleSortChange = (value) => {
         setSortOption(value);
+    };
+
+    const handleAddProduct = (productId, quantitySelected) => {
+        setBagLoading(productId);
+        if (!token) {
+            navigate("/login");
+        } else {
+            dispatch(addProductToCart({ productId, quantity: quantitySelected }))
+                .unwrap()
+                .then(() => {
+                    dispatch(getUserCart())
+                        .unwrap()
+                        .then(() => {
+                            toggleDrawer();
+                            setBagLoading("");
+                        });
+                }).catch(() => {
+                    toast.error(vnMode ? "Sản phẩm đã hết hàng" : "This product is out of stock");
+                    setBagLoading("");
+                });
+        }
     };
 
     const handleUpdateWishlist = async () => {
@@ -141,78 +132,13 @@ const WishlistItemPage = () => {
             }
             setLoading(true);
             await dispatch(updateWishlist(data));
-            toast.success("Wishlist created successfully!");
             setIsAddModalVisible(false);
             setWishlistName("");
-            dispatch(getAllWishlist())
         } catch (error) {
             toast.error("Failed to create wishlist. Please try again.");
         } finally {
+            dispatch(getAllWishlist())
             setLoading(false);
-        }
-    };
-
-    const addToFavourite = (product) => {
-        const token = Cookies.get("token");
-        setSelectedProduct(product);
-
-        if (!token) {
-            setIsLoginModalVisible(true);
-            return;
-        }
-
-        let foundWishlist = null;
-        let foundWishlistItem = null;
-
-        for (const wishlist of wishlists) {
-            for (const wishlistItem of wishlist.wishlistItems) {
-                if (wishlistItem.productId === product.productId) {
-                    foundWishlist = wishlist;
-                    foundWishlistItem = wishlistItem;
-                    break;
-                }
-            }
-            if (foundWishlist && foundWishlistItem) break;
-        }
-
-        if (foundWishlist && foundWishlistItem) {
-            dispatch(removeFromFavorite({
-                wishlistId: foundWishlist.wishlistId,
-                wishlistItemId: foundWishlistItem.wishlistItemId,
-                productId: product.productId
-            }))
-                .unwrap()
-                .then(() => {
-                    setWishlistedProducts((prev) => {
-                        const newSet = new Set(prev);
-                        newSet.delete(product.productId);
-                        return newSet;
-                    });
-                    toast.success(vnMode ? "Đã xóa khỏi danh sách yêu thích!" : "Removed from favorites!");
-                })
-                .catch(() => {
-                    toast.error(vnMode ? "Xóa khỏi danh sách yêu thích thất bại!" : "Failed to remove!");
-                })
-                .finally(() => dispatch(getAllWishlist()));
-        } else {
-            if (wishlists.length === 1) {
-                const data = {
-                    productId: product.productId,
-                    wishlistId: wishlists[0].wishlistId
-                };
-                dispatch(addToFavorite(data))
-                    .unwrap()
-                    .then(() => {
-                        setWishlistedProducts((prev) => new Set(prev).add(product.productId));
-                        toast.success(vnMode ? "Thêm vào yêu thích thành công!" : "Added to favorites!");
-                    })
-                    .catch(() => {
-                        toast.error(vnMode ? "Thêm vào yêu thích thất bại!" : "Failed to add!");
-                    })
-                    .finally(() => dispatch(getAllWishlist()));
-            } else if (wishlists.length > 1) {
-                setIsWishlistModalVisible(true);
-            }
         }
     };
 
@@ -245,86 +171,100 @@ const WishlistItemPage = () => {
                 default:
                     return products;
             }
-        } catch (error) {
-            toast.error(getLocalizedText("Failed to filter. || Có lỗi khi lọc."));
+        } catch {
+            toast.error(vnMode ? "Có lỗi khi lọc." : "Failed to filter.");
         } finally {
             setFilterLoading(false);
         }
     };
 
-    const handleSelectWishlist = (wishlistId) => {
-        const data = {
-            productId: selectedProduct.productId,
-            wishlistId: wishlistId
-        };
-        setAddLoading(wishlistId);
+    const handleAddAllToCart = async () => {
+        if (!token) {
+            navigate("/login");
+            return;
+        }
 
-        dispatch(addToFavorite(data))
-            .unwrap()
-            .then(() => {
-                setWishlistedProducts((prev) => new Set(prev).add(selectedProduct.productId));
-                toast.success(vnMode ? "Thêm vào yêu thích thành công!" : "Added to favorites!");
-            })
-            .catch(() => {
-                toast.error(vnMode ? "Thêm vào yêu thích thất bại!" : "Failed to add!");
-            })
-            .finally(() => {
-                dispatch(getAllWishlist());
-                setIsWishlistModalVisible(false);
-                setAddLoading("");
-            });
+        setBagLoading("all");
+
+        try {
+            await Promise.all(
+                wishlistData?.wishlistItems?.map((item) =>
+                    dispatch(addProductToCart({ productId: item.productId, quantity: 1 })).unwrap()
+                )
+            );
+
+            await dispatch(getUserCart()).unwrap();
+            toggleDrawer();
+        } catch (error) {
+            toast.error(vnMode ? "Một số sản phẩm đã hết hàng!" : "Some products are out of stock!");
+        } finally {
+            setBagLoading("");
+        }
     };
 
     return (
-        <div>
+        <div className="">
             <Card key={wishlistData?.wishlistId} className="p-4 rounded-2xl shadow-sm border border-gray-200">
-                <div className="wishlist-container">
-                    <div className="flex">
-                        <div>
-                            <div className="flex space-x-2">
+                <div className="sm:flex sm:justify-between sm:items-center sm:w-full">
+                    <div className="sm:flex sm:flex-wrap sm:items-start sm:justify-between gap-4">
+                        <div className="flex-1 min-w-[60%]">
+                            <div className="flex items-center space-x-2">
                                 <Title level={4} className="!mb-1 text-blue-600 cursor-pointer">
                                     {wishlistData?.name} ({wishlistData?.wishlistItems?.length})
                                 </Title>
-                                <EditOutlined onClick={() => setIsAddModalVisible(true)} className="text-blue-500 cursor-pointer" />
+                                <EditOutlined
+                                    onClick={() => setIsAddModalVisible(true)}
+                                    className="text-blue-500 cursor-pointer"
+                                />
                             </div>
-                            <Text className="text-gray-500">
-                                Last updated: {new Date(wishlistData?.createdAt).toLocaleDateString('en-GB')}
+                            <Text className="text-gray-500 text-sm">
+                                {vnMode ? "Cập nhật lần cuối:" : "Last updated:"}{" "}
+                                {new Date(wishlistData?.createdAt).toLocaleDateString('en-GB')}
                             </Text>
                             <br />
-                            <Text strong>
-                                Tổng chi phí: {wishlistData?.totalCost?.toLocaleString('vi-VN')} VND
+                            <Text strong className="text-sm">
+                                {vnMode ? "Tổng chi phí:" : "Total Cost:"}{" "}
+                                {wishlistData?.totalCost?.toLocaleString('vi-VN')} VND
                             </Text>
                         </div>
-                        <div className="flex gap-2 mt-4 ml-20">
+
+                        <div className="flex flex-wrap gap-2 justify-center">
                             {newestItems?.map((item, index) => (
                                 <img
                                     key={index}
                                     src={`data:image/png;base64,${item.productImage.file.data}`}
                                     alt="Product"
-                                    className="w-20 h-20 object-cover border border-gray-300 border-solid rounded-lg"
+                                    className="w-16 h-16 md:w-20 md:h-20 object-cover border border-gray-300 border-solid rounded-lg"
                                 />
                             ))}
                         </div>
                     </div>
 
-                    <div className="space-y-4 mt-4">
-                        <Button type="primary" className="bg-orange-300 text-gray-700 border-none flex items-center gap-2 !rounded-full" disabled={wishlistData?.wishlistItems?.length < 1}>
-                            <ShoppingOutlined /> Add all to Bag
+                    <div className="mt-4 sm:block flex sm:space-y-5 space-x-3 sm:space-x-0">
+                        <Button
+                            type="primary"
+                            className="bg-orange-300 text-gray-700 border-none flex items-center gap-2 !rounded-full w-full sm:w-auto"
+                            disabled={wishlistData?.wishlistItems?.length < 1 || bagLoading === "all"}
+                            onClick={handleAddAllToCart}
+                            loading={bagLoading === "all"}
+                        >
+                            <ShoppingOutlined /> {bagLoading === "all" ? (vnMode ? "Đang thêm..." : "Adding...") : (vnMode ? "Thêm tất cả vào giỏ" : "Add all to Cart")}
                         </Button>
+
                         <Button
                             color="danger"
                             danger
                             variant="solid"
-                            className="border-none flex items-center gap-2 justify-center !rounded-full"
+                            className="border-none flex items-center gap-2 justify-center !rounded-full w-full"
                             onClick={() => handleDelete()}
                             loading={loadingDelete === wishlistData?.wishlistId}
                         >
-                            <DeleteOutlined /> Delete Wishlist
+                            <DeleteOutlined /> {vnMode ? "Xóa danh sách" : "Delete Wishlist"}
                         </Button>
-
                     </div>
                 </div>
             </Card>
+
             <div className="flex justify-end my-5">
                 <Select options={sortOptions} defaultValue="default" onChange={handleSortChange} className="w-48" />
             </div>
@@ -338,23 +278,23 @@ const WishlistItemPage = () => {
                         <Card cover={
                             <>
                                 <img src={BeeBg} />
-                                <div className="justify-center text-center space-y-2">
-                                    <h1 className="text-orange-500 text-3xl font-bold">Your list is currently empty!</h1>
+                                <div className="justify-center text-center space-y-2 p-4">
+                                    <h1 className="text-orange-500 text-3xl font-bold">
+                                        {vnMode ? "Danh sách của bạn hiện đang trống!" : "Your list is currently empty!"}
+                                    </h1>
                                     <Button
                                         type="default"
                                         className="bg-blue-600 text-white px-6 py-5 font-bold !rounded-full"
-                                    // onClick={() =>
-                                    //     navigate(`/wishlists/${wishlist.wishlistId}`)
-                                    // }
+                                        onClick={() => navigate(`/`)}
                                     >
-                                        Shop Now
+                                        {vnMode ? "Mua sắm ngay" : "Shop Now"}
                                     </Button>
                                 </div>
                             </>
                         }>
                         </Card>
                     ) : (
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3">
                             {products?.map((product, index) => {
                                 return (
                                     <div key={index} className="px-6">
@@ -377,7 +317,7 @@ const WishlistItemPage = () => {
                                                                 })
                                                             } catch (error) {
                                                                 setLoadingDelete("");
-                                                                toast.error("Failed to delete wishlist. Please try again.");
+                                                                toast.error(vnMode ? "Có lỗi khi xoá." : "Failed to delete.");
                                                             }
                                                         }}
                                                     >
@@ -390,21 +330,27 @@ const WishlistItemPage = () => {
                                                     <img
                                                         src={`data:image/jpeg;base64,${product?.productImage?.file.data}`}
                                                         className="h-[250px] w-full object-cover rounded-t-lg"
+                                                        style={{ width: "100%" }}
+                                                        onClick={() => navigate(`/product/${product.productId}`)}
                                                     />
                                                 </div>
                                             }
                                             className="shadow-lg rounded-3xl transition-transform duration-300 ease-in-out hover:scale-105"
-                                            style={{ width: 300, height: 500 }}
                                         >
                                             <div className="h-48 relative">
-                                                <h3 className="font-semibold text-base line-clamp-3">{product.productName}</h3>
+                                                <h3 className="font-semibold text-base line-clamp-3" onClick={() => navigate(`/product/${product.productId}`)}>{product.productName}</h3>
                                                 <div className="flex">
                                                     <Rate allowHalf value={product.avgVoting} className="mb-2 mr-2 text-sm" disabled />
                                                     <p className="text-gray-600">({product.votingQuantity})</p>
                                                 </div>
                                                 <p className="text-xl font-bold">{formatCurrency(product.price)} vnđ</p>
 
-                                                <Button type="primary" icon={<ShoppingCartOutlined />} className="absolute h-10 w-full !rounded-full bottom-0">
+                                                <Button type="primary" loading={bagLoading === product.productId} onClick={() =>
+                                                    handleAddProduct(
+                                                        product?.productId,
+                                                        1
+                                                    )
+                                                } icon={<ShoppingCartOutlined />} className="absolute h-10 w-full !rounded-full bottom-0">
                                                     {vnMode ? 'Thêm vào giỏ hàng' : 'Add to Cart'}
                                                 </Button>
                                             </div>
@@ -416,75 +362,8 @@ const WishlistItemPage = () => {
                     ))
                 }
             </div>
-            <div className="font-bold pt-14 pl-6 text-4xl">Recommended For You</div>
-            <div className="relative my-5 w-full h-auto overflow-hidden">
-                {recommendations?.length > 0 ? (
-                    <div className="flex items-center">
-                        <button onClick={prevSlide} disabled={currentIndex === 0}
-                            className="absolute top-1/2 left-0 transform -translate-y-1/2 bg-white p-3 shadow-md rounded-full z-10">
-                            <LeftOutlined />
-                        </button>
-                        <button onClick={nextSlide} disabled={currentIndex + itemsPerPage >= recommendations.length}
-                            className="absolute top-1/2 right-0 transform -translate-y-1/2 bg-white p-3 shadow-md rounded-full z-10">
-                            <RightOutlined />
-                        </button>
-                        <div className="w-full overflow-hidden">
-                            <div className="flex transition-transform duration-300"
-                                style={{ transform: `translateX(-${currentIndex * (100 / itemsPerPage)}%)` }}>
-                                {recommendations.map((product, index) => {
-                                    const isWishlisted = wishlistedProducts.has(product.productId);
-                                    return (
-                                        <div key={index} className="px-6 py-6 shrink-0 w-1/3" style={{ height: 600 }}>
-                                            <Card
-                                                cover={
-                                                    <div className="relative">
-                                                        <div
-                                                            className="bg-white absolute top-4 right-4 rounded-full p-2 shadow-md cursor-pointer z-10"
-                                                            style={{ width: "35px", height: "35px" }}
-                                                            onClick={() => addToFavourite(product)}
-                                                        >
-                                                            {isWishlisted ? (
-                                                                <HeartFilled className="text-red-500 text-xl" />
-                                                            ) : (
-                                                                <HeartOutlined className="text-red-500 text-xl" />
-                                                            )}
-                                                        </div>
-                                                        <img
-                                                            src={`data:image/jpeg;base64,${product?.imageUrl?.file.data}`}
-                                                            className="h-[250px] w-full object-cover rounded-t-lg"
-                                                            style={{ width: "100%" }}
-                                                        />
-                                                    </div>
-                                                }
-                                                className="shadow-lg rounded-3xl transition-transform duration-300 ease-in-out hover:scale-105"
-                                            >
-                                                <div className="h-48 relative">
-                                                    <h3 className="font-semibold text-base line-clamp-3">{product.name}</h3>
-                                                    <div className="flex">
-                                                        <Rate allowHalf value={product.avgVoting} className="mb-2 mr-2 text-sm" disabled />
-                                                        <p className="text-gray-600">({product.votingQuantity})</p>
-                                                    </div>
-                                                    <p className="text-xl font-bold">{formatCurrency(product.price)} vnđ</p>
-
-                                                    <Button type="primary" icon={<ShoppingCartOutlined />} className="absolute h-10 w-full !rounded-full bottom-0">
-                                                        {vnMode ? 'Thêm vào giỏ hàng' : 'Add to Cart'}
-                                                    </Button>
-                                                </div>
-                                            </Card>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="col-span-4 text-center py-10 text-gray-500">
-                        <p>{vnMode ? "Không tìm thấy sản phẩm nào phù hợp với bộ lọc của bạn." : "No products found matching your filters."}</p>
-                    </div>
-                )}
-            </div>
             <Modal
-                title="Create new list"
+                title={vnMode ? "Tạo danh sách mới" : "Create new list"}
                 open={isAddModalVisible}
                 onCancel={() => setIsAddModalVisible(false)}
                 footer={null}
@@ -492,7 +371,7 @@ const WishlistItemPage = () => {
             >
                 <div className="flex items-center border border-gray-300 rounded-full p-1 w-full max-w-md">
                     <Input
-                        placeholder="Enter your list name"
+                        placeholder={vnMode ? "Nhập tên danh sách của bạn" : "Enter your list name"}
                         value={wishlistName}
                         onChange={(e) => setWishlistName(e.target.value)}
                         className="flex-1 border-none outline-none bg-transparent px-3"
@@ -516,52 +395,7 @@ const WishlistItemPage = () => {
                     />
                 </div>
             </Modal>
-            <Modal
-                title="Hey! Save your amazing wish list"
-                open={isLoginModalVisible}
-                onCancel={() => setIsLoginModalVisible(false)}
-                footer={null}
-            >
-                <p className="mb-5">Enter your email address below and we will save this product to your wish list or &nbsp;
-                    <span onClick={() => navigate("/login")} className="underline text-blue-600 text-base">Log in</span></p>
-                <div className="flex items-center border border-gray-300 rounded-full p-1 w-full max-w-md">
-                    <Input
-                        type="email"
-                        placeholder="Enter your email"
-                        // value={email}
-                        // onChange={(e) => setEmail(e.target.value)}
-                        className="flex-1 border-none outline-none bg-transparent px-3"
-                        style={{ borderRadius: "999px", border: "none", boxShadow: "none" }}
-                    />
-                    <Button
-                        type="primary"
-                        shape="circle"
-                        icon={<ArrowRightOutlined />}
-                        // onClick={handleSubmit}
-                        className="flex items-center justify-center !rounded-full"
-                        style={{ width: "32px", height: "32px", minWidth: "32px" }}
-                    />
-                </div>
-            </Modal>
-            <Modal
-                title={vnMode ? "Chọn danh sách yêu thích" : "Choose Wishlist"}
-                open={isWishlistModalVisible}
-                onCancel={() => setIsWishlistModalVisible(false)}
-                footer={null}
-            >
-                <div>
-                    {wishlists.map((wishlist) => (
-                        <Button
-                            key={wishlist.wishlistId}
-                            onClick={() => handleSelectWishlist(wishlist.wishlistId)}
-                            style={{ width: "100%", marginBottom: "10px" }}
-                            loading={addLoading === wishlist.wishlistId}
-                        >
-                            {wishlist.name || "Wishlist " + wishlist.wishlistId}
-                        </Button>
-                    ))}
-                </div>
-            </Modal>
+
         </div>
     );
 };

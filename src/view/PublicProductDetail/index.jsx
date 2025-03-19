@@ -3,7 +3,7 @@ import { Button, Card, Modal, Rate, Progress, Carousel, Image, InputNumber, Inpu
 import { ArrowRightOutlined, HeartFilled, HeartOutlined, LeftOutlined, RightOutlined, ShoppingCartOutlined, StarFilled } from "@ant-design/icons";
 import Sider from "antd/es/layout/Sider";
 import { getProductDetail, getRecommendProducts } from "../../services/productService";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import Cookies from "js-cookie";
 import { useDispatch, useSelector } from "react-redux";
 import { useLoading } from "../../provider/LoadingProvider";
@@ -26,7 +26,7 @@ const PublicProductDetail = () => {
   const dispatch = useDispatch();
   const [wishlistedProducts, setWishlistedProducts] = useState(new Set());
   const carouselRef = useRef(null);
-  const vnMode = true;
+  const { vnMode } = useOutletContext();
   const { id } = useParams();
   const [quantitySelected, setQuantitySelected] = useState(1);
   const getLocalizedText = (text) => {
@@ -35,9 +35,16 @@ const PublicProductDetail = () => {
     return vnMode ? parts[1]?.trim() || parts[0]?.trim() : parts[0]?.trim();
   };
   const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value);
-  const publicProductDetail = useSelector(
-    (state) => state.product?.product?.data
-  );
+  const publicProductDetail = useSelector((state) => state.product?.product?.data);
+
+  const localizedProductDetail = useMemo(() => {
+    if (!publicProductDetail) return null;
+    return {
+      ...publicProductDetail,
+      name: getLocalizedText(publicProductDetail.name),
+      description: getLocalizedText(publicProductDetail.description),
+    };
+  }, [publicProductDetail, vnMode]);
   const [state, setState] = useState(publicProductDetail?.state);
   const wishlists = useSelector(state => state.wishlist.wishlists);
   const reviews = useSelector(state => state.reviews?.reviews);
@@ -58,25 +65,25 @@ const PublicProductDetail = () => {
   const userSuggestions = useSelector((state) => {
     return state.product.recommend;
   })
-  const recommended = userSuggestions.map((item) => {
-    return {
+  const recommended = useMemo(() => {
+    return userSuggestions.map((item) => ({
       ...item,
       name: getLocalizedText(item.name),
-      description: getLocalizedText(item.description)
-    }
-  })
-  const suggestions = useSelector((state) => {
-    return state.user.suggestions;
-  })
-  const recommendations = suggestions.map((item) => {
-    return {
+      description: getLocalizedText(item.description),
+    }));
+  }, [userSuggestions, vnMode]);
+
+  const suggestions = useSelector((state) => state.user.suggestions);
+
+  const recommendations = useMemo(() => {
+    return suggestions.map((item) => ({
       ...item,
       name: getLocalizedText(item.name),
-      description: getLocalizedText(item.description)
-    }
-  })
+      description: getLocalizedText(item.description),
+    }));
+  }, [suggestions, vnMode]);
   const [currentIndex2, setCurrentIndex2] = useState(0);
-  const itemsPerPage = 5;
+  const itemsPerPage = 4;
   const { averageRating, totalReviews, ratingCounts } = useMemo(() => {
     if (!reviews.length) return { averageRating: 0, totalReviews: 0, ratingCounts: {} };
 
@@ -118,9 +125,7 @@ const PublicProductDetail = () => {
     dispatch(getAllReview(id));
     dispatch(getRecommendProducts(id));
     dispatch(getRecommendations())
-  }, [dispatch]);
-
-  console.log(recommendations)
+  }, [dispatch, id]);
 
   const handlePrev = () => {
     carouselRef.current?.prev();
@@ -129,7 +134,7 @@ const PublicProductDetail = () => {
   const handleNext = () => {
     carouselRef.current?.next();
   };
-  const productImages = publicProductDetail?.images;
+  const productImages = localizedProductDetail?.images;
 
   const nextSlide = () => {
     if (currentIndex2 + itemsPerPage < recommended.length) {
@@ -138,7 +143,7 @@ const PublicProductDetail = () => {
   };
 
   const prevSlide = () => {
-    if (currentIndex > 0) {
+    if (currentIndex2 > 0) {
       setCurrentIndex2(currentIndex2 - 1);
     }
   };
@@ -168,14 +173,14 @@ const PublicProductDetail = () => {
   }, [dispatch, id, startLoading, stopLoading]);
 
   useEffect(() => {
-    if (quantitySelected >= publicProductDetail?.quantity) {
+    if (quantitySelected >= localizedProductDetail?.quantity) {
       setState("Hết hàng");
     } else if (quantitySelected <= 0) {
       setState("Hết hàng");
     } else {
       setState("Còn hàng");
     }
-  }, [quantitySelected, publicProductDetail?.quantity]);
+  }, [quantitySelected, localizedProductDetail?.quantity]);
 
   const handleAddProduct = (productId, quantitySelected) => {
     setBagLoading(true);
@@ -217,7 +222,7 @@ const PublicProductDetail = () => {
         setIsModalVisible(false);
       })
       .catch((error) => {
-        console.error("Error submitting review:", error);
+        toast.error(error)
       });
   };
 
@@ -322,11 +327,11 @@ const PublicProductDetail = () => {
 
   return (
     <div className="container mx-auto">
-      <div className="flex border-b border-t border-l mt-4">
+      <div className="flex border-b border-t border-l mt-5">
         <div className="col-span-9 border-b h-[500px]">
           <div className="flex flex-col">
             <div className="flex">
-              <Sider className="gap-2 py-4 justify-items-center space-y-2 overflow-x-auto bg-[#F2F2F2] !w-auto !min-w-unset !max-w-unset">
+              <Sider className="gap-2 py-4 h-[500px] justify-items-center space-y-2 overflow-x-auto bg-[#F2F2F2] !w-auto !min-w-unset !max-w-unset">
                 <div className="space-y-2">
                   {productImages?.map((img, index) => (
                     <div
@@ -402,7 +407,7 @@ const PublicProductDetail = () => {
             >
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {productImages?.map((img, index) => (
-                  <Image key={index} src={img} width={200} height={200} style={{
+                  <Image key={index} src={`data:image/jpeg;base64,${img?.file?.data}`} width={200} height={200} style={{
                     zIndex: '10000'
                   }} />
                 ))}
@@ -412,21 +417,21 @@ const PublicProductDetail = () => {
         </div>
 
         <div className="col-span-3 border-l border-r px-2 py-6 w-[460px]">
-          <h1 className="text-3xl font-bold">{getLocalizedText(publicProductDetail?.name)}</h1>
-          <p className="text-xl text-black mt-5">{formatCurrency(publicProductDetail?.price)} vnđ</p>
+          <h1 className="text-3xl font-bold">{localizedProductDetail?.name}</h1>
+          <p className="text-xl text-black mt-5">{formatCurrency(localizedProductDetail?.price)} vnđ</p>
           <p className="text-green-600 font-semibold">{state}</p>
 
           <div className="mt-6 flex items-center space-x-4">
             <InputNumber
               min={1}
-              max={publicProductDetail?.quantity}
+              max={localizedProductDetail?.quantity}
               value={quantitySelected}
               onChange={setQuantitySelected}
               style={{ width: "80px" }}
             />
             <Button loading={bagLoading} onClick={() =>
               handleAddProduct(
-                publicProductDetail?.productId,
+                localizedProductDetail?.productId,
                 quantitySelected
               )
             } type="primary" icon={<ShoppingCartOutlined />} className="bg-orange-500 hover:bg-orange-600">
@@ -435,7 +440,7 @@ const PublicProductDetail = () => {
             <div
               className="bg-white rounded-full p-2 shadow-md cursor-pointer z-10"
               style={{ width: "35px", height: "35px" }}
-              onClick={() => addToFavourite(publicProductDetail)}
+              onClick={() => addToFavourite(localizedProductDetail)}
             >
               {isWishlisted ? (
                 <HeartFilled className="text-red-500 text-xl" />
@@ -446,7 +451,7 @@ const PublicProductDetail = () => {
           </div>
           <hr className="my-4" />
 
-          <div className="font-bold">{getLocalizedText(publicProductDetail?.description)}</div>
+          <div className="font-bold">{localizedProductDetail?.description}</div>
         </div>
       </div>
 
@@ -455,15 +460,14 @@ const PublicProductDetail = () => {
 
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <Rate allowHalf defaultValue={publicProductDetail?.avgVoting} disabled />
+            <Rate allowHalf defaultValue={localizedProductDetail?.avgVoting} disabled />
             <p className="text-gray-500">
               ({totalReviews} {totalReviews === 1 ? "Review" : "Reviews"})
             </p>
           </div>
-          <Button type="primary">Write a Review</Button>
+          <Button type="primary" onClick={handleAddReview}>Write a Review</Button>
         </div>
 
-        {/* 📊 Rating Breakdown */}
         <div className="grid grid-cols-2 mt-4">
           <div>
             {[5, 4, 3, 2, 1].map((star) => (
@@ -475,7 +479,6 @@ const PublicProductDetail = () => {
             ))}
           </div>
 
-          {/* 🔽 Sorting Dropdown */}
           <div className="flex justify-end">
             <Select value={sortBy} onChange={setSortBy} style={{ width: 150 }}>
               <Select.Option value="newest">Newest First</Select.Option>
@@ -485,7 +488,6 @@ const PublicProductDetail = () => {
           </div>
         </div>
 
-        {/* 📝 Reviews List */}
         <div className="my-6 space-y-6">
           {totalReviews > 0 ? (
             paginatedReviews.map((review, index) => (
@@ -507,12 +509,11 @@ const PublicProductDetail = () => {
             <div className="text-center text-gray-500 p-6">
               <p className="text-xl font-semibold">No reviews yet</p>
               <p>Be the first to write a review!</p>
-              <Button type="primary" className="mt-2">Write a Review</Button>
+              <Button type="primary" className="mt-2" onClick={handleAddReview}>Write a Review</Button>
             </div>
           )}
         </div>
 
-        {/* 📃 Pagination */}
         {totalReviews > reviewsPerPage && (
           <Pagination
             current={currentPage}
@@ -599,7 +600,7 @@ const PublicProductDetail = () => {
               className="absolute top-1/2 left-0 transform -translate-y-1/2 bg-white p-3 shadow-md rounded-full z-10">
               <LeftOutlined />
             </button>
-            <button onClick={nextSlide2} disabled={currentIndex3 + itemsPerPage >= recommended.length}
+            <button onClick={nextSlide2} disabled={currentIndex3 + itemsPerPage >= recommendations.length}
               className="absolute top-1/2 right-0 transform -translate-y-1/2 bg-white p-3 shadow-md rounded-full z-10">
               <RightOutlined />
             </button>

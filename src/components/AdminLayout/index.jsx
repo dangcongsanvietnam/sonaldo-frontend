@@ -52,7 +52,7 @@ const AdminLayout = () => {
 
       validateToken();
     } else {
-      stopLoading(); // If user data is already available, stop loading
+      stopLoading();
     }
   }, [dispatch, location.pathname, navigate, user, window.performance]);
 

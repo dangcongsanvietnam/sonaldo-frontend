@@ -7,6 +7,7 @@ import { adminRoutes, publicRoutes, userRoutes, publicAdminRoutes, superAdminRou
 import AdminLayout from "./components/AdminLayout";
 import SuperAdminAuthentication from "./view/SuperAdmin/SuperAdminAuthentication";
 import Layout2 from "./components/Layout2";
+import NotFoundPage from "./view/NotFoundPage";
 
 export default function App() {
   return (
@@ -53,7 +54,7 @@ export default function App() {
           </Route>
         </Route>
 
-        {/* Catch-All Route */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </div>
   );

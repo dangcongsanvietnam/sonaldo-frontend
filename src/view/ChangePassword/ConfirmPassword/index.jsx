@@ -64,24 +64,24 @@ const ChangePasswordForm = ({ token, vnMode }) => {
         onValuesChange={onValuesChange}
       >
         <Form.Item
-          label="Mật khẩu mới"
+          label={vnMode ? "Mật khẩu mới" : "New Password"}
           name="newPassword"
-          rules={[{ required: true, message: "Vui lòng nhập mật khẩu mới" }]}
+          rules={[{ required: true, message: vnMode ? "Vui lòng nhập mật khẩu mới" : "Please fill your new password" }]}
           hasFeedback
         >
           <Input.Password />
         </Form.Item>
         <Form.Item
-          label="Nhập lại mật khẩu mới"
+          label={vnMode ? "Nhập lại mật khẩu mới" : "Confirm Password"}
           name="confirmPassword"
           rules={[
-            { required: true, message: "Vui lòng nhập lại mật khẩu mới" },
+            { required: true, message: vnMode ? "Vui lòng nhập lại mật khẩu mới" : "Please confirm your new password" },
             ({ getFieldValue }) => ({
               validator(_, value) {
                 if (!value || getFieldValue("newPassword") === value) {
                   return Promise.resolve();
                 }
-                return Promise.reject(new Error("Mật khẩu không trùng khớp"));
+                return Promise.reject(new Error(vnMode ? "Mật khẩu không trùng khớp" : "Password and confirm password are not matched"));
               },
             }),
           ]}
@@ -91,7 +91,7 @@ const ChangePasswordForm = ({ token, vnMode }) => {
         </Form.Item>
         <Form.Item>
           <Button loading={buttonLoading} type="primary" htmlType="submit" disabled={!passwordsMatch}>
-            Đổi mật khẩu
+            {vnMode ? "Đổi mật khẩu" : "Change Password"}
           </Button>
         </Form.Item>
       </Form>

@@ -1,11 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Button,
   Dropdown,
-  Input,
-  notification,
   Modal,
   Table,
+  Spin,
 } from "antd";
 import {
   MoreOutlined,
@@ -16,15 +15,20 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
 import {
-  deleteCategoryItem
+  deleteCategoryItem,
+  getCategoryDetail
 } from "../../services/categoryService";
+import { toast } from "react-toastify";
 
-const CategoryItemTable = ({ categoryId, selectedRowKeys, setSelectedRowKeys, searchKeyword }) => {
+const CategoryItemTable = ({ categoryId, selectedRowKeys, setSelectedRowKeys, searchKeyword, vnMode }) => {
   const categoryItem = useSelector((state) => {
     return state?.category?.category?.data?.categoryItems;
   });
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [selectedCategoryItemId, setSelectedCategoryItemId] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const alphanumericSort = (a, b) => {
     return a.categoryItemId.localeCompare(b.categoryItemId, undefined, {
@@ -33,38 +37,43 @@ const CategoryItemTable = ({ categoryId, selectedRowKeys, setSelectedRowKeys, se
     });
   };
 
-  const handleDelete = (categoryItemId) => {
-    Modal.confirm({
-      title: "Bạn có chắc chắn muốn xóa nhãn hàng này không?",
-      onOk: () => {
-        dispatch(deleteCategoryItem({ categoryId, categoryItemId }))
-          .unwrap()
-          .then(() => {
-            notification.success({ message: "Xóa nhãn hàng thành công" });
-          })
-          .catch((error) => {
-            notification.error({ message: "Xóa nhãn hàng thất bại" });
-            console.error("Lỗi khi xóa:", error);
-          });
-      },
-    });
+  const handleDelete = (brandCategoryId) => {
+    setSelectedCategoryItemId(brandCategoryId);
+    setIsModalVisible(true);
+  };
+
+  const confirmDelete = () => {
+    setLoading(true);
+    dispatch(deleteCategoryItem({ categoryId, categoryItemId: selectedCategoryItemId }))
+      .unwrap()
+      .then(() => {
+        dispatch(getCategoryDetail(categoryId)).finally(() => {
+          setLoading(false);
+        });
+        toast.success(vnMode ? "Xóa danh mục con thành công" : "Deleted sub-category successfully");
+        setIsModalVisible(false);
+      })
+      .catch(() => {
+        toast.error(vnMode ? "Xóa danh mục con thất bại" : "Failed to delete sub-category");
+        setLoading(false);
+      })
   };
 
   const columns = [
     {
-      title: "Mã danh mục",
+      title: vnMode ? "Mã danh mục con" : "Sub-category Id",
       dataIndex: "categoryItemId",
       sorter: alphanumericSort,
       sortDirections: ["ascend", "descend"],
     },
     {
-      title: "Danh mục thuộc danh mục sản phẩm",
+      title: vnMode ? "Tên" : "Name",
       dataIndex: "categoryItem",
       sorter: (a, b) => a.categoryItem.localeCompare(b.categoryItem),
       sortDirections: ["ascend", "descend"],
     },
     {
-      title: "Ảnh danh mục",
+      title: vnMode ? "Ảnh" : "Image",
       dataIndex: "imageFile",
       render: (imageFile) => (
         <img
@@ -75,7 +84,7 @@ const CategoryItemTable = ({ categoryId, selectedRowKeys, setSelectedRowKeys, se
       ),
     },
     {
-      title: "Action",
+      title: vnMode ? "Thao tác" : "Action",
       key: "operation",
       fixed: "right",
       width: 100,
@@ -93,14 +102,14 @@ const CategoryItemTable = ({ categoryId, selectedRowKeys, setSelectedRowKeys, se
                   );
                 }}
               >
-                Xem chi tiết
+                {vnMode ? "Xem chi tiết" : "Detail"}
               </Button>
               <Button
                 className="w-full border-none flex items-center justify-start"
                 icon={<DeleteOutlined />}
-                onClick={() => handleDelete(record?.categoryItemId)} // Kích hoạt hàm xóa
+                onClick={() => handleDelete(record?.categoryItemId)}
               >
-                Xoá
+                {vnMode ? "Xoá" : "Delete"}
               </Button>
             </div>
           )}
@@ -143,6 +152,15 @@ const CategoryItemTable = ({ categoryId, selectedRowKeys, setSelectedRowKeys, se
           showSorterTooltip={{ target: "sorter-icon" }}
         />
       </div>
+      <Modal
+        title={vnMode ? "Xác nhận xóa" : "Confirm Deletion"}
+        open={isModalVisible}
+        onOk={confirmDelete}
+        onCancel={() => setIsModalVisible(false)}
+        okButtonProps={{ loading }}
+      >
+        <p>{vnMode ? "Bạn có chắc chắn muốn xóa không?" : "Are you sure you want to delete?"}</p>
+      </Modal>
     </>
   );
 };

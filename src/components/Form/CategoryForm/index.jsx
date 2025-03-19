@@ -63,10 +63,20 @@ const CategoryForm = ({ vnMode }) => {
         >
           <Form.Item label={vnMode ? "Tên danh mục" : "Category Name"} name="category">
             <Input placeholder={vnMode ? "Nhập tên danh mục ..." : "Enter category name ..."} />
+            <small className="text-gray-500">
+              {vnMode
+                ? 'Nhập theo định dạng: "English || Tiếng Việt"'
+                : 'Enter in format: "English || Vietnamese"'}
+            </small>
           </Form.Item>
 
           <Form.Item label={vnMode ? "Mô tả cho danh mục" : "Description"} name="description">
             <TextArea placeholder={vnMode ? "Nhập mô tả ..." : "Enter description ..."}></TextArea>
+            <small className="text-gray-500">
+              {vnMode
+                ? 'Nhập theo định dạng: "English || Tiếng Việt"'
+                : 'Enter in format: "English || Vietnamese"'}
+            </small>
           </Form.Item>
           <Form.Item
             label={vnMode ? "Màu nền" : "Background Color"}

@@ -12,7 +12,8 @@ const EditAddressModal = ({
   editAddress,
   form,
   isCreateModal,
-  loading
+  loading,
+  vnMode
 }) => {
   const handleChange = (changedValues) => {
     setEditAddress((prev) => ({
@@ -27,18 +28,18 @@ const EditAddressModal = ({
         <div className="flex justify-between">
           <Form.Item
             name="fullName"
-            rules={[{ required: true, message: "Họ và tên là bắt buộc" }]}
+            rules={[{ required: true, message: vnMode ? "Họ và tên là bắt buộc" : "Full Name is required" }]}
             className="w-[48%]"
           >
-            <Input placeholder="Họ và tên" className="h-[38px] rounded-none" />
+            <Input placeholder={vnMode ? "Họ và tên" : "Full Name"} className="h-[38px] rounded-none" />
           </Form.Item>
           <Form.Item
             name="phoneNumber"
-            rules={[{ required: true, message: "Số điện thoại là bắt buộc" }]}
+            rules={[{ required: true, message: vnMode ? "Số điện thoại là bắt buộc" : "Phone Number is required" }]}
             className="w-[48%]"
           >
             <Input
-              placeholder="Số điện thoại"
+              placeholder={vnMode ? "Số điện thoại" : "Phone Number"}
               className="h-[38px] rounded-none"
             />
           </Form.Item>
@@ -52,7 +53,7 @@ const EditAddressModal = ({
           <TextArea
             showCount
             maxLength={100}
-            placeholder="Địa chỉ cụ thể"
+            placeholder={vnMode ? "Địa chỉ cụ thể" : "Detailed Address"}
             style={{
               height: 55,
               resize: "none",
@@ -66,15 +67,15 @@ const EditAddressModal = ({
           className="w-full"
         >
           <Checkbox disabled={isDefault ? true : false}>
-            Đặt làm địa chỉ mặc định
+            {vnMode ? "Đặt làm địa chỉ mặc định" : "Set as default address"}
           </Checkbox>
         </Form.Item>
         <div className="flex justify-end pt-14 space-x-2">
           <Button className="w-[20%]" onClick={closeModal}>
-            Trở lại
+            {vnMode ? "Trở lại" : "Back"}
           </Button>
           <Button loading={loading} className="w-[20%]" type="primary" onClick={openEditModal}>
-            Hoàn thành
+            {vnMode ? "Hoàn thành" : "Submit"}
           </Button>
         </div>
       </Form>

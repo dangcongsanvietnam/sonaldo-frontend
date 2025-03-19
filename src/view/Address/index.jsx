@@ -13,20 +13,19 @@ import DeleteAddressModal from "../../components/Modal/DeleteAddressModal";
 import EditAddressModal from "../../components/Modal/EditAddressModal";
 import { PlusOutlined } from "@ant-design/icons";
 import { toast } from "react-toastify";
+import { useOutletContext } from "react-router-dom";
 
 const Address = () => {
-  const userAddress = useSelector((state) => {
-    const addresses = state?.address?.data || [];
-
-    return addresses
-      .slice() // Create a copy to avoid mutating Redux state
+  const addresses = useSelector((state) => state?.address?.data);
+  const userAddress = addresses ?
+    addresses
+      .slice()
       .sort((a, b) => {
         if (a.defaultAddress === b.defaultAddress) {
-          return new Date(b.updatedAt) - new Date(a.updatedAt); // Sort newest to oldest
+          return new Date(b.updatedAt) - new Date(a.updatedAt);
         }
-        return b.defaultAddress - a.defaultAddress; // Default address comes first
-      });
-  });
+        return b.defaultAddress - a.defaultAddress;
+      }) : []
 
   const initialState = {
     fullName: "",
@@ -44,7 +43,7 @@ const Address = () => {
   const [isDefault, setIsDefault] = useState(true);
   const [isCreateModal, setIsCreateModal] = useState(true);
   const [editAddress, setEditAddress] = useState(editInitialState);
-
+  const { vnMode } = useOutletContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isModalDeleteOpen, setIsModalDeleteOpen] = useState(false);
   const [isModalEditOpen, setIsModalEditOpen] = useState(false);
@@ -63,8 +62,6 @@ const Address = () => {
     dispatch(updateAddress(editAddress))
       .unwrap()
       .then(() => {
-        toast.success("Thành công");
-
         if (token) {
           dispatch(getAddress(token));
         }
@@ -74,7 +71,7 @@ const Address = () => {
         setLoading(false);
       })
       .catch(() => {
-        toast.error("Thất bại");
+        toast.error(vnMode ? "Thất bại" : "Failed");
         setLoading(false);
       });
   };
@@ -83,17 +80,14 @@ const Address = () => {
     dispatch(deleteAddress(addressId))
       .unwrap()
       .then(() => {
-        toast.success("Thành công");
-
         if (token) {
           dispatch(getAddress(token));
         }
-
         setIsModalDeleteOpen(false);
         setLoading(false);
       })
       .catch(() => {
-        toast.error("Thất bại");
+        toast.error(vnMode ? "Thất bại" : "Failed");
         setLoading(false);
       });
   };
@@ -104,7 +98,6 @@ const Address = () => {
       .unwrap()
       .then(() => {
         setAddress(initialState);
-        toast.success("Thành công");
         if (token) {
           dispatch(getAddress(token));
         }
@@ -113,7 +106,7 @@ const Address = () => {
         setIsModalOpen(false);
       })
       .catch(() => {
-        toast.error("Thất bại");
+        toast.error(vnMode ? "Thất bại" : "Failed");
         setLoading(false);
       });
   };
@@ -147,7 +140,7 @@ const Address = () => {
   return (
     <>
       <Modal
-        title="Địa chỉ mới"
+        title={vnMode ? "Địa chỉ mới" : "New Address"}
         open={isModalOpen}
         closable={false}
         footer={null}
@@ -161,6 +154,7 @@ const Address = () => {
           editAddress={address}
           isCreateModal={isCreateModal}
           loading={loading}
+          vnMode={vnMode}
         />
       </Modal>
 
@@ -169,11 +163,12 @@ const Address = () => {
           closeModal={handleCancel}
           openDeleteModal={handleDeleteOk}
           loading={loading}
+          vnMode={vnMode}
         />
       </Modal>
 
       <Modal
-        title="Cập nhật địa chỉ"
+        title={vnMode ? "Cập nhật địa chỉ" : "Update Address"}
         open={isModalEditOpen}
         closable={false}
         footer={null}
@@ -189,11 +184,12 @@ const Address = () => {
           editAddress={editAddress}
           isCreateModal={isCreateModal}
           loading={loading}
+          vnMode={vnMode}
         />
       </Modal>
 
       <div className="flex justify-between">
-        <div className="font-bold text-2xl mb-5">Address</div>
+        <div className="font-bold text-2xl mb-5">{vnMode ? "Địa chỉ" : "Address"}</div>
       </div>
       <div className="pt-1">
         <Row gutter={16}>
@@ -205,13 +201,13 @@ const Address = () => {
                     <p>
                       <strong>Tên:</strong> {item.fullName}
                     </p>
-                    {item.defaultAddress ? (<Tag color="green">Default</Tag>) : ""}
+                    {item.defaultAddress ? (<Tag color="green">{vnMode ? "Mặc định" : "Default"}</Tag>) : ""}
                   </div>
                   <p>
-                    <strong>Số điện thoại:</strong> {item.phoneNumber}
+                    <strong>{vnMode ? "Số điện thoại:" : "Phone Number:"}</strong> {item.phoneNumber}
                   </p>
                   <p>
-                    <strong>Địa chỉ:</strong> {item.address}
+                    <strong>{vnMode ? "Địa chỉ:" : "Address:"}</strong> {item.address}
                   </p>
                   <p>
                     {item.province},{item.district},{item.commune}
@@ -226,17 +222,16 @@ const Address = () => {
                           handleDelete(item.addressId);
                         }}
                       >
-                        Xoá
+                        {vnMode ? "Xoá" : "Delete"}
                       </Button>
                     )}
 
                     <Button
                       onClick={() => {
-                        console.log("sua", item);
                         handleEdit(item);
                       }}
                     >
-                      Sửa
+                      {vnMode ? "Sửa" : "Edit"}
                     </Button>
                   </div>
                 </Card>
@@ -251,7 +246,7 @@ const Address = () => {
               onClick={showModal}
               className="h-[40px] w-full !rounded-md py-10 bg-white text-black"
             >
-              <PlusOutlined className="text-4xl" /> <span className="text-lg">Add Address</span>
+              <PlusOutlined className="text-4xl" /> <span className="text-lg">{vnMode ? "Thêm địa chỉ" : "Add Address"}</span>
             </Button>
           </Col>
         </Row>

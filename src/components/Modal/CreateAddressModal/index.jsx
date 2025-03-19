@@ -12,7 +12,8 @@ const CreateAddressModal = ({
   setAddress,
   form,
   editAddress,
-  loading
+  loading,
+  vnMode
 }) => {
   const handleChange = (changedValues) => {
     setAddress((prev) => ({
@@ -23,9 +24,6 @@ const CreateAddressModal = ({
 
   const userAddress = useSelector((state) => state?.address?.data);
 
-  console.log(123, editAddress)
-
-
   return (
     <>
       <div className="flex flex-col gap-5">
@@ -34,21 +32,21 @@ const CreateAddressModal = ({
             <Form.Item
               name="fullName"
               className="w-48%"
-              rules={[{ required: true, message: "Tên là bắt buộc" }]}
+              rules={[{ required: true, message: vnMode ? "Tên là bắt buộc" : "Name is required" }]}
             >
               <Input
                 className=" h-[38px] rounded-none"
-                placeholder="Họ và tên"
+                placeholder={vnMode ? "Họ và tên" : "Full Name"}
               ></Input>
             </Form.Item>
             <Form.Item
               name="phoneNumber"
               className="w-48%"
-              rules={[{ required: true, message: "Số điện thoại là bắt buộc" }]}
+              rules={[{ required: true, message: vnMode ? "Số điện thoại là bắt buộc" : "Phone number is required" }]}
             >
               <Input
                 className=" h-[38px] rounded-none"
-                placeholder="Số điện thoại"
+                placeholder={vnMode ? "Số điện thoại" : "Phone Number"}
               ></Input>
             </Form.Item>
           </div>
@@ -57,13 +55,14 @@ const CreateAddressModal = ({
               editAddress={editAddress}
               isCreateModal={isCreateModal}
               setAddress={setAddress}
+              vnMode={vnMode}
             />
           </div>
           <Form.Item name="address" className="w-full">
             <TextArea
               showCount
               maxLength={100}
-              placeholder="Địa chỉ cụ thể"
+              placeholder={vnMode ? "Địa chỉ cụ thể" : "Detailed Address"}
               style={{
                 height: 55,
                 resize: "none",
@@ -79,16 +78,16 @@ const CreateAddressModal = ({
             <Checkbox
               disabled={userAddress?.length < 1}
             >
-              Đặt làm địa chỉ mặc định
+              {vnMode ? "Đặt làm địa chỉ mặc định" : "Set as default address"}
             </Checkbox>
 
           </Form.Item>
           <div className="flex justify-end pt-14 space-x-2">
             <Button className="w-[20%]" onClick={closeModal}>
-              Trở lại
+              {vnMode ? "Trở lại" : "Back"}
             </Button>
             <Button loading={loading} className="w-[20%] bg-[#015AD2]" type="primary" onClick={openModal}>
-              Hoàn thành
+              {vnMode ? "Hoàn thành" : "Submit"}
             </Button>
           </div>
         </Form>

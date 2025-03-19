@@ -1,27 +1,18 @@
-import { BrowserRouter } from "react-router-dom";
 import Login from "./../view/login";
-import { Routes, Route } from "react-router-dom";
 import Home from "./../view/Home";
-import Layout from "./../components/Layout";
 import Register from "./../view/Register";
 import Profile from "./../view/Profile";
-import Authentication from "./../components/Authentication";
-import Account from "./../view/Account";
 import Address from "./../view/Address";
 import VerifyEmail from "./../components/VerifyEmail";
 import ChangePassword from "./../view/ChangePassword";
 import ForgetPassword from "./../components/ForgetPassword";
 import ResetPassword from "./../components/ResetPassword";
-import AdminAuthentication from "./../view/Admin/AdminAuthentication";
 import ProductList from "./../view/Admin/Product/ProductList";
 import AddProduct from "./../view/Admin/Product/AddProduct";
-import Order from "./../view/Admin/Order";
-import UserManagement from "./../view/Admin/CustomerManagement";
 import BrandList from "./../view/Admin/Brand/BrandList";
 import BrandDetail from "./../view/Admin/Brand/BrandDetail";
 import BrandCategoryDetail from "./../view/Admin/Brand/BrandDetail/BrandCategoryDetail";
 import CategoryList from "./../view/Admin/Category/CategoryList";
-import CustomerManagement from "./../view/Admin/CustomerManagement";
 import CategoryDetail from "./../view/Admin/Category/CategoryDetail";
 import CategoryItemDetail from "./../view/Admin/Category/CategoryDetail/CategoryItemDetail";
 import ProductDetail from "./../view/Admin/Product/ProductDetail";
@@ -29,7 +20,6 @@ import AddCategory from "./../view/Admin/Category/AddCategory";
 import Addbrand from "./../view/Admin/Brand/AddBrand";
 
 import CategoryPageDetail from "./../view/Admin/Category/CategoryPageDetail";
-import CategoryPage from "./../view/Admin/Category/CategoryPage";
 import PublicProductDetail from "../view/PublicProductDetail";
 import AdminLogin from "../view/Admin/AdminLogin";
 import SucessfulPage from "../pages/SuccessfulPage";
@@ -56,24 +46,27 @@ import WishlistPage from "../pages/WishlistPage";
 import WishlistItemPage from "../pages/WishlistItemPage";
 import CreateBlog from "../pages/CreateBlog";
 import EditBlogPage from "../pages/EditBlogPage";
+import OrderList from "../pages/OrderPage";
+import BlogPage from "../pages/BlogPage";
 
 export const publicRoutes = [
   { path: "/", Component: Home },
   { path: "/category/:categoryId", Component: CategoryPageDetail },
   { path: "/category/:categoryId/:categoryItemId", Component: CategoryItemPage },
-  { path: "/verify-email", Component: VerifyEmail },
   { path: "/forget-password", Component: ForgetPassword },
   { path: "/reset-password", Component: ResetPassword },
   { path: "/product/:id", Component: PublicProductDetail },
-  { path: "/successful-payment", Component: SucessfulPage },
-  { path: "/notification", Component: NotificationPage },
   { path: "/brand/:brandId", Component: Brand },
   { path: "/brand/:brandId/:brandCategoryId", Component: BrandCategoryPage },
+  { path: "/blog/:blogId", Component: BlogPage },
 ];
 
 export const publicRoutes2 = [
   { path: "/register", Component: Register },
   { path: "/login", Component: Login },
+  { path: "/successful-payment", Component: SucessfulPage },
+  { path: "/notification", Component: NotificationPage },
+  { path: "/verify-email", Component: VerifyEmail },
 ];
 
 export const publicAdminRoutes = [
@@ -84,7 +77,8 @@ export const userRoutes = [
   { path: "/profile", Component: Profile },
   { path: "/change-password", Component: ChangePassword },
   { path: "/address", Component: Address },
-  { path: "/orders", Component: UserOrder },
+  { path: "/orders", Component: OrderList },
+  { path: "/carts", Component: UserOrder },
   { path: "/checkout", Component: Checkout },
   { path: "/orders/:orderId", Component: Payment },
   { path: "/wishlists", Component: WishlistPage },
@@ -123,7 +117,7 @@ export const superAdminRoutes = [
   { path: "emails", Component: EmailPage },
   { path: "add-blog", Component: CreateBlog },
   { path: "add-user", Component: AddManager },
-  { path: "user-detail/:email", Component: DetailPage },
+  { path: "user-detail/:role/:email", Component: DetailPage },
   { path: "search-results", Component: SearchResults },
   { path: "changelogpage", Component: LogsPage },
   { path: "profile", Component: Profile },

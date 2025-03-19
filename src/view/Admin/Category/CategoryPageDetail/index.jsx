@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Badge, Breadcrumb, Button, Card, Carousel, Checkbox, ConfigProvider, Drawer, Input, InputNumber, Modal, Rate, Select, Slider } from "antd";
+import { Badge, Breadcrumb, Button, Card, Checkbox, ConfigProvider, Drawer, Input, InputNumber, Modal, Pagination, Rate, Select, Slider } from "antd";
 import { ArrowRightOutlined, ClearOutlined, HeartFilled, HeartOutlined, ShoppingCartOutlined } from "@ant-design/icons";
-import { Option } from "antd/es/mentions";
 import { Filter } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
@@ -12,13 +11,22 @@ import { getProductsByCategoryItem } from "../../../../services/productService";
 import { getAdminBrands } from "../../../../services/brandService";
 import { addToFavorite, getAllWishlist, removeFromFavorite } from "../../../../services/wishlistService";
 import Cookies from "js-cookie";
+import { useDrawer } from "../../../../components/Layout";
+import { addProductToCart, getUserCart } from "../../../../services/cartService";
+
+const { Option } = Select;
+const PRODUCTS_PER_PAGE = 20;
 
 const CategoryPageDetail = () => {
   const { vnMode } = useOutletContext();
+  const [currentPage, setCurrentPage] = useState(1);
   const { startLoading, stopLoading } = useLoading();
   const [sortOption, setSortOption] = useState("default");
   const [inStockCount, setInStockCount] = useState(0);
   const [outOfStockCount, setOutOfStockCount] = useState(0);
+  const [bagLoading, setBagLoading] = useState("");
+  const { toggleDrawer } = useDrawer();
+  const token = Cookies.get("token");
   const [addLoading, setAddLoading] = useState("" || null);
   const navigate = useNavigate();
   const { categoryId } = useParams();
@@ -43,19 +51,18 @@ const CategoryPageDetail = () => {
         categoryName: getLocalizedText(categoryItem.categoryName)
       }))
     };
-  }, [memoizedCategory]);
+  }, [memoizedCategory, vnMode]);
 
-  const ageList = [
-    { name: "0-2 Years || 0-2 Tuổi", count: 0, disabled: true },
-    { name: "3-4 Years || 3-4 Tuổi", count: 0, disabled: true },
-    { name: "5-7 Years || 5-7 Tuổi", count: 0, disabled: true },
-    { name: "8-10 Years || 8-10 Tuổi", count: 0, disabled: true },
-    { name: "11-12 Years || 11-12 Tuổi", count: 0, disabled: true },
-    { name: "13-14 Years || 13-14 Tuổi", count: 0, disabled: true },
-    { name: "15-16 Years || 15-16 Tuổi", count: 0, disabled: true },
-    { name: "17 Years || 17 Tuổi", count: 0, disabled: true },
-    { name: "18+ Years || 18+ Tuổi", count: 0, disabled: true }
-  ].map(age => ({ ...age, name: getLocalizedText(age.name) }));
+  const ageList = useMemo(() => {
+    return [
+      { name: "0-2 Years || 0-2 Tuổi", count: 0, disabled: true },
+      { name: "3-4 Years || 3-4 Tuổi", count: 0, disabled: true },
+      { name: "5-7 Years || 5-7 Tuổi", count: 0, disabled: true },
+      { name: "8-12 Years || 8-12 Tuổi", count: 0, disabled: true },
+      { name: "13-17 Years || 13-17 Tuổi", count: 0, disabled: true },
+      { name: "18+ Years || 18+ Tuổi", count: 0, disabled: true }
+    ].map(age => ({ ...age, name: getLocalizedText(age.name) }));
+  }, [vnMode]);
 
   const [open, setOpen] = useState(false);
   const [allProducts, setAllProducts] = useState([]);
@@ -81,6 +88,14 @@ const CategoryPageDetail = () => {
   const dispatch = useDispatch();
   const wishlists = useSelector(state => state.wishlist.wishlists);
   const [wishlistedProducts, setWishlistedProducts] = useState(new Set());
+  const products = filterMode ? displayedProducts : allProducts;
+  const totalProducts = products.length;
+  const totalPages = Math.ceil(totalProducts / PRODUCTS_PER_PAGE);
+
+  const paginatedProducts = products.slice(
+    (currentPage - 1) * PRODUCTS_PER_PAGE,
+    currentPage * PRODUCTS_PER_PAGE
+  );
 
   useEffect(() => {
     const inStock = allProducts.filter(product => product.quantity > 0).length;
@@ -98,8 +113,10 @@ const CategoryPageDetail = () => {
 
   useEffect(() => {
     fetchData();
-    dispatch(getAllWishlist());
-  }, [dispatch, navigate]);
+    if (token) {
+      dispatch(getAllWishlist());
+    }
+  }, [dispatch, navigate, vnMode]);
 
   useEffect(() => {
     const sortedAllProducts = sortProducts(filterMode ? displayedProducts : allProducts, sortOption);
@@ -178,7 +195,12 @@ const CategoryPageDetail = () => {
       const categoryProducts = await Promise.all(productPromises);
       const sortedCategories = categoryProducts.sort((a, b) => b.products.length - a.products.length);
 
-      const allProductsArray = sortedCategories.flatMap(category => category.products);
+      const allProductsArray = sortedCategories
+        .flatMap(category => category.products)
+        .filter((product, index, self) =>
+          index === self.findIndex(p => p.productId === product.productId)
+        );
+
       setAllProducts(allProductsArray);
 
       const brandCategoryMap = new Map();
@@ -274,11 +296,32 @@ const CategoryPageDetail = () => {
   }));
 
   const availabilityOptions = [
-    { label: vnMode ? `In Stock (${inStockCount})` : `Còn hàng (${inStockCount})`, value: "inStock", disabled: inStockCount === 0 },
-    { label: vnMode ? `Out of Stock (${outOfStockCount})` : `Hết hàng (${outOfStockCount})`, value: "outOfStock", disabled: outOfStockCount === 0 }
+    { label: vnMode ? `Còn hàng (${inStockCount})` : `In Stock (${inStockCount})`, value: "inStock", disabled: inStockCount === 0 },
+    { label: vnMode ? `Hết hàng (${outOfStockCount})` : `Out of Stock (${outOfStockCount})`, value: "outOfStock", disabled: outOfStockCount === 0 }
   ];
 
   const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value);
+
+  const handleAddProduct = (productId, quantitySelected) => {
+    setBagLoading(productId);
+    if (!token) {
+      navigate("/login");
+    } else {
+      dispatch(addProductToCart({ productId, quantity: quantitySelected }))
+        .unwrap()
+        .then(() => {
+          dispatch(getUserCart())
+            .unwrap()
+            .then(() => {
+              toggleDrawer();
+              setBagLoading("");
+            });
+        }).catch(() => {
+          toast.error(vnMode ? "Sản phẩm đã hết hàng" : "This product is out of stock");
+          setBagLoading("");
+        });
+    }
+  };
 
   const handleMinPriceChange = (value) => {
     setFilters((prev) => ({
@@ -330,8 +373,8 @@ const CategoryPageDetail = () => {
         default:
           return products;
       }
-    } catch (error) {
-      toast.error(getLocalizedText("Failed to filter. || Có lỗi khi lọc."));
+    } catch {
+      toast.error(vnMode ? "Có lỗi khi lọc." : "Failed to filter.");
     } finally {
       setFilterLoading(false);
     }
@@ -376,8 +419,8 @@ const CategoryPageDetail = () => {
 
       setDisplayedProducts(filtered);
       setFilterMode(true);
-    } catch (error) {
-      toast.error(getLocalizedText("Failed to filter. || Có lỗi khi lọc."));
+    } catch {
+      toast.error(vnMode ? "Có lỗi khi lọc." : "Failed to filter.");
     } finally {
       setFilterLoading(false);
     }
@@ -395,8 +438,8 @@ const CategoryPageDetail = () => {
       });
       setDisplayedProducts([]);
       setFilterMode(false);
-    } catch (error) {
-      toast.error(getLocalizedText("Failed to filter. || Có lỗi khi lọc."));
+    } catch {
+      toast.error(vnMode ? "Có lỗi khi lọc." : "Failed to filter.");
     } finally {
       setFilterLoading(false);
     }
@@ -442,7 +485,6 @@ const CategoryPageDetail = () => {
             newSet.delete(product.productId);
             return newSet;
           });
-          toast.success(vnMode ? "Đã xóa khỏi danh sách yêu thích!" : "Removed from favorites!");
         })
         .catch(() => {
           toast.error(vnMode ? "Xóa khỏi danh sách yêu thích thất bại!" : "Failed to remove!");
@@ -458,7 +500,6 @@ const CategoryPageDetail = () => {
           .unwrap()
           .then(() => {
             setWishlistedProducts((prev) => new Set(prev).add(product.productId));
-            toast.success(vnMode ? "Thêm vào yêu thích thành công!" : "Added to favorites!");
           })
           .catch(() => {
             toast.error(vnMode ? "Thêm vào yêu thích thất bại!" : "Failed to add!");
@@ -482,7 +523,6 @@ const CategoryPageDetail = () => {
       .unwrap()
       .then(() => {
         setWishlistedProducts((prev) => new Set(prev).add(selectedProduct.productId));
-        toast.success(vnMode ? "Thêm vào yêu thích thành công!" : "Added to favorites!");
       })
       .catch(() => {
         toast.error(vnMode ? "Thêm vào yêu thích thất bại!" : "Failed to add!");
@@ -510,18 +550,27 @@ const CategoryPageDetail = () => {
           separator=">"
           className="mb-4 font-bold"
           style={{ fontSize: "18px", color: "#1F4ABC" }}
-        >
-          <Breadcrumb.Item>
-            <span onClick={() => navigate("/")} className="cursor-pointer text-sm underline">
-              {vnMode ? 'Trang Chủ' : 'Home'}
-            </span>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>
-            <span onClick={() => navigate(`/category/${categoryId}`)} className="cursor-pointer text-sm text-[#1F4ABC] underline">
-              {category?.name || "Category"}
-            </span>
-          </Breadcrumb.Item>
-        </Breadcrumb>
+          items={[
+            {
+              title: (
+                <span onClick={() => navigate("/")} className="cursor-pointer text-sm underline">
+                  {vnMode ? "Trang Chủ" : "Home"}
+                </span>
+              ),
+            },
+            {
+              title: (
+                <span
+                  onClick={() => navigate(`/category/${categoryId}`)}
+                  className="cursor-pointer text-sm text-[#1F4ABC] underline"
+                >
+                  {category?.name || "Category"}
+                </span>
+              ),
+            },
+          ]}
+        />
+
         <h1 style={{
           fontSize: "50px",
           marginBottom: "10px"
@@ -533,7 +582,7 @@ const CategoryPageDetail = () => {
         <div>
           <div className="flex justify-between items-center my-10">
             <span className="text-lg font-semibold">{allProducts.length} {vnMode ? "sản phẩm" : "products"}</span>
-            <div className="flex w-1/4">
+            <div className="flex">
               <div className="flex mr-2">
                 <Button
                   danger
@@ -550,7 +599,7 @@ const CategoryPageDetail = () => {
                   </Button>
                 </Badge>
               </div>
-              <Select defaultValue="default" onChange={handleSortChange} className="w-48">
+              <Select defaultValue="default" onChange={handleSortChange} className="">
                 <Option value="default">{vnMode ? 'Sắp xếp' : 'Sort By'}</Option>
                 <Option value="price-low-high">{vnMode ? 'Giá: Thấp đến cao' : 'Price: Low to High'}</Option>
                 <Option value="price-high-low">{vnMode ? 'Giá: Cao đến thấp' : 'Price: High to Low'}</Option>
@@ -562,7 +611,7 @@ const CategoryPageDetail = () => {
             </div>
           </div>
           <div className="hidden md:block w-1/4">
-            <Drawer open={open} onClose={() => setOpen(false)} title={vnMode ? 'Lọc' : "Filters"} placement="left" width={300}>
+            <Drawer zIndex={10000} open={open} onClose={() => setOpen(false)} title={vnMode ? 'Lọc' : "Filters"} placement="left" width={300}>
               <div className="space-y-4">
                 <div>
                   <h3 className="text-lg font-semibold">{vnMode ? "Danh mục" : "Category"}</h3>
@@ -654,64 +703,92 @@ const CategoryPageDetail = () => {
               </div>
             </Drawer>
           </div>
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {filterLoading ? (
               <div className="col-span-4 flex justify-center items-center h-96">
                 <Spin size="large" />
               </div>
-            ) : (
-              (filterMode ? displayedProducts : allProducts).length > 0 ? (
-                (filterMode ? displayedProducts : allProducts).map((product, index) => {
-                  const isWishlisted = wishlistedProducts.has(product.productId);
-
-                  return (
-                    <div key={index} className="px-6">
-                      <Card
-                        cover={
-                          <div className="relative">
-                            <div
-                              className="bg-white absolute top-4 right-4 rounded-full p-2 shadow-md cursor-pointer z-10"
-                              style={{ width: "35px", height: "35px" }}
-                              onClick={() => addToFavourite(product)}
-                            >
-                              {isWishlisted ? (
-                                <HeartFilled className="text-red-500 text-xl" />
-                              ) : (
-                                <HeartOutlined className="text-red-500 text-xl" />
-                              )}
-                            </div>
-                            <img
-                              src={`data:image/jpeg;base64,${product?.images[0]?.file.data}`}
-                              className="h-[250px] w-full object-cover rounded-t-lg"
-                            />
+            ) : totalProducts > 0 ? (
+              paginatedProducts.map((product, index) => {
+                const isWishlisted = wishlistedProducts.has(product.productId);
+                return (
+                  <div key={index} className="px-6">
+                    <Card
+                      cover={
+                        <div className="relative">
+                          <div
+                            className="bg-white absolute top-4 right-4 rounded-full p-2 shadow-md cursor-pointer z-10"
+                            style={{ width: "35px", height: "35px" }}
+                            onClick={() => addToFavourite(product)}
+                          >
+                            {isWishlisted ? (
+                              <HeartFilled className="text-red-500 text-xl" />
+                            ) : (
+                              <HeartOutlined className="text-red-500 text-xl" />
+                            )}
                           </div>
-                        }
-                        className="shadow-lg rounded-3xl transition-transform duration-300 ease-in-out hover:scale-105"
-                        style={{ width: 300, height: 500 }}
-                      >
-                        <div className="h-48 relative">
-                          <h3 className="font-semibold text-base line-clamp-3">{product.name}</h3>
-                          <div className="flex">
-                            <Rate allowHalf value={product.avgVoting} className="mb-2 mr-2 text-sm" disabled />
-                            <p className="text-gray-600">({product.votingQuantity})</p>
-                          </div>
-                          <p className="text-xl font-bold">{formatCurrency(product.price)} vnđ</p>
-
-                          <Button type="primary" icon={<ShoppingCartOutlined />} className="absolute h-10 w-full !rounded-full bottom-0">
-                            {vnMode ? 'Thêm vào giỏ hàng' : 'Add to Cart'}
-                          </Button>
+                          <img
+                            src={`data:image/jpeg;base64,${product?.images[0]?.file.data}`}
+                            className="h-[250px] w-full object-cover rounded-t-lg"
+                            style={{ width: "100%" }}
+                            onClick={() => navigate(`/product/${product.productId}`)}
+                          />
                         </div>
-                      </Card>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="col-span-4 text-center py-10 text-gray-500">
-                  <p>{vnMode ? "Không tìm thấy sản phẩm nào phù hợp với bộ lọc của bạn." : "No products found matching your filters."}</p>
-                </div>
-              )
+                      }
+                      className="shadow-lg rounded-3xl transition-transform duration-300 ease-in-out hover:scale-105"
+                    >
+                      <div className="h-48 relative">
+                        <h3
+                          className="font-semibold text-base line-clamp-3"
+                          onClick={() => navigate(`/product/${product.productId}`)}
+                        >
+                          {product.name}
+                        </h3>
+                        <div className="flex">
+                          <Rate
+                            allowHalf
+                            value={product.avgVoting}
+                            className="mb-2 mr-2 text-sm"
+                            disabled
+                          />
+                          <p className="text-gray-600">({product.votingQuantity})</p>
+                        </div>
+                        <p className="text-xl font-bold">{formatCurrency(product.price)} vnđ</p>
+                        <Button
+                          type="primary"
+                          loading={bagLoading === product.productId}
+                          onClick={() => handleAddProduct(product?.productId, 1)}
+                          icon={<ShoppingCartOutlined />}
+                          className="absolute h-10 w-full !rounded-full bottom-0"
+                        >
+                          {vnMode ? "Thêm vào giỏ hàng" : "Add to Cart"}
+                        </Button>
+                      </div>
+                    </Card>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="col-span-4 text-center py-10 text-gray-500">
+                <p>
+                  {vnMode
+                    ? "Không tìm thấy sản phẩm nào phù hợp với bộ lọc của bạn."
+                    : "No products found matching your filters."}
+                </p>
+              </div>
             )}
           </div>
+
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-6">
+              <Pagination
+                current={currentPage}
+                total={totalProducts}
+                pageSize={PRODUCTS_PER_PAGE}
+                onChange={setCurrentPage}
+              />
+            </div>
+          )}
         </div>
         <Modal
           title="Hey! Save your amazing wish list"

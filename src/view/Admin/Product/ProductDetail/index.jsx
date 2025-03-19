@@ -161,9 +161,9 @@ const ProductDetail = () => {
           originFileObj: file,
         };
       });
-      if (fileList.length === 0) {
-        setFileList(newFileList);
-      }
+      setFileList(newFileList);
+    } else {
+      setFileList([])
     }
   }, [productDetail?.images, fileList.length]);
 
@@ -467,7 +467,7 @@ const ProductDetail = () => {
               <Form.Item label={vnMode ? "Giá sản phẩm" : "Product price"} className="flex-1" name="price">
                 <InputNumber
                   formatter={(value) =>
-                    `₫ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                    `vnđ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                   }
                   parser={(value) => value?.replace(/₫\s?|\D/g, "")}
                   className="w-full"

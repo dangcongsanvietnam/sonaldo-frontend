@@ -18,7 +18,6 @@ const SearchResults = () => {
     const query = new URLSearchParams(location.search).get("q");
     const { searchResults = [], searchValue = "" } = location.state || {};
     const { vnMode } = useOutletContext();
-    console.log(searchResults)
 
     useEffect(() => {
         const fetchSearchResults = async () => {

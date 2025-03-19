@@ -3,7 +3,9 @@ import {
   deleteOrder,
   getOrderDetail,
   searchOrders,
+  updateOrder,
   updateOrderStatus,
+  userOrder,
 } from "../services/orderService";
 import { createOrder, getOrder } from "../services/orderService";
 
@@ -15,6 +17,7 @@ const orderSlice = createSlice({
     error: null,
     orders: [],
     orderDetail: null,
+    userOrder: []
   },
   reducers: {},
   extraReducers: (builder) => {
@@ -22,15 +25,36 @@ const orderSlice = createSlice({
       state.loading = "pending";
     });
     builder.addCase(searchOrders.fulfilled, (state, action) => {
-      state.orders = action.payload; // Cập nhật danh sách order
+      state.orders = action.payload;
       state.loading = "success";
     });
     builder.addCase(searchOrders.rejected, (state, action) => {
       state.loading = "Failed";
       state.error = action.error;
     });
+    builder.addCase(userOrder.pending, (state) => {
+      state.loading = "pending";
+    });
+    builder.addCase(userOrder.fulfilled, (state, action) => {
+      state.userOrder = action.payload;
+      state.loading = "success";
+    });
+    builder.addCase(userOrder.rejected, (state, action) => {
+      state.loading = "Failed";
+      state.error = action.error;
+    });
 
-    // Thêm extraReducers cho updateOrderStatus
+    builder.addCase(updateOrder.pending, (state) => {
+      state.loading = "pending";
+    });
+    builder.addCase(updateOrder.fulfilled, (state, action) => {
+      state.loading = "success";
+    });
+    builder.addCase(updateOrder.rejected, (state, action) => {
+      state.loading = "Failed";
+      state.error = action.error;
+    });
+
     builder.addCase(updateOrderStatus.pending, (state) => {
       state.loading = "pending";
     });

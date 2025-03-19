@@ -1,78 +1,73 @@
-import React from "react";
-import { Button, Input, Form, notification } from "antd";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { Button, Input, Form } from "antd";
+import { Link } from "react-router-dom";
 import BASE_URL from "../../api";
 import { emailValidator } from "../../utils/validataData";
+import { MailOutlined } from "@ant-design/icons";
+import { toast } from "react-toastify";
 
 const ForgetPassword = () => {
   const [form] = Form.useForm();
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
   const onFinish = (values) => {
-    console.log("Success:", values);
-    console.log(values.email);
     const email = values.email;
-    // Thực hiện các hành động sau khi người dùng gửi form, ví dụ: gọi API gửi email đặt lại mật khẩu
+    setLoading(true);
     BASE_URL.post("/api/v1/auth/forgot-password", { email })
-      .then((res) => {
-        console.log(res);
+      .then(() => {
         localStorage.setItem("email", email);
-        notification.success({
-          message: "Thành công",
-          description: "Vui lòng check mail để xác nhận đổi mật khẩu",
-        });
+        toast.success(vnMode ? "Vui lòng check mail để xác nhận đổi mật khẩu" : "Please check mail to confirm change password");
+        setLoading(false);
       })
       .catch(() => {
-        notification.error({
-          message: "Thất bại",
-          description: "Vui lòng gửi lại email",
-        });
+        setLoading(false);
+        toast.error(vnMode ? "Vui lòng gửi lại email" : "Please send email again");
       });
   };
 
-  const onFinishFailed = (errorInfo) => {
-    console.log("Failed:", errorInfo);
-  };
-
   return (
-    <div className="ra-login-container">
-      <Form
-        form={form}
-        name="forgetPassword"
-        onFinish={onFinish}
-        onFinishFailed={onFinishFailed}
-        layout="vertical"
-        className="form"
-      >
-        <h3 className="heading">Quên mật khẩu</h3>
-        <div className="text-center">
-          <span>Vui lòng nhập Email của bạn để đặt lại mật khẩu</span>
-        </div>
-        <Form.Item
-          name="email"
-          label="Email"
-          rules={[
-            {
-              validator: emailValidator,
-            },
-          ]}
-        >
-          <Input className="form-input" placeholder="Nhập email của bạn" />
-        </Form.Item>
+    <div className="flex justify-center items-center min-h-screen p-6">
+      <div className="bg-white border rounded-3xl shadow-lg p-8 max-w-md w-full text-center">
+        <h3 className="text-2xl font-bold text-blue-600 mb-4">{vnMode ? "Quên Mật Khẩu?" : "Forgor Password?"}</h3>
+        <p className="text-gray-600 mb-6">
+          {vnMode ? "Vui lòng nhập email của bạn để đặt lại mật khẩu" : "Please fill your email to reset your password"}
+        </p>
 
-        <Form.Item>
-          <div className="flex justify-center">
-            <Button htmlType="submit" type="primary" className="flex-1">
-              Gửi
+        <Form
+          form={form}
+          name="forgetPassword"
+          onFinish={onFinish}
+          layout="vertical"
+          className="text-left"
+        >
+          <Form.Item
+            name="email"
+            label={<span className="font-semibold text-gray-700">Email</span>}
+            rules={[{ validator: emailValidator }]}
+          >
+            <Input
+              prefix={<MailOutlined className="text-blue-400" />}
+              className="rounded-full py-3 px-4 border-2 border-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition"
+              placeholder={vnMode ? "Nhập email của bạn" : "Fill your email"}
+            />
+          </Form.Item>
+
+          <Form.Item>
+            <Button
+              loading={loading}
+              htmlType="submit"
+              type="primary"
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white !rounded-full !py-6 text-lg transition"
+            >
+              {vnMode ? "Gửi Yêu Cầu" : "Send Request"}
             </Button>
-          </div>
-        </Form.Item>
-        <Form.Item>
-          <Link to="/login" className="flex justify-center">
-            Quay lại
-          </Link>
-        </Form.Item>
-      </Form>
+          </Form.Item>
+        </Form>
+
+        <Link to="/login" className="text-blue-500 hover:underline text-sm flex items-center justify-center gap-2">
+          {vnMode ? "Quay lại đăng nhập" : "Go back to login"}
+        </Link>
+      </div>
     </div>
   );
 };

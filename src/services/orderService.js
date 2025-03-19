@@ -27,7 +27,60 @@ export const searchOrders = createAsyncThunk(
       const res = await BASE_URL.get("api/v1/admin/orders/search", config);
       return res.data;
     } catch (error) {
-      console.error("Lỗi khi tìm kiếm đơn hàng:", error);
+      throw error;
+    }
+  }
+);
+
+export const updateOrder = createAsyncThunk(
+  "order/updateOrder",
+  async (data) => {
+    const token = Cookies.get("token");
+    const userId = localStorage.getItem("userId");
+    const config = {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      params: {
+        orderId: data.orderId,
+        userId: userId,
+        secretToken: data.secretToken
+      },
+    };
+
+    try {
+      const res = await BASE_URL.get(
+        `api/v1/orders/update-status`,
+        config
+      );
+      return res.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+);
+
+export const userOrder = createAsyncThunk(
+  "order/userOrder",
+  async () => {
+    const token = Cookies.get("token");
+    const userId = localStorage.getItem("userId");
+    const config = {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      params: {
+        userId: userId,
+      },
+    };
+
+    try {
+      const res = await BASE_URL.get(
+        `api/v1/orders/user-orders`,
+        config
+      );
+      return res.data;
+    } catch (error) {
       throw error;
     }
   }
@@ -55,7 +108,6 @@ export const updateOrderStatus = createAsyncThunk(
       );
       return res.data;
     } catch (error) {
-      console.error("Lỗi khi cập nhật trạng thái đơn hàng:", error);
       throw error;
     }
   }
@@ -79,7 +131,6 @@ export const deleteOrder = createAsyncThunk(
       );
       return res.data;
     } catch (error) {
-      console.error("Lỗi khi xóa đơn hàng:", error);
       throw error;
     }
   }
@@ -103,7 +154,6 @@ export const getOrderDetail = createAsyncThunk(
       );
       return res.data;
     } catch (error) {
-      console.error("Lỗi khi lấy chi tiết đơn hàng:", error);
       throw error;
     }
   }
@@ -114,8 +164,7 @@ export const createOrder = createAsyncThunk(
   "orders/createOrder",
   async ({ address, selectedData, paymentMethod }, { rejectWithValue }) => {
     const token = Cookies.get("token");
-
-    console.log("service", address, selectedData, paymentMethod);
+    const userId = localStorage.getItem("userId");
 
     if (!token) {
       return rejectWithValue("Bạn cần đăng nhập để thanh toán.");
@@ -135,9 +184,10 @@ export const createOrder = createAsyncThunk(
       commune: address.commune,
       addressState: address.defaultAddress,
       cartItems: selectedData.map((item) => item.cartItemId),
-      orderMethod: paymentMethod, // Giá trị mặc định
-      bankCode: "VCB", // Giá trị mặc định
-      language: "vi", // Ngôn ngữ mặc định
+      orderMethod: paymentMethod,
+      bankCode: "VCB",
+      language: "vi",
+      userId: userId
     };
 
     const config = {
@@ -158,18 +208,16 @@ export const createOrder = createAsyncThunk(
 
 export const getOrder = createAsyncThunk("orders/getOrder", async (orderId) => {
   const token = Cookies.get("token");
-  console.log("orderId", orderId);
   const config = {
     headers: {
-      Authorization: `Bearer ${token}`, // Token xác thực
-      "Content-Type": "application/json", // Định dạng JSON
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
   };
 
   try {
     const res = await BASE_URL.get(`api/v1/orders/${orderId}`, config);
-    return res.data; // Trả về dữ liệu sau khi đặt hàng thành công
+    return res.data;
   } catch (error) {
-    console.log(error);
   }
 });

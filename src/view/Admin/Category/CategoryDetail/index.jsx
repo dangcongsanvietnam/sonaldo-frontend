@@ -314,6 +314,11 @@ const CategoryDetail = () => {
                     }))
                   }
                 />
+                <small className="text-gray-500">
+                  {vnMode
+                    ? 'Nhập theo định dạng: "English || Tiếng Việt"'
+                    : 'Enter in format: "English || Vietnamese"'}
+                </small>
               </Form.Item>
               <Form.Item
                 label={vnMode ? "Mô tả" : "Description"}
@@ -337,6 +342,11 @@ const CategoryDetail = () => {
                     }))
                   }
                 />
+                <small className="text-gray-500">
+                  {vnMode
+                    ? 'Nhập theo định dạng: "English || Tiếng Việt"'
+                    : 'Enter in format: "English || Vietnamese"'}
+                </small>
               </Form.Item>
               <Form.Item label={vnMode ? "Ảnh danh mục con" : "Category Item Image"}>
                 <ImageUpload
@@ -394,6 +404,7 @@ const CategoryDetail = () => {
             selectedRowKeys={selectedRowKeys}
             setSelectedRowKeys={setSelectedRowKeys}
             searchKeyword={searchKeyword}
+            vnMode={vnMode}
           />
         </div>
         <Modal

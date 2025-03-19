@@ -4,11 +4,15 @@ import Cookies from "js-cookie";
 
 export const getUserCart = createAsyncThunk("cart/getUserCart", async () => {
   const token = Cookies.get("token");
+  const userId = localStorage.getItem("userId");
 
   const config = {
     headers: {
       "Content-Type": "multipart/form-data",
       Authorization: `Bearer ${token}`,
+    },
+    params: {
+      userId: userId,
     },
   };
 
@@ -23,10 +27,14 @@ export const getUserCart = createAsyncThunk("cart/getUserCart", async () => {
 export const addProductToCart = createAsyncThunk(
   "cart/addProductToCart",
   async ({ productId, quantity }) => {
+    const userId = localStorage.getItem("userId");
     const token = Cookies.get("token");
     const config = {
       headers: {
         Authorization: `Bearer ${token}`,
+      },
+      params: {
+        userId: userId,
       },
     };
 
@@ -47,9 +55,13 @@ export const updateQuantityCartItem = createAsyncThunk(
   "cart/updateQuantityCartItem",
   async ({ cartItemId, quantity }) => {
     const token = Cookies.get("token");
+    const userId = localStorage.getItem("userId");
     const config = {
       headers: {
         Authorization: `Bearer ${token}`,
+      },
+      params: {
+        userId: userId,
       },
     };
 
@@ -70,9 +82,13 @@ export const removeCartItem = createAsyncThunk(
   "cart/removeCartItem",
   async (cartItemId) => {
     const token = Cookies.get("token");
+    const userId = localStorage.getItem("userId");
     const config = {
       headers: {
         Authorization: `Bearer ${token}`,
+      },
+      params: {
+        userId: userId,
       },
     };
 
@@ -89,9 +105,13 @@ export const removeAllCartItem = createAsyncThunk(
   "cart/removeAllCartItem",
   async () => {
     const token = Cookies.get("token");
+    const userId = localStorage.getItem("userId");
     const config = {
       headers: {
         Authorization: `Bearer ${token}`,
+      },
+      params: {
+        userId: userId,
       },
     };
 

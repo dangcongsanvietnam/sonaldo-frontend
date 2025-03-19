@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import Navbar from "../Navbar/Navbar";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import Footer from "../Footer";
 import { useDispatch, useSelector } from "react-redux";
 import { getAdminCategories } from "../../services/categoryService";
@@ -11,21 +11,27 @@ import { getAdminBrands } from "../../services/brandService";
 import { Checkbox, Drawer } from "antd";
 import { PlusOutlined, MinusOutlined, DeleteOutlined, LoadingOutlined } from "@ant-design/icons";
 import { debounce } from "lodash";
+import { getUserInfo } from "../../services/userService";
+import Cookies from "js-cookie";
 
 const DrawerContext = createContext({
   toggleDrawer: () => { },
 });
 
 const Layout = () => {
+  const [vnMode, setVNMode] = useState(
+    () => localStorage.getItem("vnMode") === "true"
+  );
   const { isLoading, startLoading, stopLoading } = useLoading();
-  const vnMode = false;
   const [navbarHeight, setNavbarHeight] = useState(0);
   const dispatch = useDispatch();
   const [isProcessing, setIsProcessing] = useState(false);
   const userCart = useSelector((state) => state.cart?.userCart);
-  const [cart, setCart] = useState(userCart || {});
-  const [minusLoading, setMinusLoading] = useState(false);
-  const [plusLoading, setPlusLoading] = useState(false);
+  const [minusLoading, setMinusLoading] = useState("");
+  const [plusLoading, setPlusLoading] = useState("");
+  const user = useSelector((state) => state.user.data);
+  const [isNavbarVisible, setIsNavbarVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
 
   const categoryList = useSelector((state) => state.category?.categories?.data);
   const brandList = useSelector((state) => state.brand?.brands?.data);
@@ -38,7 +44,60 @@ const Layout = () => {
     return vnMode ? parts[1]?.trim() || parts[0]?.trim() : parts[0]?.trim();
   };
   const navigate = useNavigate();
+  const location = useLocation();
   const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > lastScrollY && window.scrollY > 80) {
+        setIsNavbarVisible(false);
+      } else {
+        setIsNavbarVisible(true);
+      }
+      setLastScrollY(window.scrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [lastScrollY]);
+
+  useEffect(() => {
+    startLoading();
+
+    const token = Cookies.get("token");
+    const role = localStorage.getItem("role");
+
+    if (!token || !role) {
+      stopLoading();
+      return;
+    }
+
+    if (!user || !user.email) {
+      const validateToken = async () => {
+        try {
+          const response = await BASE_URL.get(
+            `api/v1/auth/validate-token?token=${token}&role=${role}`
+          );
+          if (response.status === 200) {
+            await dispatch(getUserInfo(token));
+          } else {
+            return;
+          }
+        } catch {
+          return;
+        } finally {
+          stopLoading();
+        }
+      };
+
+      validateToken();
+    } else {
+      stopLoading();
+    }
+  }, [dispatch, location.pathname, navigate, user, window.performance]);
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -64,16 +123,6 @@ const Layout = () => {
   }, []);
 
   useEffect(() => {
-    if (!userCart) {
-      startLoading();
-      dispatch(getUserCart())
-        .unwrap()
-        .then((res) => setCart(res.data))
-        .finally(() => stopLoading());
-    }
-  }, [dispatch, userCart]);
-
-  useEffect(() => {
     startLoading();
     dispatch(getAdminCategories());
     dispatch(getAdminBrands());
@@ -86,7 +135,6 @@ const Layout = () => {
       .unwrap()
       .then(() => {
         dispatch(getUserCart()).then(() => {
-          toast.success("Sản phẩm đã được xóa thành công!");
         });
         setIsProcessing(false);
       })
@@ -98,10 +146,14 @@ const Layout = () => {
 
   const handleQuantityChange = debounce((item, newQuantity) => {
     if (newQuantity < 0) return;
+    if (newQuantity > item.productQuantity) {
+      toast.warn("Số lượng mua không thể lớn hơn số lượng sản phẩm");
+      return;
+    }
     if (newQuantity > item.quantity) {
-      setPlusLoading(true);
+      setPlusLoading(item.cartItemId);
     } else {
-      setMinusLoading(true);
+      setMinusLoading(item.cartItemId);
     }
 
     if (newQuantity > 0) {
@@ -113,17 +165,25 @@ const Layout = () => {
       )
         .unwrap()
         .then(() => {
-          setMinusLoading(false);
-          setPlusLoading(false);
+          setMinusLoading("");
+          setPlusLoading("");
           dispatch(getUserCart());
         })
         .catch(() => {
-          setMinusLoading(false);
-          setPlusLoading(false);
+          setMinusLoading("");
+          setPlusLoading("");
           toast.error("Đã xảy ra lỗi khi cập nhật số lượng!");
         });
     }
   }, 800)
+
+  useEffect(() => {
+    startLoading();
+  
+    setTimeout(() => {
+      stopLoading();
+    }, 1000);
+  }, [vnMode]);
 
   return (
     <>
@@ -153,12 +213,13 @@ const Layout = () => {
         <DrawerContext.Provider value={{ toggleDrawer }}>
           <div
             id="navbar"
-            className="fixed top-0 w-full bg-white shadow-md z-[9999]"
+            className={`fixed top-0 w-full bg-white shadow-md z-[9999] transition-transform duration-300 ${isNavbarVisible ? "translate-y-0" : "-translate-y-full"
+              }`}
           >
-            <Navbar cart={cart} categoryList={categoryList} brandList={brandList} />
+            <Navbar categoryList={categoryList} brandList={brandList} vnMode={vnMode} setVNMode={setVNMode} />
           </div>
           <div style={{ paddingTop: navbarHeight + "px" }}>
-            <Outlet context={{ setCart, vnMode }} />
+            <Outlet context={{ vnMode }} />
             <Footer />
           </div>
           <Drawer zIndex={9999} title={<span className="text-lg font-bold">Your cart</span>} placement="right" width={400} onClose={toggleDrawer} open={isDrawerOpen}>
@@ -176,15 +237,15 @@ const Layout = () => {
                     <p className="text-xs text-gray-500">{formatCurrency(item?.totalPrice / item?.quantity)} vnđ</p>
                     <div className="flex items-center space-x-2 mt-2">
                       <button disabled={item.quantity === 1} className="border p-1 rounded" onClick={() => handleQuantityChange(item, item?.quantity - 1)}>
-                        {minusLoading ? (
+                        {minusLoading === item.cartItemId ? (
                           <LoadingOutlined />
                         ) : (
                           <MinusOutlined />
                         )}
                       </button>
                       <span className="px-3">{item?.quantity}</span>
-                      <button className="border p-1 rounded" onClick={() => handleQuantityChange(item, item?.quantity + 1)}>
-                        {plusLoading ? (
+                      <button disabled={item.quantity === item.productQuantity} className="border p-1 rounded" onClick={() => handleQuantityChange(item, item?.quantity + 1)}>
+                        {plusLoading === item.cartItemId ? (
                           <LoadingOutlined />
                         ) : (
                           <PlusOutlined />
@@ -218,7 +279,10 @@ const Layout = () => {
                 </div>
               </div>
 
-              <button onClick={() => navigate("/orders")} className="w-full bg-blue-600 text-white py-3 rounded-md text-lg font-semibold mt-4">Check out</button>
+              <button onClick={() => {
+                navigate("/carts");
+                toggleDrawer();
+              }} className="w-full bg-blue-600 text-white py-3 rounded-md text-lg font-semibold mt-4">Check out</button>
             </div>
           </Drawer>
         </DrawerContext.Provider>

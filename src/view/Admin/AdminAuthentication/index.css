@@ -9,3 +9,7 @@
 .ant-menu-item-selected {
   width: 100% !important;
 }
+
+.ant-menu-dark.ant-menu-inline .ant-menu-item {
+  text-align: start !important;
+}

@@ -29,6 +29,12 @@ const AddProduct = () => {
   const [suggestedTags, setSuggestedTags] = useState([]);
   const { vnMode } = useOutletContext();
 
+  const getLocalizedText = (text) => {
+    if (!text) return "";
+    const parts = text.split(" || ");
+    return vnMode ? parts[1]?.trim() || parts[0]?.trim() : parts[0]?.trim();
+  };
+
   useEffect(() => {
     if (!avatar) {
       fetch(defaultAvatar)
@@ -51,11 +57,11 @@ const AddProduct = () => {
 
   const brandOptions = Array.isArray(brandCategory)
     ? brandCategory.map((brand) => ({
-      label: brand?.brandName,
+      label: getLocalizedText(brand?.brandName),
       value: brand?.brandId,
       children: Array.isArray(brand.brandCategories)
         ? brand.brandCategories.map((subBrand) => ({
-          label: subBrand?.name,
+          label: getLocalizedText(subBrand?.name),
           value: subBrand?.brandCategoryId,
         }))
         : [],
@@ -64,11 +70,11 @@ const AddProduct = () => {
 
   const categoryOptions = Array.isArray(categoryItem)
     ? categoryItem.map((category) => ({
-      label: category?.categoryName,
+      label: getLocalizedText(category?.categoryName),
       value: category?.categoryId,
       children: Array.isArray(category.categoryItems)
         ? category.categoryItems.map((subCategory) => ({
-          label: subCategory?.name,
+          label: getLocalizedText(subCategory?.name),
           value: subCategory?.categoryItemId,
         }))
         : [],
@@ -148,7 +154,7 @@ const AddProduct = () => {
       status: stateMapping[values.state] || values.state,
       tagsDescription: filteredTags.join(" "),
       quantity: values.quantity,
-      color: values.color.toHexString() || "#000000"
+      color: values?.color?.toHexString() || "#000000"
     };
 
     if (fileList.length < 1) {
@@ -179,6 +185,11 @@ const AddProduct = () => {
               name="productName"
             >
               <Input onBlur={handleTagBlur} />
+              <small className="text-gray-500">
+                {vnMode
+                  ? 'Nhập theo định dạng: "English || Tiếng Việt"'
+                  : 'Enter in format: "English || Vietnamese"'}
+              </small>
             </Form.Item>
 
             <Form.Item
@@ -190,6 +201,11 @@ const AddProduct = () => {
                 rows={4}
                 placeholder={vnMode ? "Mô tả ..." : "Description ..."}
               />
+              <small className="text-gray-500">
+                {vnMode
+                  ? 'Nhập theo định dạng: "English || Tiếng Việt"'
+                  : 'Enter in format: "English || Vietnamese"'}
+              </small>
             </Form.Item>
 
             <div className="mb-5">
@@ -250,7 +266,7 @@ const AddProduct = () => {
               >
                 <InputNumber
                   formatter={(value) =>
-                    `${vnMode ? "₫" : "$"} ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                    `vnđ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                   }
                   parser={(value) => value?.replace(/[^0-9]/g, "")}
                   className="w-full"
@@ -259,7 +275,7 @@ const AddProduct = () => {
 
               <Form.Item
                 label={vnMode ? "Trạng thái sản phẩm" : "Product Status"}
-                name="status"
+                name="state"
                 className="w-1/2"
               >
                 <Select

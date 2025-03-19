@@ -16,6 +16,13 @@
   box-shadow: none;
 }
 
+.ant-menu-dark.ant-menu-inline .ant-menu-item {
+  text-align: start !important;
+}
+
+.ant-menu-item .ant-menu-item-selected .ant-menu-item-only-child {
+  height: 10px !important;
+}
 /* Ensure the dropdown is styled properly */
 .custom-dropdown .ant-input-search {
   border-radius: 8px;

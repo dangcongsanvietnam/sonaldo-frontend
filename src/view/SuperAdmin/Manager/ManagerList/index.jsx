@@ -92,9 +92,19 @@ const ManagerList = () => {
             setLoading(true);
             const usersRes = await dispatch(getAllUsers()).unwrap();
             const managersRes = await dispatch(getAllManagers()).unwrap();
-            setUsers(usersRes);
-            setManagers(managersRes);
-            setCustomers([...usersRes, ...managersRes]);
+            const usersWithRole = usersRes.map(user => ({
+                ...user,
+                role: "ROLE_USER"
+            }));
+
+            const managersWithRole = managersRes.map(user => ({
+                ...user,
+                role: "ROLE_MANAGER"
+            }));
+            const combinedCustomers = [...usersWithRole, ...managersWithRole];
+            setUsers(usersWithRole);
+            setManagers(managersWithRole);
+            setCustomers(combinedCustomers);
             toast.success(vnMode ? "Tải dữ liệu thành công" : "Load data succesfully");
         } catch (error) {
             toast.error(vnMode ? "Lỗi tải dữ liệu" : "Failed to load data");
@@ -104,6 +114,8 @@ const ManagerList = () => {
         }
     };
 
+    console.log(customers)
+
     const debouncedSearch = useMemo(
         () =>
             debounce((params) => {
@@ -111,9 +123,16 @@ const ManagerList = () => {
                 dispatch(searchUsers({ ...params, page: 0, limit: 10 }))
                     .unwrap()
                     .then((res) => {
-                        if (tabKey === 2) setUsers(res);
-                        else if (tabKey === 3) setManagers(res);
-                        else setCustomers(res);
+                        if (tabKey === 2) {
+                            setUsers(res.map(user => ({ ...user, role: "ROLE_USER" })));
+                        } else if (tabKey === 3) {
+                            setManagers(res.map(user => ({ ...user, role: "ROLE_MANAGER" })));
+                        } else {
+                            setCustomers(res.map(user => ({
+                                ...user,
+                                role: user.isManager ? "ROLE_MANAGER" : "ROLE_USER" // Ensure role is correct
+                            })));
+                        }
                     })
                     .catch(() => {
                         toast.error(vnMode ? "Lỗi tìm kiếm" : "Search Error");
@@ -224,9 +243,10 @@ const ManagerList = () => {
                     ? "Xóa người dùng thành công"
                     : "Successfully deleted user"
             );
-            setCustomers(customers.filter((c) => c.email !== selectedUserEmail));
-            setUsers(users.filter((c) => c.email !== selectedUserEmail));
-            setManagers(managers.filter((c) => c.email !== selectedUserEmail));
+            setCustomers(prevCustomers => prevCustomers.filter(c => c.email !== selectedUserEmail));
+            setUsers(prevUsers => prevUsers.filter(c => c.email !== selectedUserEmail));
+            setManagers(prevManagers => prevManagers.filter(c => c.email !== selectedUserEmail));
+
         } catch (error) {
             toast.error(
                 vnMode
@@ -449,7 +469,7 @@ const ManagerList = () => {
         items: [
             {
                 label: (
-                    <div onClick={() => navigate(`/super-admin/user-detail/${record.email}`)}>
+                    <div onClick={() => navigate(`/super-admin/user-detail/${record.role}/${record.email}`)}>
                         <EyeOutlined style={{ marginRight: 8 }} />
                         {vnMode ? "Xem chi tiết" : "Detail"}
                     </div>
@@ -640,7 +660,8 @@ const ManagerList = () => {
         email: manager.email,
         phoneNumber: manager.phoneNumber,
         birthday: manager.birthday,
-        status: manager.status === "Lock" ? vnMode ? "Khoá" : "Lock" : vnMode ? "Mở" : "Unlock"
+        status: manager.status === "Lock" ? vnMode ? "Khoá" : "Lock" : vnMode ? "Mở" : "Unlock",
+        role: manager.role
     }));
 
     const data2 = users?.map((manager, index) => ({
@@ -650,7 +671,8 @@ const ManagerList = () => {
         email: manager.email,
         phoneNumber: manager.phoneNumber,
         birthday: manager.birthday,
-        status: manager.status === "Lock" ? vnMode ? "Khoá" : "Lock" : vnMode ? "Mở" : "Unlock"
+        status: manager.status === "Lock" ? vnMode ? "Khoá" : "Lock" : vnMode ? "Mở" : "Unlock",
+        role: manager.role
     }));
 
     const data3 = customers?.map((manager, index) => ({
@@ -660,7 +682,8 @@ const ManagerList = () => {
         email: manager.email,
         phoneNumber: manager.phoneNumber,
         birthday: manager.birthday,
-        status: manager.status === "Lock" ? vnMode ? "Khoá" : "Lock" : vnMode ? "Mở" : "Unlock"
+        status: manager.status === "Lock" ? vnMode ? "Khoá" : "Lock" : vnMode ? "Mở" : "Unlock",
+        role: manager.role
     }));
 
     const onChange = (key) => {
@@ -999,7 +1022,7 @@ const ManagerList = () => {
                     </div>
                     <div className="flex flex-col gap-2 ">
                         <label className="font-semibold" htmlFor="">
-                        {vnMode ? "Quyền" : "Role"}
+                            {vnMode ? "Quyền" : "Role"}
                         </label>
                         <Form.Item
                             name="role"

@@ -17,7 +17,6 @@ import {
 import { Button, Layout, Menu, Breadcrumb, Input, Dropdown, Badge, ConfigProvider, Avatar } from "antd";
 import { Outlet, useLocation, useNavigate, useOutletContext } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { searchAdminProducts } from "../../../services/productService";
 import { getLogs } from "../../../services/changelogService";
 import { Stomp } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
@@ -27,6 +26,8 @@ import { logout } from "../../../slices/authSlice";
 import BASE_URL from "../../../api";
 import { getUserInfo } from "../../../services/userService";
 import { Bounce, toast, ToastContainer } from "react-toastify";
+import { getAdminBrands } from "../../../services/brandService";
+import { getAdminCategories } from "../../../services/categoryService";
 
 const { Header, Sider, Content } = Layout;
 
@@ -151,7 +152,7 @@ const AdminAuthentication = () => {
       });
     });
 
-    brands.forEach((brand) => {
+    brands?.forEach((brand) => {
       if (brand.brandName.toLowerCase().includes(value.toLowerCase()) || brand.brandId.toLowerCase().includes(value.toLowerCase())) {
         results.push({ name: `${brand.brandName} - ${brand.brandId}`, type: "brand", link: `/admin/brand/${brand.brandId}` });
       }
@@ -162,7 +163,7 @@ const AdminAuthentication = () => {
       })
     });
 
-    categories.forEach((category) => {
+    categories?.forEach((category) => {
       if (category.categoryName.toLowerCase().includes(value.toLowerCase()) || category.categoryId.toLowerCase().includes(value.toLowerCase())) {
         results.push({ name: `${category.categoryName} - ${category.categoryId}`, type: "category", link: `/admin/category/${category.categoryId}` });
       }
@@ -171,11 +172,6 @@ const AdminAuthentication = () => {
           results.push({ name: `${categoryItem.name} - ${categoryItem.categoryItemId}`, type: "category", link: `/admin/category/${category.categoryId}/${categoryItem.categoryItemId}` });
         }
       })
-    });
-
-    const res = await dispatch(searchAdminProducts({ search: value })).unwrap();
-    res.forEach((product) => {
-      results.push({ name: `${product.name} - ${product.productId}`, type: "product", link: `/admin/products/${product.productId}` });
     });
 
     setSearchResults(results);
@@ -190,6 +186,8 @@ const AdminAuthentication = () => {
 
   useEffect(() => {
     fetchChangelogs();
+    dispatch(getAdminBrands());
+    dispatch(getAdminCategories());
   }, [dispatch]);
 
 
@@ -639,7 +637,7 @@ const AdminAuthentication = () => {
       return [
         {
           label: (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", paddingLeft: collapsed ? "20px" : "30px" }}>
+            <div style={{ display: "flex", gap: "8px" }}>
               <UserOutlined />
               {vnMode ? "Thông tin cá nhân" : "Profile"}
             </div>
@@ -649,7 +647,7 @@ const AdminAuthentication = () => {
         },
         {
           label: (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", paddingLeft: collapsed ? "20px" : "30px" }}>
+            <div style={{ display: "flex", gap: "8px" }}>
               <KeyOutlined />
               {vnMode ? "Đổi mật khẩu" : "Change Password"}
             </div>
@@ -659,7 +657,7 @@ const AdminAuthentication = () => {
         },
         {
           label: (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", paddingLeft: collapsed ? "20px" : "30px" }}>
+            <div style={{ display: "flex", gap: "8px" }}>
               <RollbackOutlined />
               {vnMode ? "Quay về trang chủ" : "Back to the admin"}
             </div>
@@ -820,7 +818,7 @@ const AdminAuthentication = () => {
               ...item,
               children: item.children?.map((child) => ({
                 ...child,
-                label: <div className="" style={{ paddingLeft: collapsed ? "24px" : "40px" }} onClick={child.onClick}>{child.label}</div>,
+                label: <div onClick={child.onClick}>{child.label}</div>,
               })),
             }))}
           />
@@ -878,35 +876,40 @@ const AdminAuthentication = () => {
                 <Dropdown
                   menu={{
                     items: [
-                      ...searchResults.map((item, index) => ({
-                        key: index,
+                      {
+                        key: "results",
                         label: (
-                          <div className="flex items-center">
-                            {item.avatar ? item.avatar.src !== '' ? (
-                              <Avatar src={item.avatar.src} alt={item.avatar.alt} />
-                            ) : (
-                              <Avatar icon={<UserOutlined />} />
-                            ) : (<></>)}
-                            <span className="ml-2">{item.name}</span>
+                          <div className="max-h-60 overflow-y-auto">
+                            {searchResults.map((item, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center p-2 hover:bg-gray-200 cursor-pointer"
+                                onClick={() => navigate(item.link)}
+                              >
+                                {item.avatar?.src ? (
+                                  <Avatar src={item.avatar.src} alt={item.avatar.alt} />
+                                ) : (
+                                  <Avatar icon={<UserOutlined />} />
+                                )}
+                                <span className="ml-2">{item.name}</span>
+                              </div>
+                            ))}
                           </div>
                         ),
-                        onClick: () => navigate(item.link),
-                      })),
-                      ...(searchResults.length > 0 ? [
-                        {
-                          key: 'show-all',
-                          label: (
-                            <Button
-                              className="w-full mt-2"
-                              type="primary"
-                              onClick={handleShowAll}
-                            >
-                              Hiển thị tất cả
-                            </Button>
-                          ),
-                        }
-                      ] : []),
-                    ]
+                      },
+                      ...(searchResults.length > 0
+                        ? [
+                          {
+                            key: "show-all",
+                            label: (
+                              <Button className="w-full mt-2" type="primary" onClick={handleShowAll}>
+                                Hiển thị tất cả
+                              </Button>
+                            ),
+                          },
+                        ]
+                        : []),
+                    ],
                   }}
                   open={searchValue && searchResults.length > 0}
                   placement="bottom"
