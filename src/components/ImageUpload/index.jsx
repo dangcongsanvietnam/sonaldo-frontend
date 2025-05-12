@@ -1,6 +1,6 @@
 import ImgCrop from "antd-img-crop";
-import { Upload, message } from "antd";
-import './index.css'
+import { Upload } from "antd";
+import "./index.css";
 
 const getSrcFromFile = (file) => {
   return new Promise((resolve) => {
@@ -10,14 +10,9 @@ const getSrcFromFile = (file) => {
   });
 };
 
-const ImageUpload = ({ fileList, setFileList, vnMode, info }) => {
-  const MIN_WIDTH = 200;
-  const MIN_HEIGHT = 200;
-  const MAX_WIDTH = 2000;
-  const MAX_HEIGHT = 2000;
-
+const ImageUpload = ({ fileList, setFileList, vnMode, info, blogState }) => {
   const onChange = ({ fileList: newFileList }) => {
-    const updatedFileList = newFileList.map((file) => {
+    let updatedFileList = newFileList.map((file) => {
       const existingFile = fileList.find((f) => f.uid === file.uid);
       return {
         ...file,
@@ -27,6 +22,10 @@ const ImageUpload = ({ fileList, setFileList, vnMode, info }) => {
           file.originFileObj,
       };
     });
+
+    if (blogState) {
+      updatedFileList = updatedFileList.slice(-1); // ✅ Keep only the latest uploaded image for blog
+    }
 
     setFileList(updatedFileList);
   };
@@ -61,21 +60,21 @@ const ImageUpload = ({ fileList, setFileList, vnMode, info }) => {
   };
 
   return (
-    <div className="">
-      {info ? (
-        <div>
-          <Upload
-            listType="picture-card"
-            fileList={fileList}
-            onChange={onChange}
-            onPreview={onPreview}
-            beforeUpload={beforeUpload}
-            customRequest={customRequest}
-          >
-            {fileList.length < 5 && vnMode ? "+ Tải lên" : "+ Upload"}
-          </Upload>
-        </div>
+    <div>
+      {blogState ? (
+        // ✅ No cropping for blog images, fully flexible
+        <Upload
+          listType="picture-card"
+          fileList={fileList}
+          onChange={onChange}
+          onPreview={onPreview}
+          beforeUpload={beforeUpload}
+          customRequest={customRequest}
+        >
+          {fileList.length === 0 && (vnMode ? "+ Tải lên" : "+ Upload")}
+        </Upload>
       ) : (
+        // ✅ Cropping enabled for non-blog images
         <ImgCrop rotationSlider showReset cropShape="square">
           <Upload
             listType="picture-card"
@@ -85,7 +84,7 @@ const ImageUpload = ({ fileList, setFileList, vnMode, info }) => {
             beforeUpload={beforeUpload}
             customRequest={customRequest}
           >
-            {fileList.length < 5 && vnMode ? "+ Tải lên" : "+ Upload"}
+            {fileList.length === 0 && (vnMode ? "+ Tải lên" : "+ Upload")}
           </Upload>
         </ImgCrop>
       )}

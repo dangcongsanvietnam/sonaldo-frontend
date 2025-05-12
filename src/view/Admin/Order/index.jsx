@@ -32,28 +32,68 @@ const UserOrder = () => {
   useEffect(() => {
     if (userCart) {
       setCartQuantity(
-        userCart.map((item) => ({
-          cartItemId: item.cartItemId,
-          quantity: item.quantity,
-          totalPrice: item.totalPrice,
-        }))
+        userCart.map((item) => {
+          let unitPrice = item.totalPrice / item.quantity;
+
+          const discountCategoryItem = item.categoryItems?.find(
+            (catItem) => catItem.categoryName === "Discounts || Khuyến mãi"
+          );
+
+          if (discountCategoryItem) {
+            const match = discountCategoryItem.name?.match(/(\d+)%/);
+            if (match) {
+              const discountPercent = parseInt(match[1], 10);
+              unitPrice -= (unitPrice * discountPercent) / 100;
+            }
+          }
+
+          return {
+            cartItemId: item.cartItemId,
+            quantity: item.quantity,
+            totalPrice: item.totalPrice,
+            discountedUnitPrice: unitPrice,
+            categoryItems: item.categoryItems,
+          };
+        })
       );
     }
   }, [userCart]);
 
   const handleQuantityChange = debounce((item, newQuantity) => {
     if (newQuantity > item.productQuantity) {
-      toast.warn(vnMode ? "Số lượng mới không thể nhiều hơn số lượng sản phẩm" : "New quantity cannot larger than product's quantity");
+      toast.warn(
+        vnMode
+          ? "Số lượng mới không thể nhiều hơn số lượng sản phẩm"
+          : "New quantity cannot be larger than product's quantity"
+      );
       return;
     }
+
     setIsProcessing(true);
+
+    const unitPrice = (() => {
+      let basePrice = item.totalPrice / item.quantity;
+      const discountCategoryItem = item.categoryItems?.find(
+        (catItem) => catItem.categoryName === "Discounts || Khuyến mãi"
+      );
+      if (discountCategoryItem) {
+        const match = discountCategoryItem.name?.match(/(\d+)%/);
+        if (match) {
+          const discountPercent = parseInt(match[1], 10);
+          return basePrice - (basePrice * discountPercent) / 100;
+        }
+      }
+      return basePrice;
+    })();
+
     setCartQuantity((prevCart) =>
       prevCart?.map((cartItem) =>
         cartItem?.cartItemId === item.cartItemId
           ? {
             ...cartItem,
             quantity: newQuantity,
-            totalPrice: newQuantity * (item.totalPrice / item.quantity),
+            totalPrice: item.totalPrice,
+            discountedUnitPrice: unitPrice,
           }
           : cartItem
       )
@@ -73,7 +113,11 @@ const UserOrder = () => {
         })
         .catch(() => {
           setIsProcessing(false);
-          toast.error(vnMode ? "Đã xảy ra lỗi khi cập nhật số lượng!" : "Failed while updating quantity");
+          toast.error(
+            vnMode
+              ? "Đã xảy ra lỗi khi cập nhật số lượng!"
+              : "Failed while updating quantity"
+          );
         });
     } else {
       setCurrentItem(item);
@@ -115,8 +159,40 @@ const UserOrder = () => {
       title: vnMode ? "Đơn giá" : "Price",
       dataIndex: "price",
       key: "price",
-      render: (_, record) =>
-        `${(record.totalPrice / record.quantity).toLocaleString()}₫`,
+      render: (_, record) => {
+        const cartItem = cartQuantity.find(
+          (cartItem) => cartItem.cartItemId === record.cartItemId
+        );
+
+        if (!cartItem) return "0₫";
+
+        let pricePerUnit = cartItem.totalPrice / cartItem.quantity;
+        const discountCategoryItem = cartItem.categoryItems?.find(
+          (catItem) => catItem.categoryName === "Discounts || Khuyến mãi"
+        );
+
+        if (discountCategoryItem) {
+          const match = discountCategoryItem.name?.match(/(\d+)%/);
+          if (match) {
+            const discountPercent = parseInt(match[1], 10);
+            const discountedUnitPrice =
+              pricePerUnit - (pricePerUnit * discountPercent) / 100;
+
+            return (
+              <span>
+                <span className="text-gray-400 line-through mr-1">
+                  {pricePerUnit.toLocaleString()}₫
+                </span>
+                <span className="text-red-500 font-medium">
+                  {discountedUnitPrice.toLocaleString()}₫
+                </span>
+              </span>
+            );
+          }
+        }
+
+        return `${pricePerUnit.toLocaleString()}₫`;
+      }
     },
     {
       title: vnMode ? "Số lượng" : "Quantity",
@@ -146,15 +222,46 @@ const UserOrder = () => {
           (cartItem) => cartItem?.cartItemId === record.cartItemId
         );
 
-        return cartItem ? `${cartItem.totalPrice.toLocaleString()}₫` : "0₫";
-      },
+        if (!cartItem) return "0₫";
+
+        let totalPrice = cartItem.totalPrice;
+        const discountCategoryItem = cartItem.categoryItems?.find(
+          (catItem) => catItem.categoryName === "Discounts || Khuyến mãi"
+        );
+
+        if (discountCategoryItem) {
+          const match = discountCategoryItem.name?.match(/(\d+)%/);
+          if (match) {
+            const discountPercent = parseInt(match[1], 10);
+            const discountedTotal =
+              totalPrice - (totalPrice * discountPercent) / 100;
+
+            return (
+              <span>
+                <span className="text-gray-400 line-through mr-1">
+                  {totalPrice.toLocaleString()}₫
+                </span>
+                <span className="text-red-500 font-medium">
+                  {discountedTotal.toLocaleString()}₫
+                </span>
+              </span>
+            );
+          }
+        }
+
+        return `${totalPrice.toLocaleString()}₫`;
+      }
     },
     {
       title: vnMode ? "Thao tác" : "Actions",
       key: "action",
       render: (_, record) => (
         <Popconfirm
-          title={vnMode ? "Bạn có chắc muốn xóa sản phẩm này?" : "Are you sure want to delete this product"}
+          title={
+            vnMode
+              ? "Bạn có chắc muốn xóa sản phẩm này?"
+              : "Are you sure want to delete this product"
+          }
           onConfirm={() => handleDeleteCartItem(record.cartItemId)}
           okText={vnMode ? "Có" : "Yes"}
           cancelText={vnMode ? "Không" : "No"}
@@ -176,7 +283,23 @@ const UserOrder = () => {
   const totalSelectedPrice =
     userCart
       ?.filter((item) => selectedRowKeys.includes(item.cartItemId))
-      .reduce((total, item) => total + (item.totalPrice || 0), 0) || 0;
+      .reduce((total, item) => {
+        const discountCategoryItem = item.categoryItems?.find(
+          (catItem) => catItem.categoryName === "Discounts || Khuyến mãi"
+        );
+
+        let discountedTotal = item.totalPrice || 0;
+
+        if (discountCategoryItem) {
+          const match = discountCategoryItem.name?.match(/(\d+)%/);
+          if (match) {
+            const discountPercent = parseInt(match[1], 10);
+            discountedTotal = discountedTotal - (discountedTotal * discountPercent) / 100;
+          }
+        }
+
+        return total + discountedTotal;
+      }, 0) || 0;
 
   const totalItems = selectedRowKeys.length;
 

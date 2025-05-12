@@ -2,6 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import {
   createInformation,
   deleteInformation,
+  findDefault,
   getAllInformation,
   setDefaultInformation,
   updateInformation,
@@ -13,6 +14,7 @@ const informationSlice = createSlice({
     loading: "idle",
     informationList: [],
     error: null,
+    defaultData: null
   },
   reducers: {},
   extraReducers: (builder) => {
@@ -78,6 +80,17 @@ const informationSlice = createSlice({
         state.loading = "succeeded";
       })
       .addCase(setDefaultInformation.rejected, (state, action) => {
+        state.loading = "failed";
+        state.error = action.error.message;
+      })
+      .addCase(findDefault.pending, (state) => {
+        state.loading = "pending";
+      })
+      .addCase(findDefault.fulfilled, (state, action) => {
+        state.defaultData = action.payload;
+        state.loading = "succeeded";
+      })
+      .addCase(findDefault.rejected, (state, action) => {
         state.loading = "failed";
         state.error = action.error.message;
       });

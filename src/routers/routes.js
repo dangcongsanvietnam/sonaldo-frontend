@@ -48,6 +48,10 @@ import CreateBlog from "../pages/CreateBlog";
 import EditBlogPage from "../pages/EditBlogPage";
 import OrderList from "../pages/OrderPage";
 import BlogPage from "../pages/BlogPage";
+import StatisticsPage from "../pages/StatisticsPage";
+import BannerManagementPage from "../pages/BannerManagement";
+import AdminChat from "../pages/AdminChat";
+import SearchResult from "../pages/SearchResult";
 
 export const publicRoutes = [
   { path: "/", Component: Home },
@@ -59,6 +63,7 @@ export const publicRoutes = [
   { path: "/brand/:brandId", Component: Brand },
   { path: "/brand/:brandId/:brandCategoryId", Component: BrandCategoryPage },
   { path: "/blog/:blogId", Component: BlogPage },
+  { path: "/search/:keyword", Component: SearchResult },
 ];
 
 export const publicRoutes2 = [
@@ -123,4 +128,7 @@ export const superAdminRoutes = [
   { path: "profile", Component: Profile },
   { path: "change-password", Component: ChangePassword },
   { path: "contact", Component: InformationPage },
+  { path: "statistic", Component: StatisticsPage },
+  { path: "banner", Component: BannerManagementPage },
+  { path: "messages", Component: AdminChat },
 ];

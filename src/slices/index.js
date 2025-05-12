@@ -15,6 +15,9 @@ import informationSlice from "./informationSlice";
 import cartSlice from "./cartSlice";
 import searchSlice from "./searchSlice";
 import wishlistSlice from "./wishlistSlice";
+import statisticSlice from "./statisticSlice";
+import bannerSlice from "./bannerSlice";
+import chatSlice from "./chatSlice";
 
 
 const reducers = combineReducers({
@@ -34,8 +37,10 @@ const reducers = combineReducers({
   cart: cartSlice,
   changelog: changelogSlice,
   search: searchSlice,
-  wishlist: wishlistSlice
-  // order: orderSlice,
+  wishlist: wishlistSlice,
+  statistic: statisticSlice,
+  banner: bannerSlice,
+  chat: chatSlice
 });
 
 export default reducers;

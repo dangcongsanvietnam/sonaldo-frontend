@@ -3,9 +3,11 @@ import { Form, Input, Button, Tag } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import TextEditor from "../../components/TextEditor";
 import { Bounce, toast, ToastContainer } from "react-toastify";
-import { createFeedback, getBlogDetail, updateBlog } from "../../services/feedbackService";
+import { getBlogDetail, updateBlog } from "../../services/feedbackService";
 import { useOutletContext, useParams } from "react-router-dom";
 import { suggestTagsFromText } from "../../utils/suggestTagsFromText";
+import ImageUpload from "../../components/ImageUpload";
+import defaultAvatar from "../../assets/download.png";
 
 const socialPlatforms = ["facebook", "twitter", "instagram", "linkedin"];
 
@@ -21,7 +23,9 @@ const EditBlogPage = () => {
     const { vnMode } = useOutletContext();
     const [loading, setLoading] = useState(false);
     const { blogId } = useParams();
-    const { blog } = useSelector((state) => state.feedbacks)
+    const { blog } = useSelector((state) => state.feedbacks);
+    const [fileList, setFileList] = useState([]);
+    const [avatar, setAvatar] = useState(null);
 
     console.log(blog)
 
@@ -55,6 +59,34 @@ const EditBlogPage = () => {
     useEffect(() => {
         handleTagBlur();
     }, [tags]);
+
+    useEffect(() => {
+        if (!avatar) {
+            fetch(defaultAvatar)
+                .then((res) => res.blob())
+                .then((blob) => {
+                    const file = new File([blob], "default-avatar.png", { type: "image/png" });
+                    setAvatar(file);
+                });
+        }
+    }, [avatar]);
+
+    useEffect(() => {
+        if (blog?.image) {
+            const file = base64ToFile(blog.image.file.data, "blog-image.jpg");
+
+            setFileList([
+                {
+                    uid: "0",
+                    name: file.name,
+                    status: "done",
+                    originFileObj: file,
+                },
+            ]);
+        } else {
+            setFileList([]);
+        }
+    }, [blog?.image]);
 
     const handleInputChange = (e) => setInputValue(e.target.value);
 
@@ -91,9 +123,15 @@ const EditBlogPage = () => {
             subject: values.subject,
             content: values.content,
             writer: values.writer,
+            file: fileList[0]?.originFileObj,
             links: formattedLinks,
             tagsDescription: filteredTags.join(" "),
         };
+
+        if (fileList.length < 1) {
+            toast.error(vnMode ? "Bắt buộc phải có ít nhất 1 ảnh" : "Require at least one picture");
+            return;
+        }
 
         console.log(data)
 
@@ -107,6 +145,40 @@ const EditBlogPage = () => {
             setLoading(false);
         }
     };
+
+    const base64ToFile = (base64Data, filename) => {
+        if (!base64Data || !base64Data.startsWith("data:")) {
+          const defaultMimeType = "image/jpeg";
+          const arr = base64Data.split(",");
+          const mime =
+            arr.length > 1 ? arr[0].match(/:(.*?);/)[1] : defaultMimeType;
+          const bstr = atob(arr[arr.length - 1]);
+          const n = bstr.length;
+          const u8arr = new Uint8Array(n);
+    
+          for (let i = 0; i < n; i++) {
+            u8arr[i] = bstr.charCodeAt(i);
+          }
+    
+          return new File([u8arr], filename, { type: mime });
+        }
+    
+        try {
+          const arr = base64Data.split(",");
+          const mime = arr[0].match(/:(.*?);/)[1];
+          const bstr = atob(arr[1]);
+          const n = bstr.length;
+          const u8arr = new Uint8Array(n);
+    
+          for (let i = 0; i < n; i++) {
+            u8arr[i] = bstr.charCodeAt(i);
+          }
+    
+          return new File([u8arr], filename, { type: mime });
+        } catch (error) {
+          return null;
+        }
+      };
 
     return (
         <>
@@ -126,6 +198,15 @@ const EditBlogPage = () => {
             <Form form={form} layout="vertical" onFinish={handleSubmit} className="w-full max-w-2xl">
                 <Form.Item label="Title" name="subject" rules={[{ required: true, message: "Please enter a title!" }]}>
                     <Input placeholder="Enter blog title" onBlur={handleTagBlur} />
+                </Form.Item>
+
+                <Form.Item label={vnMode ? "Ảnh sản phẩm" : "Product image"} name="files">
+                    <ImageUpload
+                        fileList={fileList}
+                        setAvatar={setAvatar}
+                        setFileList={setFileList}
+                        blogState={true}
+                    />
                 </Form.Item>
 
                 <Form.Item

@@ -296,6 +296,25 @@ const WishlistItemPage = () => {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3">
                             {products?.map((product, index) => {
+                                const discountCategoryItem = product.categoryItems?.find(
+                                    (item) =>
+                                        item.categoryName === "Discounts || Khuyến mãi" ||
+                                        item.categoryName === "Discounts" ||
+                                        item.categoryName === "Khuyến mãi"
+                                );
+
+                                let discountPercent = 0;
+                                let discountLabel = "";
+                                let discountedPrice = product.price;
+
+                                if (discountCategoryItem) {
+                                    discountLabel = discountCategoryItem.name; // e.g., "10%"
+                                    const match = discountLabel?.match(/(\d+)%/);
+                                    if (match) {
+                                        discountPercent = parseInt(match[1]);
+                                        discountedPrice = product.price - (product.price * discountPercent) / 100;
+                                    }
+                                }
                                 return (
                                     <div key={index} className="px-6">
                                         <Card
@@ -343,7 +362,19 @@ const WishlistItemPage = () => {
                                                     <Rate allowHalf value={product.avgVoting} className="mb-2 mr-2 text-sm" disabled />
                                                     <p className="text-gray-600">({product.votingQuantity})</p>
                                                 </div>
-                                                <p className="text-xl font-bold">{formatCurrency(product.price)} vnđ</p>
+                                                {discountPercent > 0 ? (
+                                                    <div>
+                                                        <p className="text-gray-400 line-through text-sm">
+                                                            {formatCurrency(product.price)} vnđ
+                                                        </p>
+                                                        <p className="text-xl font-bold text-red-600">
+                                                            {formatCurrency(discountedPrice)} vnđ
+                                                        </p>
+                                                        <p className="text-green-600 text-sm font-medium">{discountLabel} OFF</p>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-xl font-bold">{formatCurrency(product.price)} vnđ</p>
+                                                )}
 
                                                 <Button type="primary" loading={bagLoading === product.productId} onClick={() =>
                                                     handleAddProduct(

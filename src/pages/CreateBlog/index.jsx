@@ -6,6 +6,8 @@ import { Bounce, toast, ToastContainer } from "react-toastify";
 import { createFeedback } from "../../services/feedbackService";
 import { useOutletContext } from "react-router-dom";
 import { suggestTagsFromText } from "../../utils/suggestTagsFromText";
+import ImageUpload from "../../components/ImageUpload";
+import defaultAvatar from "../../assets/download.png";
 
 const socialPlatforms = ["facebook", "twitter", "instagram", "linkedin"];
 
@@ -20,6 +22,8 @@ const CreateBlog = () => {
     const name = user?.firstName + " " + user?.lastName;
     const { vnMode } = useOutletContext();
     const [loading, setLoading] = useState(false);
+    const [fileList, setFileList] = useState([]);
+    const [avatar, setAvatar] = useState(null);
 
     useEffect(() => {
         form.setFieldsValue({ writer: name });
@@ -28,6 +32,17 @@ const CreateBlog = () => {
     useEffect(() => {
         handleTagBlur();
     }, [tags]);
+
+    useEffect(() => {
+        if (!avatar) {
+          fetch(defaultAvatar)
+            .then((res) => res.blob())
+            .then((blob) => {
+              const file = new File([blob], "default-avatar.png", { type: "image/png" });
+              setAvatar(file);
+            });
+        }
+      }, [avatar]);
 
     const handleInputChange = (e) => setInputValue(e.target.value);
 
@@ -66,7 +81,13 @@ const CreateBlog = () => {
             writer: values.writer,
             links: formattedLinks,
             tagsDescription: filteredTags.join(" "),
+            file: fileList[0]?.originFileObj,
         };
+
+        if (fileList.length < 1) {
+              toast.error(vnMode ? "Bắt buộc phải có ít nhất 1 ảnh" : "Require at least one picture");
+              return;
+            }
 
         try {
             await dispatch(createFeedback(payload)).unwrap();
@@ -77,6 +98,40 @@ const CreateBlog = () => {
             setLoading(false);
         }
     };
+
+    const base64ToFile = (base64Data, filename) => {
+        if (!base64Data || !base64Data.startsWith("data:")) {
+          const defaultMimeType = "image/jpeg";
+          const arr = base64Data.split(",");
+          const mime =
+            arr.length > 1 ? arr[0].match(/:(.*?);/)[1] : defaultMimeType;
+          const bstr = atob(arr[arr.length - 1]);
+          const n = bstr.length;
+          const u8arr = new Uint8Array(n);
+    
+          for (let i = 0; i < n; i++) {
+            u8arr[i] = bstr.charCodeAt(i);
+          }
+    
+          return new File([u8arr], filename, { type: mime });
+        }
+    
+        try {
+          const arr = base64Data.split(",");
+          const mime = arr[0].match(/:(.*?);/)[1];
+          const bstr = atob(arr[1]);
+          const n = bstr.length;
+          const u8arr = new Uint8Array(n);
+    
+          for (let i = 0; i < n; i++) {
+            u8arr[i] = bstr.charCodeAt(i);
+          }
+    
+          return new File([u8arr], filename, { type: mime });
+        } catch (error) {
+          return null;
+        }
+      };
 
     return (
         <>
@@ -96,6 +151,12 @@ const CreateBlog = () => {
             <Form form={form} layout="vertical" onFinish={handleSubmit} className="w-full max-w-2xl">
                 <Form.Item label="Title" name="subject" rules={[{ required: true, message: "Please enter a title!" }]}>
                     <Input placeholder="Enter blog title" onBlur={handleTagBlur} />
+                </Form.Item>
+
+                <Form.Item
+                    label={vnMode ? "Ảnh" : "Image"}
+                >
+                    <ImageUpload fileList={fileList} setAvatar={setAvatar} setFileList={setFileList} blogState={true} />
                 </Form.Item>
 
                 <Form.Item
@@ -169,7 +230,6 @@ const CreateBlog = () => {
                             key={platform}
                             value={links[platform]}
                             onChange={(e) => setLinks({ ...links, [platform]: e.target.value })}
-                            placeholder={`${platform}="link"`}
                             addonBefore={<span className="capitalize">{platform}</span>}
                             className="mb-2"
                         />

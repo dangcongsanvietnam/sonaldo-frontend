@@ -13,6 +13,7 @@ import { PlusOutlined, MinusOutlined, DeleteOutlined, LoadingOutlined } from "@a
 import { debounce } from "lodash";
 import { getUserInfo } from "../../services/userService";
 import Cookies from "js-cookie";
+import UserChatbox from "../UserChatbox";
 
 const DrawerContext = createContext({
   toggleDrawer: () => { },
@@ -179,7 +180,7 @@ const Layout = () => {
 
   useEffect(() => {
     startLoading();
-  
+
     setTimeout(() => {
       stopLoading();
     }, 1000);
@@ -220,6 +221,7 @@ const Layout = () => {
           </div>
           <div style={{ paddingTop: navbarHeight + "px" }}>
             <Outlet context={{ vnMode }} />
+            <UserChatbox />
             <Footer />
           </div>
           <Drawer zIndex={9999} title={<span className="text-lg font-bold">Your cart</span>} placement="right" width={400} onClose={toggleDrawer} open={isDrawerOpen}>
@@ -229,40 +231,80 @@ const Layout = () => {
                 <span>Total</span>
               </div>
 
-              {userCart?.cartItems?.map((item) => (
-                <div key={item?.cartItemId} className="flex items-center space-x-4 border-b pb-4">
-                  <img src={`data:image/jpeg;base64,${item?.productImage?.file?.data}`} alt={getLocalizedText(item?.productName)} className="w-12 h-12 rounded cursor-pointer" onClick={() => navigate(`/product/${item?.productId}`)} />
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold cursor-pointer" onClick={() => navigate(`/product/${item?.productId}`)}>{getLocalizedText(item?.productName)}</p>
-                    <p className="text-xs text-gray-500">{formatCurrency(item?.totalPrice / item?.quantity)} vnđ</p>
-                    <div className="flex items-center space-x-2 mt-2">
-                      <button disabled={item.quantity === 1} className="border p-1 rounded" onClick={() => handleQuantityChange(item, item?.quantity - 1)}>
-                        {minusLoading === item.cartItemId ? (
-                          <LoadingOutlined />
-                        ) : (
-                          <MinusOutlined />
-                        )}
-                      </button>
-                      <span className="px-3">{item?.quantity}</span>
-                      <button disabled={item.quantity === item.productQuantity} className="border p-1 rounded" onClick={() => handleQuantityChange(item, item?.quantity + 1)}>
-                        {plusLoading === item.cartItemId ? (
-                          <LoadingOutlined />
-                        ) : (
-                          <PlusOutlined />
-                        )}
-                      </button>
-                      <button className="text-red-500 ml-2" onClick={() => handleDeleteCartItem(item?.cartItemId)}>
-                        {isProcessing ? (
-                          <LoadingOutlined />
-                        ) : (
-                          <DeleteOutlined />
-                        )}
-                      </button>
+              {userCart?.cartItems?.map((item) => {
+                const discountCategoryItem = item.categoryItems?.find(
+                  (item) =>
+                    item.categoryName === "Discounts || Khuyến mãi" ||
+                    item.categoryName === "Discounts" ||
+                    item.categoryName === "Khuyến mãi"
+                );
+
+                let discountPercent = 0;
+                let discountLabel = "";
+                let discountedPrice = item.totalPrice;
+
+                if (discountCategoryItem) {
+                  discountLabel = discountCategoryItem.name; // e.g., "10%"
+                  const match = discountLabel?.match(/(\d+)%/);
+                  if (match) {
+                    discountPercent = parseInt(match[1]);
+                    discountedPrice = item.totalPrice - (item.totalPrice * discountPercent) / 100;
+                  }
+                }
+                return (
+                  <div key={item?.cartItemId} className="flex items-center space-x-4 border-b pb-4">
+                    <img src={`data:image/jpeg;base64,${item?.productImage?.file?.data}`} alt={getLocalizedText(item?.productName)} className="w-12 h-12 rounded cursor-pointer" onClick={() => navigate(`/product/${item?.productId}`)} />
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold cursor-pointer" onClick={() => navigate(`/product/${item?.productId}`)}>{getLocalizedText(item?.productName)}</p>
+                      {discountPercent > 0 ? (
+                        <div>
+                          <p className="text-xs text-gray-500 line-through">
+                            {formatCurrency(item?.totalPrice / item?.quantity)} vnđ
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {formatCurrency(discountedPrice / item?.quantity)} vnđ
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-500">{formatCurrency(item?.totalPrice / item?.quantity)} vnđ</p>
+                      )}
+                      <div className="flex items-center space-x-2 mt-2">
+                        <button disabled={item.quantity === 1} className="border p-1 rounded" onClick={() => handleQuantityChange(item, item?.quantity - 1)}>
+                          {minusLoading === item.cartItemId ? (
+                            <LoadingOutlined />
+                          ) : (
+                            <MinusOutlined />
+                          )}
+                        </button>
+                        <span className="px-3">{item?.quantity}</span>
+                        <button disabled={item.quantity === item.productQuantity} className="border p-1 rounded" onClick={() => handleQuantityChange(item, item?.quantity + 1)}>
+                          {plusLoading === item.cartItemId ? (
+                            <LoadingOutlined />
+                          ) : (
+                            <PlusOutlined />
+                          )}
+                        </button>
+                        <button className="text-red-500 ml-2" onClick={() => handleDeleteCartItem(item?.cartItemId)}>
+                          {isProcessing ? (
+                            <LoadingOutlined />
+                          ) : (
+                            <DeleteOutlined />
+                          )}
+                        </button>
+                      </div>
                     </div>
+                    {discountPercent > 0 ? (
+                        <div>
+                          <p className="font-semibold">
+                            {formatCurrency(discountedPrice)} vnđ
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="font-semibold">{formatCurrency(item?.totalPrice)} vnđ</p>
+                      )}
                   </div>
-                  <p className="font-semibold">{formatCurrency(item?.totalPrice)} vnđ</p>
-                </div>
-              ))}
+                )
+              })}
 
               <div className="border-t pt-4 text-sm">
                 <div className="flex justify-between">

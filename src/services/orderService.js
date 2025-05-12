@@ -162,7 +162,7 @@ export const getOrderDetail = createAsyncThunk(
 
 export const createOrder = createAsyncThunk(
   "orders/createOrder",
-  async ({ address, selectedData, paymentMethod }, { rejectWithValue }) => {
+  async ({ address, selectedData, paymentMethod, totalPrice }, { rejectWithValue }) => {
     const token = Cookies.get("token");
     const userId = localStorage.getItem("userId");
 
@@ -187,7 +187,8 @@ export const createOrder = createAsyncThunk(
       orderMethod: paymentMethod,
       bankCode: "VCB",
       language: "vi",
-      userId: userId
+      userId: userId,
+      totalPrice: totalPrice
     };
 
     const config = {

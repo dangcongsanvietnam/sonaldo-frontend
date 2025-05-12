@@ -22,7 +22,6 @@ export const deleteQuestion = createAsyncThunk(
       const res = await BASE_URL.delete(`api/v1/super-admin/questions/${questionId}`, config);
       return res.data;
     } catch (error) {
-      console.error("Lỗi khi xóa question:", error);
       throw error;
     }
   }
@@ -47,7 +46,6 @@ export const updateQuestionState = createAsyncThunk(
       const res = await BASE_URL.put(`api/v1/super-admin/questions/${questionId}/state`, {}, config);
       return res.data;
     } catch (error) {
-      console.error("Lỗi khi cập nhật trạng thái question:", error);
       throw error;
     }
   }

@@ -73,8 +73,35 @@ const UserOrder = () => {
       title: vnMode ? "Đơn giá" : "Price",
       dataIndex: "price",
       key: "price",
-      render: (_, record) =>
-        `${(record.totalPrice / record.quantity).toLocaleString()}₫`,
+      render: (_, record) => {
+        const pricePerUnit = record.totalPrice / record.quantity;
+  
+        const discountCategoryItem = record.categoryItems?.find(
+          (catItem) => catItem.categoryName === "Discounts || Khuyến mãi"
+        );
+  
+        if (discountCategoryItem) {
+          const match = discountCategoryItem.name?.match(/(\d+)%/);
+          if (match) {
+            const discountPercent = parseInt(match[1], 10);
+            const discountedUnitPrice =
+              pricePerUnit - (pricePerUnit * discountPercent) / 100;
+  
+            return (
+              <span>
+                <span className="text-gray-400 line-through mr-1">
+                  {pricePerUnit.toLocaleString()}₫
+                </span>
+                <span className="text-red-500 font-medium">
+                  {discountedUnitPrice.toLocaleString()}₫
+                </span>
+              </span>
+            );
+          }
+        }
+  
+        return `${pricePerUnit.toLocaleString()}₫`;
+      },
     },
     {
       title: vnMode ? "Số lượng" : "Quantity",
@@ -86,18 +113,60 @@ const UserOrder = () => {
       title: vnMode ? "Tổng số tiền" : "Total Price",
       key: "totalPrice",
       dataIndex: "totalPrice",
-      render: (_, record) => `${record.totalPrice?.toLocaleString() || "0"}₫`,
+      render: (_, record) => {
+        let totalPrice = record.totalPrice;
+  
+        const discountCategoryItem = record.categoryItems?.find(
+          (catItem) => catItem.categoryName === "Discounts || Khuyến mãi"
+        );
+  
+        if (discountCategoryItem) {
+          const match = discountCategoryItem.name?.match(/(\d+)%/);
+          if (match) {
+            const discountPercent = parseInt(match[1], 10);
+            const discountedTotal =
+              totalPrice - (totalPrice * discountPercent) / 100;
+  
+            return (
+              <div>
+                <div className="line-through text-gray-400">
+                  {totalPrice.toLocaleString()}₫
+                </div>
+                <div className="text-red-500 font-medium">
+                  {discountedTotal.toLocaleString()}₫
+                </div>
+              </div>
+            );
+          }
+        }
+  
+        return `${totalPrice?.toLocaleString() || "0"}₫`;
+      },
     },
-  ];
+  ];  
 
   const selectedData = userCart?.filter((item) =>
     selectedRowKeys.includes(item.cartItemId)
   );
-
+  
   const totalSelectedPrice =
-    userCart
-      ?.filter((item) => selectedRowKeys.includes(item.cartItemId))
-      .reduce((total, item) => total + (item.totalPrice || 0), 0) || 0;
+    selectedData?.reduce((total, item) => {
+      let itemTotal = item.totalPrice;
+  
+      const discountCategoryItem = item.categoryItems?.find(
+        (catItem) => catItem.categoryName === "Discounts || Khuyến mãi"
+      );
+  
+      if (discountCategoryItem) {
+        const match = discountCategoryItem.name?.match(/(\d+)%/);
+        if (match) {
+          const discountPercent = parseInt(match[1], 10);
+          itemTotal = itemTotal - (itemTotal * discountPercent) / 100;
+        }
+      }
+  
+      return total + itemTotal;
+    }, 0) || 0;  
 
   const handleCheckout = async (address, selectedData, paymentMethod) => {
     setLoading(true);
@@ -107,6 +176,7 @@ const UserOrder = () => {
           address: address,
           selectedData: selectedData,
           paymentMethod: paymentMethod,
+          totalPrice: totalSelectedPrice
         })
       ).unwrap();
 

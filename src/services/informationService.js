@@ -40,6 +40,18 @@ export const getInformationById = createAsyncThunk(
   }
 );
 
+export const findDefault = createAsyncThunk(
+  "information/findDefault",
+  async () => {
+    try {
+      const res = await BASE_URL.get(`/api/v1/information/default`);
+      return res.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+);
+
 export const createInformation = createAsyncThunk(
   "information/createInformation",
   async (informationData) => {

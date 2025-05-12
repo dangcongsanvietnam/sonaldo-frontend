@@ -65,6 +65,25 @@ const PublicProductDetail = () => {
   const userSuggestions = useSelector((state) => {
     return state.product.recommend;
   })
+  const discountCategoryItem = localizedProductDetail?.categoryItems?.find(
+    (item) =>
+      item.categoryName === "Discounts || Khuyến mãi" ||
+      item.categoryName === "Discounts" ||
+      item.categoryName === "Khuyến mãi"
+  );
+
+  let discountMainPercent = 0;
+  let discountMainLabel = "";
+  let discountedMainPrice = localizedProductDetail?.price;
+
+  if (discountCategoryItem) {
+    discountMainLabel = discountCategoryItem.name; // e.g., "10%"
+    const match = discountMainLabel?.match(/(\d+)%/);
+    if (match) {
+      discountMainPercent = parseInt(match[1]);
+      discountedMainPrice = localizedProductDetail.price - (localizedProductDetail.price * discountMainPercent) / 100;
+    }
+  }
   const recommended = useMemo(() => {
     return userSuggestions.map((item) => ({
       ...item,
@@ -174,13 +193,13 @@ const PublicProductDetail = () => {
 
   useEffect(() => {
     if (quantitySelected >= localizedProductDetail?.quantity) {
-      setState("Hết hàng");
+      setState(vnMode ? "Hết hàng" : "Out of Stock");
     } else if (quantitySelected <= 0) {
-      setState("Hết hàng");
+      setState(vnMode ? "Hết hàng" : "Out of Stock");
     } else {
-      setState("Còn hàng");
+      setState(vnMode ? "Còn hàng" : "In Stock");
     }
-  }, [quantitySelected, localizedProductDetail?.quantity]);
+  }, [quantitySelected, localizedProductDetail?.quantity, vnMode]);
 
   const handleAddProduct = (productId, quantitySelected) => {
     setBagLoading(true);
@@ -193,12 +212,12 @@ const PublicProductDetail = () => {
           dispatch(getUserCart())
             .unwrap()
             .then(() => {
-              toast.success("Sản phẩm đã được thêm vào giỏ hàng!");
+              toast.success(vnMode ? "Sản phẩm đã được thêm vào giỏ hàng!" : "Added successfully!");
               toggleDrawer();
               setBagLoading(false);
             });
         }).catch(() => {
-          toast.error("Thêm sản phẩm thất bại!");
+          toast.error(vnMode ? "Thêm sản phẩm thất bại!" : "Failed to add!");
           setBagLoading(false);
         });
     }
@@ -218,12 +237,14 @@ const PublicProductDetail = () => {
     dispatch(addReview({ updateValues, productId: id }))
       .unwrap()
       .then(() => {
-        dispatch(getAllReview(id));
-        setIsModalVisible(false);
+
       })
       .catch((error) => {
         toast.error(error)
-      });
+      }).finally(() => {
+        dispatch(getAllReview(id));
+        setIsReviewModalVisible(false);
+      })
   };
 
   const addToFavourite = (product) => {
@@ -289,6 +310,8 @@ const PublicProductDetail = () => {
       }
     }
   };
+
+  console.log(paginatedReviews)
 
   const handleSelectWishlist = (wishlistId) => {
     const data = {
@@ -381,7 +404,7 @@ const PublicProductDetail = () => {
                   className="absolute top-2 right-2"
                   onClick={() => setIsModalOpen(true)}
                 >
-                  View All
+                  {vnMode ? "Xem tất cả" : "View All"}
                 </Button>
 
                 <Button
@@ -418,7 +441,19 @@ const PublicProductDetail = () => {
 
         <div className="col-span-3 border-l border-r px-2 py-6 w-[460px]">
           <h1 className="text-3xl font-bold">{localizedProductDetail?.name}</h1>
-          <p className="text-xl text-black mt-5">{formatCurrency(localizedProductDetail?.price)} vnđ</p>
+          {discountMainPercent > 0 ? (
+            <div>
+              <p className="text-gray-400 line-through text-sm">
+                {formatCurrency(localizedProductDetail.price)} vnđ
+              </p>
+              <p className="text-xl font-bold text-red-600">
+                {formatCurrency(discountedMainPrice)} vnđ
+              </p>
+              <p className="text-green-600 text-sm font-medium">{discountMainLabel} {vnMode ? "Giảm giá" : "OFF"}</p>
+            </div>
+          ) : (
+            <p className="text-xl font-bold">{formatCurrency(localizedProductDetail?.price)} vnđ</p>
+          )}
           <p className="text-green-600 font-semibold">{state}</p>
 
           <div className="mt-6 flex items-center space-x-4">
@@ -435,7 +470,7 @@ const PublicProductDetail = () => {
                 quantitySelected
               )
             } type="primary" icon={<ShoppingCartOutlined />} className="bg-orange-500 hover:bg-orange-600">
-              Add to Bag
+              {vnMode ? "Thêm vào giỏ hàng" : "Add to Bag"}
             </Button>
             <div
               className="bg-white rounded-full p-2 shadow-md cursor-pointer z-10"
@@ -456,16 +491,16 @@ const PublicProductDetail = () => {
       </div>
 
       <div className="col-span-12 mt-12">
-        <h2 className="text-2xl font-bold">Customer Reviews</h2>
+        <h2 className="text-2xl font-bold">{vnMode ? "Đánh giá" : "Customer Reviews"}</h2>
 
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <Rate allowHalf defaultValue={localizedProductDetail?.avgVoting} disabled />
+            <Rate allowHalf value={averageRating} disabled />
             <p className="text-gray-500">
               ({totalReviews} {totalReviews === 1 ? "Review" : "Reviews"})
             </p>
           </div>
-          <Button type="primary" onClick={handleAddReview}>Write a Review</Button>
+          <Button type="primary" onClick={handleAddReview}>{vnMode ? "Viết bài đánh giá" : "Write a Review"}</Button>
         </div>
 
         <div className="grid grid-cols-2 mt-4">
@@ -474,16 +509,16 @@ const PublicProductDetail = () => {
               <div key={star} className="flex items-center space-x-2">
                 <p className="w-10">{star} ★</p>
                 <Progress percent={(ratingCounts[star] || 0) / totalReviews * 100} showInfo={false} className="w-64" />
-                <p className="text-gray-500">{ratingCounts[star] || 0} Reviews</p>
+                <p className="text-gray-500">{ratingCounts[star] || 0} {vnMode ? "Đánh giá" : "Reviews"}</p>
               </div>
             ))}
           </div>
 
           <div className="flex justify-end">
-            <Select value={sortBy} onChange={setSortBy} style={{ width: 150 }}>
-              <Select.Option value="newest">Newest First</Select.Option>
-              <Select.Option value="highest">Highest Rating</Select.Option>
-              <Select.Option value="lowest">Lowest Rating</Select.Option>
+            <Select value={vnMode ? "Lọc theo" : "sortBy"} onChange={setSortBy} style={{ width: 150 }}>
+              <Select.Option value="newest">{vnMode ? "Mới nhất trước" : "Newest First"}</Select.Option>
+              <Select.Option value="highest">{vnMode ? "Cao nhất trước" : "Highest Rating"}</Select.Option>
+              <Select.Option value="lowest">{vnMode ? "Thấp nhất trước" : "Lowest Rating"}</Select.Option>
             </Select>
           </div>
         </div>
@@ -500,16 +535,31 @@ const PublicProductDetail = () => {
                 <p className="mt-2">
                   {truncateText(review.content, 100)}
                   {review.content.length > 100 && (
-                    <Button type="link">Read more</Button>
+                    <Button type="link">{vnMode ? "Xem thêm" : "Read more"}</Button>
                   )}
                 </p>
+                <div className="flex">
+                  {review?.images?.map((image, index) => (
+                    <img
+                      key={index}
+                      src={`data:image/jpeg;base64,${image?.file.data}`}
+                      className="h-[250px] w-full object-cover rounded-t-lg"
+                      style={{
+                        width: '100px',
+                        height: '100px',
+                        objectFit: 'cover',
+                        overflow: 'hidden'
+                      }}
+                    />
+                  ))}
+                </div>
               </Card>
             ))
           ) : (
             <div className="text-center text-gray-500 p-6">
-              <p className="text-xl font-semibold">No reviews yet</p>
-              <p>Be the first to write a review!</p>
-              <Button type="primary" className="mt-2" onClick={handleAddReview}>Write a Review</Button>
+              <p className="text-xl font-semibold">{vnMode ? "Chưa có đánh giá nào" : "No reviews yet"}</p>
+              <p>{vnMode ? "Hãy trở thành người đầu tiên đánh giá" : "Be the first to write a review!"}</p>
+              <Button type="primary" className="mt-2" onClick={handleAddReview}>{vnMode ? "Viết bài đánh giá" : "Write a Review"}</Button>
             </div>
           )}
         </div>
@@ -524,7 +574,7 @@ const PublicProductDetail = () => {
           />
         )}
       </div>
-      <div className="font-bold text-2xl mb-5">Maybe You Like</div>
+      <div className="font-bold text-2xl mb-5">{vnMode ? "Có thể bạn sẽ thích" : "Maybe You Like"}</div>
       <div className="relative w-full h-auto overflow-hidden">
         {recommended?.length > 0 ? (
           <div className="flex items-center">
@@ -541,6 +591,26 @@ const PublicProductDetail = () => {
                 style={{ transform: `translateX(-${currentIndex2 * (100 / itemsPerPage)}%)` }}>
                 {recommended.map((product, index) => {
                   const isWishlisted = wishlistedProducts.has(product.productId);
+
+                  const discountCategoryItem = product.categoryItems?.find(
+                    (item) =>
+                      item.categoryName === "Discounts || Khuyến mãi" ||
+                      item.categoryName === "Discounts" ||
+                      item.categoryName === "Khuyến mãi"
+                  );
+
+                  let discountPercent = 0;
+                  let discountLabel = "";
+                  let discountedPrice = product.price;
+
+                  if (discountCategoryItem) {
+                    discountLabel = discountCategoryItem.name; // e.g., "10%"
+                    const match = discountLabel?.match(/(\d+)%/);
+                    if (match) {
+                      discountPercent = parseInt(match[1]);
+                      discountedPrice = product.price - (product.price * discountPercent) / 100;
+                    }
+                  }
                   return (
                     <div key={index} className="px-6 py-6 shrink-0 w-1/4" style={{ height: 600 }}>
                       <Card
@@ -573,7 +643,19 @@ const PublicProductDetail = () => {
                             <Rate allowHalf value={product.avgVoting} className="mb-2 mr-2 text-sm" disabled />
                             <p className="text-gray-600">({product.votingQuantity})</p>
                           </div>
-                          <p className="text-xl font-bold">{formatCurrency(product.price)} vnđ</p>
+                          {discountPercent > 0 ? (
+                            <div>
+                              <p className="text-gray-400 line-through text-sm">
+                                {formatCurrency(product.price)} vnđ
+                              </p>
+                              <p className="text-xl font-bold text-red-600">
+                                {formatCurrency(discountedPrice)} vnđ
+                              </p>
+                              <p className="text-green-600 text-sm font-medium">{discountLabel} {vnMode ? "Giảm giá" : "OFF"}</p>
+                            </div>
+                          ) : (
+                            <p className="text-xl font-bold">{formatCurrency(product.price)} vnđ</p>
+                          )}
 
                           <Button type="primary" icon={<ShoppingCartOutlined />} className="absolute h-10 w-full !rounded-full bottom-0">
                             {vnMode ? 'Thêm vào giỏ hàng' : 'Add to Cart'}
@@ -592,7 +674,7 @@ const PublicProductDetail = () => {
           </div>
         )}
       </div>
-      <div className="font-bold text-2xl mb-5">Suggestion Just For You</div>
+      <div className="font-bold text-2xl mb-5">{vnMode ? "Đề xuất dành riêng cho bạn" : "Suggestion Just For You"}</div>
       <div className="relative w-full h-auto overflow-hidden">
         {recommendations?.length > 0 ? (
           <div className="flex items-center">
@@ -609,6 +691,26 @@ const PublicProductDetail = () => {
                 style={{ transform: `translateX(-${currentIndex3 * (100 / itemsPerPage)}%)` }}>
                 {recommendations.map((product, index) => {
                   const isWishlisted = wishlistedProducts.has(product.productId);
+
+                  const discountCategoryItem = product.categoryItems?.find(
+                    (item) =>
+                      item.categoryName === "Discounts || Khuyến mãi" ||
+                      item.categoryName === "Discounts" ||
+                      item.categoryName === "Khuyến mãi"
+                  );
+
+                  let discountPercent = 0;
+                  let discountLabel = "";
+                  let discountedPrice = product.price;
+
+                  if (discountCategoryItem) {
+                    discountLabel = discountCategoryItem.name; // e.g., "10%"
+                    const match = discountLabel?.match(/(\d+)%/);
+                    if (match) {
+                      discountPercent = parseInt(match[1]);
+                      discountedPrice = product.price - (product.price * discountPercent) / 100;
+                    }
+                  }
                   return (
                     <div key={index} className="px-6 py-6 shrink-0 w-1/4" style={{ height: 600 }}>
                       <Card
@@ -641,7 +743,19 @@ const PublicProductDetail = () => {
                             <Rate allowHalf value={product.avgVoting} className="mb-2 mr-2 text-sm" disabled />
                             <p className="text-gray-600">({product.votingQuantity})</p>
                           </div>
-                          <p className="text-xl font-bold">{formatCurrency(product.price)} vnđ</p>
+                          {discountPercent > 0 ? (
+                            <div>
+                              <p className="text-gray-400 line-through text-sm">
+                                {formatCurrency(product.price)} vnđ
+                              </p>
+                              <p className="text-xl font-bold text-red-600">
+                                {formatCurrency(discountedPrice)} vnđ
+                              </p>
+                              <p className="text-green-600 text-sm font-medium">{discountLabel} {vnMode ? "Giảm giá" : "OFF"}</p>
+                            </div>
+                          ) : (
+                            <p className="text-xl font-bold">{formatCurrency(product.price)} vnđ</p>
+                          )}
 
                           <Button type="primary" icon={<ShoppingCartOutlined />} className="absolute h-10 w-full !rounded-full bottom-0">
                             {vnMode ? 'Thêm vào giỏ hàng' : 'Add to Cart'}
@@ -709,16 +823,16 @@ const PublicProductDetail = () => {
         </div>
       </Modal>
       <Modal
-        title="Write a Review"
+        title={vnMode ? "Viết bài đánh giá" : "Write a Review"}
         open={isReviewModalVisible}
         onCancel={() => setIsReviewModalVisible(false)}
         onOk={handleSubmit}
-        okText="Submit"
+        okText={vnMode ? "Xác nhận" : "Submit"}
         zIndex={10000}
       >
         <Input.TextArea
           rows={4}
-          placeholder="Write your review..."
+          placeholder={vnMode ? "Viết đánh giá của bạn" : "Write your review..."}
           value={content}
           onChange={(e) => setContent(e.target.value)}
         />

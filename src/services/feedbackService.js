@@ -9,6 +9,7 @@ export const createFeedback = createAsyncThunk(
     try {
       const config = {
         headers: {
+          "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
         },
       };
@@ -27,6 +28,7 @@ export const updateBlog = createAsyncThunk(
     try {
       const config = {
         headers: {
+          "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
         },
       };
@@ -114,9 +116,46 @@ export const getBlogDetail = createAsyncThunk(
   async (blogId) => {
     try {
       const response = await BASE_URL.get(`/api/v1/blogs/${blogId}`);
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+);
+
+export const getRelatedBlogs = createAsyncThunk(
+  "blog/getRelatedBlogs",
+  async (blogId) => {
+    try {
+      const response = await BASE_URL.get(`/api/v1/blogs/related/${blogId}`);
       return response.data;
     } catch (error) {
       throw error;
     }
   }
 );
+
+export const getHottestBlogs = createAsyncThunk(
+  "blog/getHottestBlogs",
+  async (limit = 10) => {
+    try {
+      const response = await BASE_URL.get(`/api/v1/blogs/hottest?limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+);
+
+export const getNewestBlogs = createAsyncThunk(
+  "blog/getNewestBlogs",
+  async (limit = 10) => {
+    try {
+      const response = await BASE_URL.get(`/api/v1/blogs/newest?limit=${limit}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+);
+

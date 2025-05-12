@@ -1,107 +1,72 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Badge, Breadcrumb, Button, Card, Checkbox, ConfigProvider, Drawer, Input, InputNumber, Modal, Pagination, Rate, Select, Slider } from "antd";
-import { ArrowRightOutlined, ClearOutlined, HeartFilled, HeartOutlined, ShoppingCartOutlined } from "@ant-design/icons";
+import { Badge, Button, Card, Checkbox, ConfigProvider, Drawer, InputNumber, Modal, Pagination, Rate, Select, Slider } from "antd";
+import { ClearOutlined, HeartFilled, HeartOutlined, ShoppingCartOutlined } from "@ant-design/icons";
 import { Filter } from "lucide-react";
-import './index.css'
 import { useDispatch, useSelector } from "react-redux";
-import { getBrandDetail } from "../../services/brandService";
-import { useLoading } from "../../provider/LoadingProvider";
 import { toast } from "react-toastify";
 import { useNavigate, useOutletContext, useParams } from "react-router-dom";
-import { getProductsByBrandCategory } from "../../services/productService";
 import Cookies from "js-cookie";
-import { addToFavorite, getAllWishlist, removeFromFavorite } from "../../services/wishlistService";
-import { useDrawer } from "../../components/Layout";
 import { addProductToCart, getUserCart } from "../../services/cartService";
+import { useDrawer } from "../../components/Layout";
+import { addToFavorite, getAllWishlist, removeFromFavorite } from "../../services/wishlistService";
+import { searchProducts } from "../../services/productService";
 
 const { Option } = Select;
 const PRODUCTS_PER_PAGE = 20;
 
-const Brand = () => {
+const SearchResult = () => {
     const { vnMode } = useOutletContext();
-    const { startLoading, stopLoading } = useLoading();
+    const [currentPage, setCurrentPage] = useState(1);
     const [sortOption, setSortOption] = useState("default");
     const [inStockCount, setInStockCount] = useState(0);
     const [outOfStockCount, setOutOfStockCount] = useState(0);
+    const [bagLoading, setBagLoading] = useState("");
+    const { toggleDrawer } = useDrawer();
+    const token = Cookies.get("token");
+    const [addLoading, setAddLoading] = useState("" || null);
     const navigate = useNavigate();
-    const { brandId } = useParams();
+    const { keyword } = useParams();
+    const [products, setProducts] = useState([]);
+    const [originalProducts, setOriginalProducts] = useState([]);
     const getLocalizedText = (text) => {
         if (!text) return "";
         const parts = text.split(" || ");
         return vnMode ? parts[1]?.trim() || parts[0]?.trim() : parts[0]?.trim();
     };
-    const brandData = useSelector((state) => state?.brand?.brand?.data);
-
-    const brand = useMemo(() => {
-        if (!brandData) return null;
-
-        return {
-            ...brandData,
-            name: getLocalizedText(brandData.name),
-            description: getLocalizedText(brandData.description),
-            brandCategories: brandData.brandCategories?.map((brandCategory) => ({
-                ...brandCategory,
-                name: getLocalizedText(brandCategory.name),
-                description: getLocalizedText(brandCategory.description),
-            })),
-        };
-    }, [brandData, vnMode]);
-
-    const ageList = useMemo(() => {
-        return [
-            { name: "0-2 Years || 0-2 Tuổi", count: 0, disabled: true },
-            { name: "3-4 Years || 3-4 Tuổi", count: 0, disabled: true },
-            { name: "5-7 Years || 5-7 Tuổi", count: 0, disabled: true },
-            { name: "8-10 Years || 8-10 Tuổi", count: 0, disabled: true },
-            { name: "11-12 Years || 11-12 Tuổi", count: 0, disabled: true },
-            { name: "13-14 Years || 13-14 Tuổi", count: 0, disabled: true },
-            { name: "15-16 Years || 15-16 Tuổi", count: 0, disabled: true },
-            { name: "17 Years || 17 Tuổi", count: 0, disabled: true },
-            { name: "18+ Years || 18+ Tuổi", count: 0, disabled: true }
-        ].map(age => ({ ...age, name: getLocalizedText(age.name) }));
-    }, [vnMode]);
 
     const [open, setOpen] = useState(false);
-    const [bagLoading, setBagLoading] = useState("");
-    const [allProducts, setAllProducts] = useState([]);
-    const [categoryList, setCategoryList] = useState([]);
-    const [ageCategory, setAgeCategory] = useState([]);
-    const token = Cookies.get("token");
-    const { toggleDrawer } = useDrawer();
     const [filters, setFilters] = useState({
-        category: [],
-        age: [],
         availability: [],
         priceRange: [0, 10000000],
     });
     const [filterLoading, setFilterLoading] = useState(false);
     const [filterMode, setFilterMode] = useState(false);
-    const [displayedProducts, setDisplayedProducts] = useState([]);
-    const [showAllCategories, setShowAllCategories] = useState(false);
-    const MAX_CATEGORIES = 10;
+    const [selectedProduct, setSelectedProduct] = useState(null);
+    const [isWishlistModalVisible, setIsWishlistModalVisible] = useState(false);
     const dispatch = useDispatch();
     const wishlists = useSelector(state => state.wishlist.wishlists);
     const [wishlistedProducts, setWishlistedProducts] = useState(new Set());
-    const [addLoading, setAddLoading] = useState("" || null);
-    const [selectedProduct, setSelectedProduct] = useState(null);
-    const [isWishlistModalVisible, setIsWishlistModalVisible] = useState(false);
-    const [isLoginModalVisible, setIsLoginModalVisible] = useState(false);
-    const products = filterMode ? displayedProducts : allProducts;
-    const totalProducts = products.length;
-    const totalPages = Math.ceil(totalProducts / PRODUCTS_PER_PAGE);
-    const [currentPage, setCurrentPage] = useState(1);
-
-    const paginatedProducts = products.slice(
-        (currentPage - 1) * PRODUCTS_PER_PAGE,
-        currentPage * PRODUCTS_PER_PAGE
+    const productsData = useSelector(
+        (state) => state?.product?.suggestProducts
     );
 
+    const suggestProducts = useMemo(() => {
+        if (!productsData) return [];
+        return productsData.map((product) => ({
+            ...product,
+            name: getLocalizedText(product.name),
+        }));
+    }, [productsData, vnMode]);
+
+    const totalProducts = suggestProducts.length;
+    const totalPages = Math.ceil(totalProducts / PRODUCTS_PER_PAGE);
+
     useEffect(() => {
-        const inStock = allProducts.filter(product => product.quantity > 0).length;
-        const outOfStock = allProducts.filter(product => product.quantity === 0).length;
+        const inStock = suggestProducts.filter(product => product.stockStatus === "InStock").length;
+        const outOfStock = suggestProducts.filter(product => product.quantity === "OutofStock").length;
         setInStockCount(inStock);
         setOutOfStockCount(outOfStock);
-    }, [allProducts]);
+    }, [suggestProducts]);
 
     useEffect(() => {
         const productIds = new Set(
@@ -111,141 +76,34 @@ const Brand = () => {
     }, [wishlists]);
 
     useEffect(() => {
-        const fetchBrandDetail = async () => {
+        dispatch(searchProducts(keyword)).then(() => {
+            setFilterLoading(true);
             try {
-                startLoading(true);
-                const res = await dispatch(getBrandDetail(brandId)).unwrap();
-                const brandCategories = (res.data?.brandCategories || []).map(brandCategory => ({
-                    ...brandCategory,
-                    name: getLocalizedText(brandCategory.name),
-                    description: getLocalizedText(brandCategory.description),
+                const mappedProducts = suggestProducts.map((product) => ({
+                    ...product,
+                    name: getLocalizedText(product.name),
                 }));
-
-                const productPromises = brandCategories.map(async (category) => {
-                    const response = await dispatch(getProductsByBrandCategory(category.brandCategoryId)).unwrap();
-                    return {
-                        ...category,
-                        name: getLocalizedText(category.name),
-                        description: getLocalizedText(category.description),
-                        products: response.data.map(product => ({
-                            ...product,
-                            name: getLocalizedText(product.name),
-                            description: getLocalizedText(product.description),
-                            categoryItems: product.categoryItems?.map(categoryItem => ({
-                                ...categoryItem,
-                                name: getLocalizedText(categoryItem.name),
-                                categoryName: getLocalizedText(categoryItem.categoryName),
-                            })),
-                            brandCategory: {
-                                brandName: getLocalizedText(product.brandCategory.brandName),
-                                name: getLocalizedText(product.brandCategory.name),
-                            },
-                        }))
-                    };
-                });
-
-                const categoryProducts = await Promise.all(productPromises);
-                const sortedCategories = categoryProducts.sort((a, b) => b.products.length - a.products.length);
-
-                const allProductsArray = sortedCategories.flatMap(category => category.products);
-                const categoryMap = new Map();
-                const updatedAgeList = ageList.map(age => ({ ...age, count: 0, disabled: true }));
-
-                allProductsArray.forEach(product => {
-                    product?.categoryItems.forEach(categoryItem => {
-                        const key = categoryItem.categoryItemId;
-                        if ((getLocalizedText(categoryItem.categoryName) !== "Mua Sắm Theo Độ Tuổi") && (getLocalizedText(categoryItem.categoryName) !== "Mua Sắm Theo Độ Tuổi" !== "Shop By Age")) {
-                            if (!categoryMap.has(key)) {
-                                categoryMap.set(key, {
-                                    categoryItem: {
-                                        ...categoryItem,
-                                        name: getLocalizedText(categoryItem.name),
-                                        description: getLocalizedText(categoryItem.description)
-                                    },
-                                    count: 1
-                                });
-                            } else {
-                                categoryMap.get(key).count += 1;
-                            }
-                        }
-
-                        const ageItem = updatedAgeList.find(age => age.name === getLocalizedText(categoryItem.name));
-                        if (ageItem) {
-                            ageItem.count += 1;
-                            ageItem.disabled = false;
-                        }
-                    });
-                });
-
-                const categories = Array.from(categoryMap.values());
-                setCategoryList(categories);
-                setAllProducts(allProductsArray);
-                setAgeCategory(updatedAgeList);
-            } catch (error) {
+                setOriginalProducts(mappedProducts);
+                setProducts(mappedProducts);
             } finally {
-                stopLoading(false);
+                setFilterLoading(false);
             }
-        };
-
-        fetchBrandDetail();
+        });
         if (token) {
             dispatch(getAllWishlist());
         }
-    }, [dispatch, brandId, navigate, vnMode]);
+    }, [dispatch, navigate, vnMode, totalProducts]);
 
     useEffect(() => {
-        const sortedAllProducts = sortProducts(filterMode ? displayedProducts : allProducts, sortOption);
-        if (filterMode) {
-            if (JSON.stringify(sortedAllProducts) !== JSON.stringify(displayedProducts)) {
-                setDisplayedProducts(sortedAllProducts);
-            }
-        } else {
-            if (JSON.stringify(sortedAllProducts) !== JSON.stringify(allProducts)) {
-                setAllProducts(sortedAllProducts);
-            }
-        }
+        setProducts(sortProducts(products, sortOption));
     }, [sortOption]);
 
-    const categoryOptions = categoryList.map(ctgr => ({
-        label: `${ctgr.categoryItem.name} (${ctgr.count})`,
-        value: ctgr.categoryItem.name
-    }));
-
-    const displayedCategories = showAllCategories ? categoryOptions : categoryOptions.slice(0, MAX_CATEGORIES);
-
-    const ageOptions = ageCategory.map(ctgr => ({
-        label: `${ctgr.name} (${ctgr.count})`,
-        value: ctgr.name,
-        disabled: ctgr.disabled
-    }));
-
     const availabilityOptions = [
-        { label: vnMode ? `Còn hàng (${inStockCount})` : `In Stock (${inStockCount})`, value: "inStock", disabled: inStockCount === 0 },
-        { label: vnMode ? `Hết hàng (${outOfStockCount})` : `Out of Stock (${outOfStockCount})`, value: "outOfStock", disabled: outOfStockCount === 0 }
+        { label: vnMode ? `Còn hàng (${inStockCount})` : `In Stock (${inStockCount})`, value: "InStock", disabled: inStockCount === 0 },
+        { label: vnMode ? `Hết hàng (${outOfStockCount})` : `Out of Stock (${outOfStockCount})`, value: "OutOfStock", disabled: outOfStockCount === 0 }
     ];
 
     const formatCurrency = (value) => new Intl.NumberFormat("vi-VN").format(value);
-
-    const handleMinPriceChange = (value) => {
-        setFilters((prev) => ({
-            ...prev,
-            priceRange: [value ?? 0, prev.priceRange[1]],
-        }));
-    };
-
-    const handleMaxPriceChange = (value) => {
-        setFilters((prev) => ({
-            ...prev,
-            priceRange: [prev.priceRange[0], value ?? 10000000],
-        }));
-    };
-
-    const handlePriceChange = (values) => {
-        setFilters((prev) => ({
-            ...prev,
-            priceRange: values,
-        }));
-    };
 
     const handleAddProduct = (productId, quantitySelected) => {
         setBagLoading(productId);
@@ -268,37 +126,60 @@ const Brand = () => {
         }
     };
 
-    const sortProducts = (products, sortOption) => {
-        setFilterLoading(true)
+    const handleMinPriceChange = (value) => {
+        setFilters((prev) => ({
+            ...prev,
+            priceRange: [value ?? 0, prev.priceRange[1]],
+        }));
+    };
+
+    const handleMaxPriceChange = (value) => {
+        setFilters((prev) => ({
+            ...prev,
+            priceRange: [prev.priceRange[0], value ?? 10000000],
+        }));
+    };
+
+    const handlePriceChange = (values) => {
+        setFilters((prev) => ({
+            ...prev,
+            priceRange: values,
+        }));
+    };
+
+    const sortProducts = (productsToSort, sortOption) => {
+        setFilterLoading(true);
         try {
-            if (!products || products.length === 0) return [];
+            if (!productsToSort || productsToSort.length === 0) return [];
+
+            let sortedProducts = [...productsToSort];
 
             switch (sortOption) {
                 case "price-low-high":
-                    return [...products].sort((a, b) => a.price - b.price);
-
+                    sortedProducts.sort((a, b) => a.price - b.price);
+                    break;
                 case "price-high-low":
-                    return [...products].sort((a, b) => b.price - a.price);
-
+                    sortedProducts.sort((a, b) => b.price - a.price);
+                    break;
                 case "name-asc":
-                    return [...products].sort((a, b) => a.name.localeCompare(b.name));
-
+                    sortedProducts.sort((a, b) => a.name.localeCompare(b.name));
+                    break;
                 case "name-dsc":
-                    return [...products].sort((a, b) => b.name.localeCompare(a.name));
-
+                    sortedProducts.sort((a, b) => b.name.localeCompare(a.name));
+                    break;
                 case "rating-high-low":
-                    return [...products].sort((a, b) => (b.avgVoting || 0) - (a.avgVoting || 0));
-
+                    sortedProducts.sort((a, b) => (b.avgVoting || 0) - (a.avgVoting || 0));
+                    break;
                 case "rating-low-high":
-                    return [...products].sort((a, b) => (a.avgVoting || 0) - (b.avgVoting || 0));
-
-                case "default":
-                    return products;
+                    sortedProducts.sort((a, b) => (a.avgVoting || 0) - (b.avgVoting || 0));
+                    break;
                 default:
-                    return products;
+                    break;
             }
+            return sortedProducts;
         } catch {
             toast.error(vnMode ? "Có lỗi khi lọc." : "Failed to filter.");
+            return productsToSort;
         } finally {
             setFilterLoading(false);
         }
@@ -306,24 +187,16 @@ const Brand = () => {
 
     const handleApplyFilter = () => {
         setFilterLoading(true);
+        setFilterMode(true);
         try {
-            let filtered = allProducts;
-
-            if (filters.category.length > 0 || filters.age.length > 0) {
-                filtered = filtered.filter((product) =>
-                    product.categoryItems.some((categoryItem) =>
-                        filters.category.includes(categoryItem.name) || filters.age.includes(categoryItem.name)
-                    )
-                );
-            }
+            let filtered = [...originalProducts];
 
             if (filters.availability.length > 0) {
                 if (filters.availability.includes("inStock")) {
                     filtered = filtered.filter((product) => product.quantity > 0);
-                } else if (filters.availability.includes("outOfStock")) {
-                    filtered = filtered.filter((product) => product.quantity = 0);
-                } else {
-                    return;
+                }
+                if (filters.availability.includes("outOfStock")) {
+                    filtered = filtered.filter((product) => product.quantity === 0);
                 }
             }
 
@@ -331,8 +204,7 @@ const Brand = () => {
                 (product) => product.price >= filters.priceRange[0] && product.price <= filters.priceRange[1]
             );
 
-            setDisplayedProducts(filtered);
-            setFilterMode(true);
+            setProducts(filtered);
         } catch {
             toast.error(vnMode ? "Có lỗi khi lọc." : "Failed to filter.");
         } finally {
@@ -341,21 +213,12 @@ const Brand = () => {
     };
 
     const handleClearFilters = () => {
-        setFilterLoading(true);
-        try {
-            setFilters({
-                category: [],
-                age: [],
-                availability: [],
-                priceRange: [0, 10000000]
-            });
-            setDisplayedProducts([]);
-            setFilterMode(false);
-        } catch {
-            toast.error(vnMode ? "Có lỗi khi lọc." : "Failed to filter.");
-        } finally {
-            setFilterLoading(false);
-        }
+        setFilterMode(false)
+        setFilters({
+            availability: [],
+            priceRange: [0, 10000000],
+        });
+        setProducts(originalProducts);
     };
 
     const handleSortChange = (value) => {
@@ -363,13 +226,7 @@ const Brand = () => {
     };
 
     const addToFavourite = (product) => {
-        const token = Cookies.get("token");
         setSelectedProduct(product);
-
-        if (!token) {
-            setIsLoginModalVisible(true);
-            return;
-        }
 
         let foundWishlist = null;
         let foundWishlistItem = null;
@@ -459,68 +316,12 @@ const Brand = () => {
             }}
         >
             <div className="p-6 max-w-screen-xl mx-auto">
-                <Breadcrumb
-                    separator=">"
-                    className="mb-4 font-bold"
-                    style={{ fontSize: "18px", color: "#1F4ABC" }}
-                    items={[
-                        {
-                            title: (
-                                <span onClick={() => navigate("/")} className="cursor-pointer text-sm underline">
-                                    {vnMode ? "Trang Chủ" : "Home"}
-                                </span>
-                            ),
-                        },
-                        {
-                            title: (
-                                <span
-                                    onClick={() => navigate(`/brand/${brandId}`)}
-                                    className="cursor-pointer text-sm text-[#1F4ABC] underline"
-                                >
-                                    {brand?.name || "Brand"}
-                                </span>
-                            ),
-                        },
-                    ]}
-                />
-
-                <h1 style={{
-                    fontSize: "50px",
-                    marginBottom: "10px"
-                }}>{brand?.name}</h1>
-                <p style={{
-                    marginBottom: "20px"
-                }}>{brand?.description}</p>
-                {brand?.brandCategories?.length > 1 && (
-                    <div>
-                        <div className="overflow-x-auto whitespace-nowrap py-4">
-                            <div className="flex gap-4 md:justify-center">
-                                {brand?.brandCategories?.map((category, index) => (
-                                    <div key={index} className="flex flex-col items-center w-[120px] sm:w-[160px] flex-shrink-0">
-                                        <div
-                                            key={category.name}
-                                            className="w-[120px] sm:w-[160px] h-[120px] sm:h-[160px] text-center p-4 rounded-lg cursor-pointer hover:opacity-80 text-white font-bold text-lg flex items-center justify-center"
-                                        >
-                                            <img
-                                                onClick={() => navigate(`/brand/${brandId}/${category.brandCategoryId}`)}
-                                                src={`data:image/jpeg;base64,${category.imageFile.file.data}`}
-                                                className="w-full h-full object-contain transition-transform duration-300 ease-in-out hover:scale-110 rounded-xl"
-                                            />
-                                        </div>
-                                        <div className="font-semibold text-xs truncate w-[120px] sm:w-[160px] text-center mt-2">
-                                            {category.brandCategoryName}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                    </div>
-                )}
 
                 <div>
                     <div className="flex justify-between items-center my-10">
-                        <span className="text-lg font-semibold">{allProducts.length} {vnMode ? "sản phẩm" : "products"}</span>
+                        <span>
+                            <span className="text-lg font-semibold">{vnMode ? "Có" : "There is"} {suggestProducts.length} {vnMode ? "sản phẩm cho" : "products for"} "{keyword}"</span>
+                        </span>
                         <div className="flex">
                             <div className="flex mr-2">
                                 <Button
@@ -552,30 +353,6 @@ const Brand = () => {
                     <div className="hidden md:block w-1/4">
                         <Drawer zIndex={10000} open={open} onClose={() => setOpen(false)} title={vnMode ? 'Lọc' : "Filters"} placement="left" width={300}>
                             <div className="space-y-4">
-                                <div>
-                                    <h3 className="text-lg font-semibold">{vnMode ? "Danh mục" : "Category"}</h3>
-                                    <Checkbox.Group
-                                        options={displayedCategories}
-                                        value={filters.category}
-                                        onChange={(values) => setFilters((prev) => ({ ...prev, category: values }))}
-                                    />
-                                    {categoryOptions.length > MAX_CATEGORIES && (
-                                        <button
-                                            onClick={() => setShowAllCategories(!showAllCategories)}
-                                            className="text-black underline mt-2"
-                                        >
-                                            {showAllCategories ? "Show Less" : "Show More"}
-                                        </button>
-                                    )}
-                                </div>
-                                <div>
-                                    <h3 className="text-lg font-semibold">{vnMode ? "Nhóm tuổi" : "Age Group"}</h3>
-                                    <Checkbox.Group
-                                        options={ageOptions}
-                                        value={filters.age}
-                                        onChange={(values) => setFilters((prev) => ({ ...prev, age: values }))}
-                                    />
-                                </div>
                                 <div>
                                     <h3 className="text-lg font-semibold">{vnMode ? "Trạng thái" : "Availability"}</h3>
                                     <Checkbox.Group
@@ -631,8 +408,11 @@ const Brand = () => {
                             <div className="col-span-4 flex justify-center items-center h-96">
                                 <Spin size="large" />
                             </div>
-                        ) : totalProducts > 0 ? (
-                            paginatedProducts.map((product, index) => {
+                        ) : products?.length > 0 ? (
+                            products.slice(
+                                (currentPage - 1) * PRODUCTS_PER_PAGE,
+                                currentPage * PRODUCTS_PER_PAGE
+                            ).map((product, index) => {
                                 const isWishlisted = wishlistedProducts.has(product.productId);
 
                                 const discountCategoryItem = product.categoryItems?.find(
@@ -671,7 +451,7 @@ const Brand = () => {
                                                         )}
                                                     </div>
                                                     <img
-                                                        src={`data:image/jpeg;base64,${product?.images[0]?.file.data}`}
+                                                        src={`data:image/jpeg;base64,${product?.imageUrl?.file.data}`}
                                                         className="h-[250px] w-full object-cover rounded-t-lg"
                                                         style={{ width: "100%" }}
                                                         onClick={() => navigate(`/product/${product.productId}`)}
@@ -746,33 +526,6 @@ const Brand = () => {
                     )}
                 </div>
                 <Modal
-                    title="Hey! Save your amazing wish list"
-                    open={isLoginModalVisible}
-                    onCancel={() => setIsLoginModalVisible(false)}
-                    footer={null}
-                >
-                    <p className="mb-5">Enter your email address below and we will save this product to your wish list or &nbsp;
-                        <span onClick={() => navigate("/login")} className="underline text-blue-600 text-base">Log in</span></p>
-                    <div className="flex items-center border border-gray-300 rounded-full p-1 w-full max-w-md">
-                        <Input
-                            type="email"
-                            placeholder="Enter your email"
-                            // value={email}
-                            // onChange={(e) => setEmail(e.target.value)}
-                            className="flex-1 border-none outline-none bg-transparent px-3"
-                            style={{ borderRadius: "999px", border: "none", boxShadow: "none" }}
-                        />
-                        <Button
-                            type="primary"
-                            shape="circle"
-                            icon={<ArrowRightOutlined />}
-                            // onClick={handleSubmit}
-                            className="flex items-center justify-center !rounded-full"
-                            style={{ width: "32px", height: "32px", minWidth: "32px" }}
-                        />
-                    </div>
-                </Modal>
-                <Modal
                     title={vnMode ? "Chọn danh sách yêu thích" : "Choose Wishlist"}
                     open={isWishlistModalVisible}
                     onCancel={() => setIsWishlistModalVisible(false)}
@@ -796,4 +549,4 @@ const Brand = () => {
     );
 };
 
-export default Brand;
+export default SearchResult;

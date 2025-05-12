@@ -136,7 +136,7 @@ const OrderManagement = () => {
       {
         key: "1",
         label: (
-          <div onClick={() => navigate(`/super-admin/order-details/${record.orderId}`)}>
+          <div onClick={() => navigate(`/admin/order-details/${record.orderId}`)}>
             <EyeOutlined style={{ marginRight: 8 }} />
             {vnMode ? "Xem chi tiết" : "View details"}
           </div>

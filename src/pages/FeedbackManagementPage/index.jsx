@@ -310,7 +310,7 @@ const FeedbackManagementPage = () => {
             <Button icon={<CloseCircleOutlined />} onClick={handleClearFilter}>
               {vnMode ? 'Xóa bộ lọc' : 'Clear filter'}
             </Button>
-            <Button type='primary' icon={<PlusOutlined />} onClick={() => navigate("/add-blogs")}>
+            <Button type='primary' icon={<PlusOutlined />} onClick={() => navigate("/super-admin/add-blog")}>
               {vnMode ? 'Thêm Blog' : 'Add Blog'}
             </Button>
           </Space>

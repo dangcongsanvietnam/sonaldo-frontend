@@ -67,7 +67,7 @@ const Login = () => {
           <ArrowLeftOutlined />
         </div>
 
-        <div className="flex flex-col items-center w-full z-50">
+        <div className="flex flex-col items-center">
           <div className="w-full pb-2 text-center">
             <img src={Logo} alt="LEGO" className="h-16 md:h-20 mx-auto" />
             <h3 className="text-lg md:text-xl font-bold mb-4">

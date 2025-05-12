@@ -12,6 +12,7 @@ import {
   DatabaseOutlined,
   MessageOutlined,
   InfoCircleOutlined,
+  BarChartOutlined,
 } from "@ant-design/icons";
 import { Button, Layout, Menu, theme, Breadcrumb, Input, Dropdown, Badge, ConfigProvider, Avatar } from "antd";
 import { Outlet, useLocation, useNavigate, useOutletContext } from "react-router-dom";
@@ -192,15 +193,14 @@ const SuperAdminAuthentication = () => {
   };
 
   const menuItems = [
-    // {
-    //   label: vnMode ? "Thống kê" : "Statistics",
-    //   key: "statistics",
-    //   icon: <BarChartOutlined />,
-    //   children: [
-    //     { label: vnMode ? "Báo cáo doanh thu" : "Revenue Report", key: "statistics-revenue-report", onClick: () => navigate("/super-admin/statistics/revenue") },
-    //     { label: vnMode ? "Phân tích người dùng" : "User Analysis", key: "statistics-user-analysis", onClick: () => navigate("/super-admin/statistics/user-analysis") },
-    //   ],
-    // },
+    {
+      label: vnMode ? "Thống kê" : "Statistics",
+      key: "statistics",
+      icon: <BarChartOutlined />,
+      children: [
+        { label: vnMode ? "Báo cáo thống kê" : "Statistic Report", key: "statistic", onClick: () => navigate("/super-admin/statistic") },
+      ],
+    },
     {
       label: vnMode ? "Quản lý người dùng" : "User Management",
       icon: <UserOutlined />,
@@ -226,23 +226,22 @@ const SuperAdminAuthentication = () => {
       ],
     },
     {
-      label: vnMode ? "Quản lý thông tin" : "Website Info",
+      label: vnMode ? "Quản lý thông tin & Banner" : "Website Info & Banner",
       key: "website-info",
       icon: <InfoCircleOutlined />,
       children: [
-        // { label: vnMode ? "Cài đặt trang web" : "Website Settings", key: "settings", onClick: () => navigate("/super-admin/settings") },
+        { label: vnMode ? "Banner" : "Banner", key: "banner", onClick: () => navigate("/super-admin/banner") },
         { label: vnMode ? "Thông tin liên hệ" : "Contact Info", key: "contact", onClick: () => navigate("/super-admin/contact") },
       ],
     },
-    // {
-    //   label: vnMode ? "Quản lý bố cục" : "Layout Management",
-    //   key: "layout-management",
-    //   icon: <LayoutOutlined />,
-    //   children: [
-    //     { label: vnMode ? "Danh sách bố cục" : "Layout List", key: "layout-management-layout-list", onClick: () => navigate("/super-admin/layouts") },
-    //     { label: vnMode ? "Chỉnh sửa bố cục" : "Edit Layout", key: "layout-management-edit-layout", onClick: () => navigate("/super-admin/edit-layout") },
-    //   ],
-    // },
+    {
+      label: vnMode ? "Quản lý Tin nhắn" : "Messenger",
+      key: "messages",
+      icon: <MessageOutlined />,
+      children: [
+        { label: vnMode ? "Tin nhắn" : "Messages", key: "messages", onClick: () => navigate("/super-admin/messages") },
+      ],
+    },
   ];
 
   useEffect(() => {
@@ -446,7 +445,9 @@ const SuperAdminAuthentication = () => {
       "contact": vnMode ? "Thông tin liên hệ" : "Contact Info",
       "layout-management": vnMode ? "Quản lý bố cục" : "Layout Management",
       "layouts": vnMode ? "Danh sách bố cục" : "Layout List",
-      "edit-layout": vnMode ? "Chỉnh sửa bố cục" : "Edit Layout",
+      "banner": vnMode ? "Banner" : "Edit Banner",
+      "statistic": vnMode ? "Thống kê" : "Statistic",
+      "messages": vnMode ? "Tin nhắn" : "Message",
     };
 
     return pathnames.map((path, index) => {

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Badge, Breadcrumb, Button, Card, Checkbox, ConfigProvider, Drawer, Input, InputNumber, Modal, Pagination, Rate, Select, Slider } from "antd";
-import { ArrowRightOutlined, ClearOutlined, HeartFilled, HeartOutlined, ShoppingCartOutlined } from "@ant-design/icons";
+import { ClearOutlined, HeartFilled, HeartOutlined, ShoppingCartOutlined } from "@ant-design/icons";
 import { Filter } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
@@ -711,6 +711,26 @@ const CategoryPageDetail = () => {
             ) : totalProducts > 0 ? (
               paginatedProducts.map((product, index) => {
                 const isWishlisted = wishlistedProducts.has(product.productId);
+
+                const discountCategoryItem = product.categoryItems?.find(
+                  (item) =>
+                      item.categoryName === "Discounts || Khuyến mãi" ||
+                      item.categoryName === "Discounts" ||
+                      item.categoryName === "Khuyến mãi"
+              );
+
+                let discountPercent = 0;
+                let discountLabel = "";
+                let discountedPrice = product.price;
+
+                if (discountCategoryItem) {
+                  discountLabel = discountCategoryItem.name; // e.g., "10%"
+                  const match = discountLabel?.match(/(\d+)%/);
+                  if (match) {
+                    discountPercent = parseInt(match[1]);
+                    discountedPrice = product.price - (product.price * discountPercent) / 100;
+                  }
+                }
                 return (
                   <div key={index} className="px-6">
                     <Card
@@ -753,7 +773,19 @@ const CategoryPageDetail = () => {
                           />
                           <p className="text-gray-600">({product.votingQuantity})</p>
                         </div>
-                        <p className="text-xl font-bold">{formatCurrency(product.price)} vnđ</p>
+                        {discountPercent > 0 ? (
+                          <div>
+                            <p className="text-gray-400 line-through text-sm">
+                              {formatCurrency(product.price)} vnđ
+                            </p>
+                            <p className="text-xl font-bold text-red-600">
+                              {formatCurrency(discountedPrice)} vnđ
+                            </p>
+                            <p className="text-green-600 text-sm font-medium">{discountLabel} OFF</p>
+                          </div>
+                        ) : (
+                          <p className="text-xl font-bold">{formatCurrency(product.price)} vnđ</p>
+                        )}
                         <Button
                           type="primary"
                           loading={bagLoading === product.productId}
@@ -790,33 +822,6 @@ const CategoryPageDetail = () => {
             </div>
           )}
         </div>
-        <Modal
-          title="Hey! Save your amazing wish list"
-          open={isLoginModalVisible}
-          onCancel={() => setIsLoginModalVisible(false)}
-          footer={null}
-        >
-          <p className="mb-5">Enter your email address below and we will save this product to your wish list or &nbsp;
-            <span onClick={() => navigate("/login")} className="underline text-blue-600 text-base">Log in</span></p>
-          <div className="flex items-center border border-gray-300 rounded-full p-1 w-full max-w-md">
-            <Input
-              type="email"
-              placeholder="Enter your email"
-              // value={email}
-              // onChange={(e) => setEmail(e.target.value)}
-              className="flex-1 border-none outline-none bg-transparent px-3"
-              style={{ borderRadius: "999px", border: "none", boxShadow: "none" }}
-            />
-            <Button
-              type="primary"
-              shape="circle"
-              icon={<ArrowRightOutlined />}
-              // onClick={handleSubmit}
-              className="flex items-center justify-center !rounded-full"
-              style={{ width: "32px", height: "32px", minWidth: "32px" }}
-            />
-          </div>
-        </Modal>
         <Modal
           title={vnMode ? "Chọn danh sách yêu thích" : "Choose Wishlist"}
           open={isWishlistModalVisible}

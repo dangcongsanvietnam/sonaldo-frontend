@@ -1,28 +1,18 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import NavLinks from "./NavLinks";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { CloseOutlined, FireOutlined, HeartOutlined, LeftOutlined, MenuOutlined, QuestionCircleOutlined, RightOutlined, SearchOutlined, ShoppingCartOutlined, UserOutlined } from "@ant-design/icons";
-import { Card, Col, Row, Input, Tag, Modal, Button } from "antd";
+import { Input, Modal, Button } from "antd";
 import debounce from "lodash/debounce";
 import Cookies from "js-cookie";
 import "./Navbar.css";
-import {
-  faFire,
-} from "@fortawesome/free-solid-svg-icons";
 import { useDispatch, useSelector } from "react-redux";
 import { searchProducts } from "../../services/productService";
 import { getAllHotSearch } from "../../services/searchService";
 import Logo from '../../assets/logo.svg';
 import { motion } from "framer-motion";
 import { useDrawer } from "../Layout";
-
-const slides = [
-  "Get a Ferrari 499P – Hypercar with selected Ferrari vehicle purchase*",
-  "Exclusive Lamborghini Huracán EVO discount available now!",
-  "Limited-time offer on McLaren 720S – Drive your dream car today!",
-  "New Porsche 911 Turbo S – Performance meets luxury!",
-];
+import { getActiveBanner } from "../../services/bannerService";
 
 const Navbar = ({ categoryList, brandList, vnMode, setVNMode }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -39,6 +29,8 @@ const Navbar = ({ categoryList, brandList, vnMode, setVNMode }) => {
   const [direction, setDirection] = useState(1);
   const token = Cookies.get("token");
   const { toggleDrawer } = useDrawer();
+  const { activeBanner } = useSelector((state) => state.banner);
+  const [localBanner, setLocalBanner] = useState(activeBanner);
   const getLocalizedText = (text) => {
     if (!text) return "";
     const parts = text.split(" || ");
@@ -108,6 +100,10 @@ const Navbar = ({ categoryList, brandList, vnMode, setVNMode }) => {
     });
   };
 
+  useEffect(() => {
+    if (activeBanner) setLocalBanner(activeBanner);
+  }, [activeBanner]);
+
   const debouncedSearch = useCallback(
     debounce((keyword) => {
       dispatch(searchProducts(keyword));
@@ -118,16 +114,17 @@ const Navbar = ({ categoryList, brandList, vnMode, setVNMode }) => {
 
   useEffect(() => {
     dispatch(getAllHotSearch(1, 10));
+    dispatch(getActiveBanner());
   }, [dispatch]);
 
   const nextSlide = () => {
     setDirection(-1);
-    setIndex((prev) => (prev - 1 + slides.length) % slides.length);
+    setIndex((prev) => (prev - 1 + activeBanner?.titles.length) % activeBanner?.titles.length);
   };
 
   const prevSlide = () => {
     setDirection(1);
-    setIndex((prev) => (prev + 1) % slides.length);
+    setIndex((prev) => (prev + 1) % activeBanner?.titles.length);
   };
 
   const hotTag = useSelector((state) => state?.search?.data);
@@ -153,6 +150,7 @@ const Navbar = ({ categoryList, brandList, vnMode, setVNMode }) => {
     if (e.key === "Enter" && searchText.trim() !== "") {
       saveSearchHistory(searchText.trim());
       setSearchOpen(false);
+      navigate(`search/${searchText}`)
     }
   };
 
@@ -168,7 +166,7 @@ const Navbar = ({ categoryList, brandList, vnMode, setVNMode }) => {
     <>
       <div className="text-black text-center">
         <div className="flex justify-between items-center px-4 bg-[#F8F8F8] w-full">
-          <button className="text-black bg-[#ABD9FF] justify-start border py-1 px-2 rounded-md text-xs shadow-xl">&larr; {vnMode ? "CỘNG ĐỒNG" : "COMMUNITY"}</button>
+          <button onClick={() => navigate("/blog/f1b5c71c-e71e-4295-bee0-de77ab67997a")} className="text-black bg-[#ABD9FF] justify-start border py-1 px-2 rounded-md text-xs shadow-xl">&larr; {vnMode ? "CỘNG ĐỒNG" : "COMMUNITY"}</button>
           <div className="flex w-[20%] justify-end">
             <span onClick={handleProfileClick} className="cursor-pointer mx-4">
               <UserOutlined />
@@ -176,7 +174,7 @@ const Navbar = ({ categoryList, brandList, vnMode, setVNMode }) => {
                 {token ? vnMode ? "Tài khoản" : "Account" : vnMode ? "Đăng nhập" : "Login"}
               </span>
             </span>
-            <span className="cursor-pointer"><QuestionCircleOutlined />
+            <span onClick={() => navigate(`/blog/650ba8c3-9db5-474f-97fe-312b3116e08b`)} className="cursor-pointer"><QuestionCircleOutlined />
               <span className="hidden sm:block">
                 {vnMode ? "Trung tâm hỗ trợ" : "Help Center"}
               </span>
@@ -201,8 +199,8 @@ const Navbar = ({ categoryList, brandList, vnMode, setVNMode }) => {
               className="w-full text-center text-sm sm:text-base whitespace-normal leading-normal"
             >
               <span>
-                {slides[index]}{" "}
-                <a href="#" className="text-blue-500 underline">
+                {localBanner?.titles[index]}
+                <a onClick={() => navigate(`/category/${localBanner?.categoryId}/${localBanner?.categoryItemId}`)} className="text-blue-500 underline">
                   Learn more
                 </a>
               </span>
